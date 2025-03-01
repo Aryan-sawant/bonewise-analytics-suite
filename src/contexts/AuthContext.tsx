@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, AuthContextType } from '@/types/auth';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Create context with a default value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +23,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
   // Check for existing session on mount
   useEffect(() => {
@@ -32,6 +34,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           setUser(JSON.parse(storedUser));
+          // Don't automatically navigate on initial load
         }
       } catch (error) {
         console.error('Failed to restore user session:', error);
@@ -65,6 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(mockUser));
       
       toast.success('Logged in successfully');
+      navigate('/tasks');
     } catch (error) {
       console.error('Login failed:', error);
       toast.error('Login failed. Please try again.');
@@ -101,6 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(mockUser));
       
       toast.success('Account created successfully');
+      navigate('/tasks');
     } catch (error) {
       console.error('Signup failed:', error);
       toast.error('Signup failed. Please try again.');
@@ -115,6 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     localStorage.removeItem('user');
     toast.success('Logged out successfully');
+    navigate('/auth');
   };
 
   // Provide the auth context to children components
