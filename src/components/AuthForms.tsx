@@ -24,7 +24,7 @@ const AuthForms = ({ defaultTab = 'login' }: AuthFormsProps) => {
     email: '', 
     password: '', 
     confirmPassword: '',
-    userType: 'common' // Default user type is common user
+    userType: 'common' as 'common' | 'doctor' // Type annotation to ensure correct type
   });
   const [isLoading, setIsLoading] = useState(false);
   
