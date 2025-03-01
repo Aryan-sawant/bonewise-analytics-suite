@@ -1,0 +1,16 @@
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  userType: 'common' | 'doctor';
+  // Additional user properties can be added here
+}
+
+export interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, userType: 'common' | 'doctor', name?: string) => Promise<void>;
+  logout: () => void;
+}
