@@ -9,6 +9,7 @@ export interface SignupFormData {
   password: string;
   confirmPassword: string;
   userType: 'common' | 'doctor';
+  name?: string;
 }
 
 export interface AuthFormsProps {

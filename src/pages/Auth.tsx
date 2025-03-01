@@ -22,8 +22,8 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Gradient Background Side */}
-        <div className="md:w-1/2 h-40 md:h-auto bg-gradient-to-r from-medical-900 to-medical-800 relative overflow-hidden">
-          <div className="absolute inset-0 bg-bone-pattern opacity-5"></div>
+        <div className="md:w-1/2 h-40 md:h-auto bg-gradient-to-r from-purple-900 to-indigo-800 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5 pattern-grid-lg"></div>
           <div className="absolute inset-0 flex items-center justify-center p-8">
             <div className="text-white max-w-md text-center md:text-left">
               <h2 className="text-2xl md:text-3xl font-bold mb-4">BoneHealthAI</h2>

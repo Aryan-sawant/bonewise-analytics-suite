@@ -8,23 +8,25 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { useAuthContext } from "@/contexts/AuthContext";
 import { SignupFormData } from './types';
+import { Eye, EyeOff, User } from 'lucide-react';
 
 const SignupForm = () => {
   const navigate = useNavigate();
-  const { signup } = useAuthContext();
+  const { signup, loading } = useAuthContext();
   const [signupData, setSignupData] = useState<SignupFormData>({ 
     email: '', 
     password: '', 
     confirmPassword: '',
-    userType: 'common' as 'common' | 'doctor'
+    userType: 'common',
+    name: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!signupData.email || !signupData.password || !signupData.confirmPassword) {
-      toast.error('Please fill in all fields');
+      toast.error('Please fill in all required fields');
       return;
     }
     
@@ -39,20 +41,15 @@ const SignupForm = () => {
     }
     
     try {
-      setIsLoading(true);
-      await signup(signupData.email, signupData.password, signupData.userType);
-      toast.success('Account created successfully!');
+      await signup(signupData.email, signupData.password, signupData.userType, signupData.name);
       navigate('/dashboard');
     } catch (error) {
-      toast.error('Signup failed. Please try again.');
       console.error('Signup error:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <Card className="border-none shadow-card">
+    <Card className="border shadow-md">
       <CardHeader>
         <CardTitle>Create an account</CardTitle>
         <CardDescription>
@@ -61,6 +58,16 @@ const SignupForm = () => {
       </CardHeader>
       <form onSubmit={handleSignupSubmit}>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="signup-name">Name (Optional)</Label>
+            <Input 
+              id="signup-name" 
+              type="text" 
+              placeholder="Your name" 
+              value={signupData.name}
+              onChange={(e) => setSignupData({...signupData, name: e.target.value})}
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="signup-email">Email</Label>
             <Input 
@@ -74,20 +81,31 @@ const SignupForm = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="signup-password">Password</Label>
-            <Input 
-              id="signup-password" 
-              type="password" 
-              placeholder="••••••••"
-              value={signupData.password}
-              onChange={(e) => setSignupData({...signupData, password: e.target.value})}
-              required
-            />
+            <div className="relative">
+              <Input 
+                id="signup-password" 
+                type={showPassword ? "text" : "password"} 
+                placeholder="••••••••"
+                value={signupData.password}
+                onChange={(e) => setSignupData({...signupData, password: e.target.value})}
+                required
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </Button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="signup-confirm-password">Confirm Password</Label>
             <Input 
               id="signup-confirm-password" 
-              type="password" 
+              type={showPassword ? "text" : "password"} 
               placeholder="••••••••"
               value={signupData.confirmPassword}
               onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
@@ -119,8 +137,9 @@ const SignupForm = () => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Creating account...' : 'Create account'}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Creating account...' : 'Create account'} 
+            <User size={16} className="ml-2" />
           </Button>
         </CardFooter>
       </form>

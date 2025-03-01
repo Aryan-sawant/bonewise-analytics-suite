@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { useAuthContext } from "@/contexts/AuthContext";
 import { LoginFormData } from './types';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { login } = useAuthContext();
+  const { login, loading } = useAuthContext();
   const [loginData, setLoginData] = useState<LoginFormData>({ email: '', password: '' });
-  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,20 +25,15 @@ const LoginForm = () => {
     }
     
     try {
-      setIsLoading(true);
       await login(loginData.email, loginData.password);
-      toast.success('Login successful!');
       navigate('/dashboard');
     } catch (error) {
-      toast.error('Login failed. Please check your credentials.');
       console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <Card className="border-none shadow-card">
+    <Card className="border shadow-md">
       <CardHeader>
         <CardTitle>Welcome back</CardTitle>
         <CardDescription>
@@ -65,23 +61,40 @@ const LoginForm = () => {
                 size="sm" 
                 className="px-0 text-xs text-muted-foreground h-auto" 
                 tabIndex={-1}
+                type="button"
               >
                 Forgot password?
               </Button>
             </div>
-            <Input 
-              id="login-password" 
-              type="password" 
-              placeholder="••••••••" 
-              value={loginData.password}
-              onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-              required
-            />
+            <div className="relative">
+              <Input 
+                id="login-password" 
+                type={showPassword ? "text" : "password"} 
+                placeholder="••••••••" 
+                value={loginData.password}
+                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                required
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </Button>
+            </div>
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Login'}
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'} 
+            <LogIn size={16} className="ml-2" />
           </Button>
         </CardFooter>
       </form>
