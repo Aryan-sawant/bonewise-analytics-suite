@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import AuthForms from '@/components/AuthForms';
+import AuthForms from '@/components/auth/AuthForms';
 import { useAuthContext } from '@/contexts/AuthContext';
 
 const Auth = () => {
