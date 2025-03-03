@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +7,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { useAuthContext } from "@/contexts/AuthContext";
 import { SignupFormData } from './types';
-import { Eye, EyeOff, User } from 'lucide-react';
+import { Eye, EyeOff, User, UserCog } from 'lucide-react';
 
 const SignupForm = () => {
-  const navigate = useNavigate();
   const { signup, loading } = useAuthContext();
   const [signupData, setSignupData] = useState<SignupFormData>({ 
     email: '', 
@@ -53,7 +51,7 @@ const SignupForm = () => {
       <CardHeader>
         <CardTitle>Create an account</CardTitle>
         <CardDescription>
-          Enter your details to create your account
+          Enter your details to create your BoneHealthAI account
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSignupSubmit}>
@@ -113,25 +111,25 @@ const SignupForm = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label>User Type</Label>
-            <div className="flex space-x-4 pt-1">
+            <Label>Account Type</Label>
+            <div className="grid grid-cols-2 gap-4 pt-1">
               <Button
                 type="button"
                 variant={signupData.userType === 'common' ? 'default' : 'outline'}
-                size="sm"
                 onClick={() => setSignupData({...signupData, userType: 'common'})}
-                className="flex-1"
+                className="w-full h-24 flex flex-col items-center justify-center space-y-2"
               >
-                Common User
+                <User size={24} />
+                <div className="text-sm">Common User</div>
               </Button>
               <Button
                 type="button"
                 variant={signupData.userType === 'doctor' ? 'default' : 'outline'}
-                size="sm"
                 onClick={() => setSignupData({...signupData, userType: 'doctor'})}
-                className="flex-1"
+                className="w-full h-24 flex flex-col items-center justify-center space-y-2"
               >
-                Doctor
+                <UserCog size={24} />
+                <div className="text-sm">Doctor</div>
               </Button>
             </div>
           </div>

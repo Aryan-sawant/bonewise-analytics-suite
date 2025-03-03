@@ -1,38 +1,38 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bone, PlusCircle, ArrowRight } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { CheckSquare, Clock, List, PlusSquare, Trash, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Task {
   id: string;
   title: string;
-  description?: string;
-  completed: boolean;
-  deadline?: string;
-  user_id: string;
+  description: string | null;
+  completed: boolean | null;
+  deadline: string | null;
+  created_at: string | null;
 }
 
 const Tasks = () => {
-  const { user } = useAuthContext();
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-
+  const [activeTab, setActiveTab] = useState<string>('all');
+  
   // Redirect if not logged in
   useEffect(() => {
     if (!user) {
       navigate('/auth');
+      return;
     }
   }, [user, navigate]);
-
+  
   // Fetch tasks from Supabase
   useEffect(() => {
     const fetchTasks = async () => {
@@ -61,229 +61,150 @@ const Tasks = () => {
     
     fetchTasks();
   }, [user]);
-
-  const handleAddTask = async () => {
-    if (!user) return;
-    if (!newTaskTitle.trim()) {
-      toast.error('Task title cannot be empty');
-      return;
-    }
-    
-    try {
-      const newTask = {
-        user_id: user.id,
-        title: newTaskTitle,
-        completed: false,
-      };
-      
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert(newTask)
-        .select()
-        .single();
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        setTasks([data, ...tasks]);
-        setNewTaskTitle('');
-        toast.success('Task added successfully');
-      }
-    } catch (error) {
-      console.error('Error adding task:', error);
-      toast.error('Failed to add task');
-    }
+  
+  const handleCreateTask = () => {
+    // For now, just navigate to tasks page
+    navigate('/tasks');
   };
-
-  const toggleTaskCompletion = async (task: Task) => {
-    try {
-      const updatedTask = { ...task, completed: !task.completed };
-      
-      const { error } = await supabase
-        .from('tasks')
-        .update({ completed: !task.completed })
-        .eq('id', task.id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
-      toast.success(`Task ${updatedTask.completed ? 'completed' : 'marked as incomplete'}`);
-    } catch (error) {
-      console.error('Error updating task:', error);
-      toast.error('Failed to update task');
-    }
-  };
-
-  const deleteTask = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      setTasks(tasks.filter(task => task.id !== id));
-      toast.success('Task deleted successfully');
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      toast.error('Failed to delete task');
-    }
-  };
-
-  const viewTaskDetails = (taskId: string) => {
+  
+  const handleViewTask = (taskId: string) => {
     navigate(`/task-details/${taskId}`);
   };
-
+  
+  const filteredTasks = activeTab === 'completed' 
+    ? tasks.filter(task => task.completed) 
+    : activeTab === 'pending' 
+      ? tasks.filter(task => !task.completed)
+      : tasks;
+  
   if (!user) {
-    return null; // Don't render anything if not logged in
+    return null;
   }
-
+  
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Your Bone Health Tasks</h1>
-        <p className="text-muted-foreground">
-          Track and manage your bone health activities
-        </p>
+    <div className="container mx-auto px-4 py-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Manage your tasks and bone health analyses</p>
+        </div>
+        <div className="flex gap-3">
+          <Button onClick={handleCreateTask}>
+            <PlusCircle className="mr-2 h-4 w-4" /> 
+            New Task
+          </Button>
+          <Button onClick={() => navigate('/bone-analysis')} variant="outline">
+            <Bone className="mr-2 h-4 w-4" />
+            Bone Analysis
+          </Button>
+        </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="bg-primary text-primary-foreground">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PlusSquare className="text-primary" />
-              Add New Task
-            </CardTitle>
+            <CardTitle className="text-xl">Bone Health</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="task-title">Task Title</Label>
-                <Input 
-                  id="task-title" 
-                  placeholder="Enter task title"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                />
-              </div>
-            </div>
+            <p className="text-primary-foreground/90 mb-4">
+              Access AI-powered bone health analysis tools
+            </p>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleAddTask}>Add Task</Button>
+            <Button variant="secondary" className="w-full" onClick={() => navigate('/bone-analysis')}>
+              Start Analysis <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </CardFooter>
         </Card>
-
+        
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <List className="text-primary" />
-              Task Summary
-            </CardTitle>
-            <CardDescription>
-              You have {tasks.filter(t => !t.completed).length} incomplete tasks
-            </CardDescription>
+            <CardTitle className="text-xl">Recent Analyses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckSquare className="text-green-500" />
-                  <span>Completed Tasks</span>
-                </div>
-                <span className="font-medium">{tasks.filter(t => t.completed).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="text-orange-500" />
-                  <span>Pending Tasks</span>
-                </div>
-                <span className="font-medium">{tasks.filter(t => !t.completed).length}</span>
-              </div>
-            </div>
+            <p className="text-muted-foreground mb-4">
+              View your most recent bone health analysis results
+            </p>
           </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/analysis')}>
+              View History
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">My Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}: {user.email}
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full">
+              Account Settings
+            </Button>
+          </CardFooter>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckSquare className="text-primary" />
-            Your Tasks
-          </CardTitle>
-          <CardDescription>
-            Manage your bone health activities
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-6">
-              Loading tasks...
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {tasks.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  No tasks yet. Add your first task above.
-                </div>
-              ) : (
-                tasks.map((task) => (
-                  <div 
-                    key={task.id} 
-                    className="flex items-center justify-between p-4 border rounded-md bg-card hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => toggleTaskCompletion(task)}
-                        className={task.completed ? "text-green-500" : "text-muted-foreground"}
-                      >
-                        <CheckSquare />
-                      </Button>
-                      <div>
-                        <p className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
+      
+      <div className="bg-card rounded-lg border shadow-sm p-6">
+        <h2 className="text-2xl font-semibold mb-4">Tasks</h2>
+        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value={activeTab}>
+            {loading ? (
+              <div className="text-center py-8">
+                <p>Loading tasks...</p>
+              </div>
+            ) : filteredTasks.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">No tasks found</p>
+                <Button variant="outline" className="mt-4" onClick={handleCreateTask}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> 
+                  Create a task
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredTasks.map((task) => (
+                  <Card key={task.id} className="transition-all hover:shadow-md">
+                    <CardHeader className="pb-2">
+                      <CardTitle className={`text-lg ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {task.description}
                         </p>
-                        {task.deadline && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> Due: {new Date(task.deadline).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center">
+                      )}
+                    </CardContent>
+                    <CardFooter>
                       <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => viewTaskDetails(task.id)}
-                        className="text-primary mr-1"
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => handleViewTask(task.id)}
                       >
-                        View <ArrowRight className="ml-1 w-4 h-4" />
+                        View
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => deleteTask(task.id)}
-                        className="text-destructive hover:text-destructive/90"
-                      >
-                        <Trash />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

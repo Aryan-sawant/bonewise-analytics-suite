@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, LogOut, Menu, X } from 'lucide-react';
+import { User, LogOut, Menu, X, Bone } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -34,6 +34,7 @@ const NavBar = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Tasks', path: '/tasks', requiresAuth: true },
+    { name: 'Bone Analysis', path: '/bone-analysis', requiresAuth: true },
     { name: 'Analysis', path: '/analysis', requiresAuth: true },
   ];
 
@@ -47,7 +48,7 @@ const NavBar = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">B</span>
+            <Bone className="h-6 w-6 text-primary-foreground" />
           </div>
           <span className="text-lg md:text-xl font-semibold text-foreground">BoneHealthAI</span>
         </Link>
@@ -74,6 +75,9 @@ const NavBar = () => {
           
           {user ? (
             <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                {user.userType === 'doctor' ? 'Doctor' : 'User'}: {user.name || user.email}
+              </div>
               <Button variant="ghost" size="sm" className="gap-2" onClick={logout}>
                 <LogOut size={16} />
                 <span>Logout</span>
@@ -128,6 +132,11 @@ const NavBar = () => {
             
             {user ? (
               <div className="mt-auto pb-8">
+                <div className="mb-4 p-4 bg-muted rounded-md text-sm">
+                  <p className="font-medium">{user.name || 'User'}</p>
+                  <p className="text-muted-foreground">{user.email}</p>
+                  <p className="text-xs mt-1 text-primary">{user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}</p>
+                </div>
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
                   <LogOut size={16} />
                   <span>Logout</span>
