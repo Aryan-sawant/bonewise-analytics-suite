@@ -39,11 +39,11 @@ const EXAMPLE_RESULTS: Record<string, {common: string, doctor: string}> = {
     doctor: 'The image shows a non-displaced transverse fracture of the distal radius with approximately 1mm separation. No apparent articular involvement. Surrounding soft tissue edema is evident. Recommend immobilization and follow-up radiographs in 1-2 weeks to assess healing progress.'
   },
   'osteoporosis': {
-    common: 'Based on the analysis, there are signs suggesting moderate bone density loss consistent with osteopenia or early-stage osteoporosis. This may increase your risk of fractures. It's recommended to discuss these results with your doctor.',
+    common: "Based on the analysis, there are signs suggesting moderate bone density loss consistent with osteopenia or early-stage osteoporosis. This may increase your risk of fractures. It's recommended to discuss these results with your doctor.",
     doctor: 'DEXA scan analysis indicates T-score of -2.3 at L1-L4 vertebrae, consistent with osteoporosis according to WHO criteria. Trabecular pattern shows significant thinning. Recommend calcium and vitamin D supplementation, consider bisphosphonate therapy, and fall prevention counseling.'
   },
   'default': {
-    common: 'Thank you for uploading your medical image. Based on our AI analysis, we've identified some findings that should be reviewed by a healthcare professional for a complete diagnosis.',
+    common: "Thank you for uploading your medical image. Based on our AI analysis, we've identified some findings that should be reviewed by a healthcare professional for a complete diagnosis.",
     doctor: 'The AI analysis has detected potential abnormalities that warrant further clinical correlation. Consider additional diagnostic procedures to confirm findings and establish appropriate treatment protocols.'
   }
 };
