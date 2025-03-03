@@ -33,7 +33,7 @@ const NavBar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Dashboard', path: '/dashboard', requiresAuth: true },
+    { name: 'Tasks', path: '/tasks', requiresAuth: true },
     { name: 'Analysis', path: '/analysis', requiresAuth: true },
   ];
 

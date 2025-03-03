@@ -42,7 +42,7 @@ const SignupForm = () => {
     
     try {
       await signup(signupData.email, signupData.password, signupData.userType, signupData.name);
-      navigate('/dashboard');
+      // Redirect is handled in the AuthContext
     } catch (error) {
       console.error('Signup error:', error);
     }

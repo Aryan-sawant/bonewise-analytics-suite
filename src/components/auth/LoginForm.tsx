@@ -26,7 +26,7 @@ const LoginForm = () => {
     
     try {
       await login(loginData.email, loginData.password);
-      navigate('/dashboard');
+      // Redirect is handled in the AuthContext
     } catch (error) {
       console.error('Login error:', error);
     }

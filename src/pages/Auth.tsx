@@ -14,7 +14,7 @@ const Auth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/tasks');
     }
   }, [user, navigate]);
   
