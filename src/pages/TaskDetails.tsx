@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -13,13 +12,11 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { 
-  Button,
-  Input,
-  Textarea,
-  Label,
-  Separator,
-} from '@/components/ui/';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { 
   CheckSquare, 
   ArrowLeft, 
@@ -50,7 +47,6 @@ const TaskDetails = () => {
   const [editing, setEditing] = useState(false);
   const [editedTask, setEditedTask] = useState<Partial<Task>>({});
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!user) {
       navigate('/auth');
@@ -58,7 +54,6 @@ const TaskDetails = () => {
     }
   }, [user, navigate]);
 
-  // Fetch task details from Supabase
   useEffect(() => {
     const fetchTaskDetails = async () => {
       if (!id || !user) return;
