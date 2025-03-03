@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -165,7 +164,7 @@ const ImageUploadPage = () => {
           <div>
             <h3 className="text-lg font-medium mb-4">Upload Medical Image</h3>
             <ImageUpload 
-              onImageUpload={handleImageUpload}
+              onImageSelected={handleImageUpload}
               isLoading={isUploading}
               buttonText="Select Medical Image"
               description={`Upload your ${analysisType === 'fracture' ? 'X-ray image' : 'medical image'} for analysis`}
