@@ -1,14 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ImageUpload } from '@/components/ImageUpload';
-import ResultsDisplay from '@/components/ResultsDisplay';
+import ImageUpload from '@/components/ImageUpload';
 import { toast } from 'sonner';
 
-// Map of task IDs to their proper titles
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
   'bone-marrow': 'Bone Marrow Cell Classification',
@@ -20,7 +17,6 @@ const TASK_TITLES: Record<string, string> = {
   'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
 };
 
-// Map task IDs to appropriate image guidance
 const TASK_GUIDANCE: Record<string, string> = {
   'fracture-detection': 'Upload an X-ray image of the bone area. The image should clearly show the suspected fracture area.',
   'bone-marrow': 'Upload a microscope image of the bone marrow sample.',
@@ -32,7 +28,6 @@ const TASK_GUIDANCE: Record<string, string> = {
   'bone-infection': 'Upload an X-ray, MRI, or bone scan showing the affected area.'
 };
 
-// Example results for testing
 const EXAMPLE_RESULTS: Record<string, {common: string, doctor: string}> = {
   'fracture-detection': {
     common: 'Based on the analysis of your X-ray, there appears to be a potential fracture in the displayed bone. This may require medical attention. Please consult with a healthcare professional for a proper diagnosis.',
@@ -57,7 +52,6 @@ const AnalysisPage = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<string | null>(null);
   
-  // Redirect if not logged in
   useEffect(() => {
     if (!user) {
       navigate('/auth');
@@ -65,7 +59,6 @@ const AnalysisPage = () => {
     }
   }, [user, navigate]);
   
-  // Validate task ID
   useEffect(() => {
     if (taskId && !TASK_TITLES[taskId]) {
       toast.error('Invalid analysis task');
@@ -76,7 +69,7 @@ const AnalysisPage = () => {
   const handleImageUpload = (file: File) => {
     setImage(file);
     setImageUrl(URL.createObjectURL(file));
-    setResults(null); // Clear any previous results
+    setResults(null);
   };
   
   const handleAnalyze = async () => {
@@ -88,11 +81,8 @@ const AnalysisPage = () => {
     setAnalyzing(true);
     
     try {
-      // In a production app, we would send the image to a backend API for AI analysis
-      // For this example, we'll simulate an API call with a timeout
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Get example results based on task type and user type
       const resultKey = taskId && EXAMPLE_RESULTS[taskId] ? taskId : 'default';
       const resultType = user?.userType === 'doctor' ? 'doctor' : 'common';
       setResults(EXAMPLE_RESULTS[resultKey][resultType]);
@@ -127,7 +117,6 @@ const AnalysisPage = () => {
       </p>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Image Upload Section */}
         <Card className="border">
           <CardHeader>
             <CardTitle>Upload Medical Image</CardTitle>
@@ -152,17 +141,15 @@ const AnalysisPage = () => {
           </CardContent>
         </Card>
         
-        {/* Results Section */}
         <Card className="border">
           <CardHeader>
             <CardTitle>Analysis Results</CardTitle>
           </CardHeader>
           <CardContent>
             {results ? (
-              <ResultsDisplay 
-                results={results}
-                userType={user.userType as 'common' | 'doctor'}
-              />
+              <div className="prose dark:prose-invert">
+                <p className="whitespace-pre-wrap">{results}</p>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed">
                 <p className="text-muted-foreground">

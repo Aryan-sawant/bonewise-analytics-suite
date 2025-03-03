@@ -2,117 +2,116 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Bone, 
-  ScanLine, 
-  Activity, 
-  Brain, 
-  Clock, 
-  Spine, 
-  PlusCircle, 
-  AlertCircle 
+  FlaskConical, 
+  ActivitySquare, 
+  BarChart4, 
+  CalendarDays, 
+  Spline, 
+  Skull, 
+  Microscope
 } from 'lucide-react';
-
-const ANALYSIS_TASKS = [
-  {
-    id: 'fracture-detection',
-    title: 'Bone Fracture Detection',
-    description: 'Upload an X-ray to detect potential bone fractures',
-    icon: <Bone className="h-12 w-12 text-medical-600" />,
-    color: 'bg-medical-50',
-  },
-  {
-    id: 'bone-marrow',
-    title: 'Bone Marrow Cell Classification',
-    description: 'Analyze bone marrow cell images for classification',
-    icon: <ScanLine className="h-12 w-12 text-amber-600" />,
-    color: 'bg-amber-50',
-  },
-  {
-    id: 'osteoarthritis',
-    title: 'Knee Joint Osteoarthritis',
-    description: 'Detect osteoarthritis in knee joint images',
-    icon: <Activity className="h-12 w-12 text-blue-600" />,
-    color: 'bg-blue-50',
-  },
-  {
-    id: 'osteoporosis',
-    title: 'Osteoporosis Stage & BMD Score',
-    description: 'Predict osteoporosis stage and analyze bone mineral density',
-    icon: <AlertCircle className="h-12 w-12 text-purple-600" />,
-    color: 'bg-purple-50',
-  },
-  {
-    id: 'bone-age',
-    title: 'Bone Age Detection',
-    description: 'Determine bone age from X-ray images',
-    icon: <Clock className="h-12 w-12 text-green-600" />,
-    color: 'bg-green-50',
-  },
-  {
-    id: 'spine-fracture',
-    title: 'Cervical Spine Fracture Detection',
-    description: 'Detect cervical spine fractures from medical images',
-    icon: <Spine className="h-12 w-12 text-red-600" />,
-    color: 'bg-red-50',
-  },
-  {
-    id: 'bone-tumor',
-    title: 'Bone Tumor/Cancer Detection',
-    description: 'Analyze images for potential bone tumors or cancer',
-    icon: <PlusCircle className="h-12 w-12 text-orange-600" />,
-    color: 'bg-orange-50',
-  },
-  {
-    id: 'bone-infection',
-    title: 'Bone Infection (Osteomyelitis)',
-    description: 'Detect signs of bone infection in medical images',
-    icon: <Brain className="h-12 w-12 text-teal-600" />,
-    color: 'bg-teal-50',
-  }
-];
 
 const TaskSelector = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   
-  if (!user) {
-    navigate('/auth');
-    return null;
-  }
-
-  const handleSelectTask = (taskId: string) => {
-    navigate(`/analysis/${taskId}`);
+  // Redirect if not logged in
+  React.useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+  
+  const analysisOptions = [
+    {
+      id: 'fracture-detection',
+      title: 'Bone Fracture Detection',
+      description: 'Detect fractures in bones using X-ray images.',
+      icon: <Bone className="h-10 w-10 text-primary" />,
+    },
+    {
+      id: 'bone-marrow',
+      title: 'Bone Marrow Cell Classification',
+      description: 'Analyze bone marrow cells from microscope images.',
+      icon: <Microscope className="h-10 w-10 text-primary" />,
+    },
+    {
+      id: 'osteoarthritis',
+      title: 'Knee Joint Osteoarthritis',
+      description: 'Assess knee joint osteoarthritis from X-ray or MRI.',
+      icon: <ActivitySquare className="h-10 w-10 text-primary" />,
+    },
+    {
+      id: 'osteoporosis',
+      title: 'Osteoporosis Stage & BMD Score',
+      description: 'Evaluate bone density and osteoporosis staging.',
+      icon: <BarChart4 className="h-10 w-10 text-primary" />,
+    },
+    {
+      id: 'bone-age',
+      title: 'Bone Age Detection',
+      description: 'Determine bone age from hand X-ray images.',
+      icon: <CalendarDays className="h-10 w-10 text-primary" />,
+    },
+    {
+      id: 'spine-fracture',
+      title: 'Cervical Spine Fracture Detection',
+      description: 'Detect fractures in the cervical spine.',
+      icon: <Spline className="h-10 w-10 text-primary" />,
+    },
+    {
+      id: 'bone-tumor',
+      title: 'Bone Tumor/Cancer Detection',
+      description: 'Identify potential bone tumors or cancerous lesions.',
+      icon: <Skull className="h-10 w-10 text-primary" />,
+    },
+    {
+      id: 'bone-infection',
+      title: 'Bone Infection Detection',
+      description: 'Detect signs of osteomyelitis or bone infections.',
+      icon: <FlaskConical className="h-10 w-10 text-primary" />,
+    },
+  ];
+  
+  const handleAnalysisSelect = (analysisId: string) => {
+    navigate(`/analysis/${analysisId}`);
   };
-
+  
+  if (!user) return null;
+  
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-2">Bone Health Analysis</h1>
+      <Button 
+        variant="outline" 
+        onClick={() => navigate('/tasks')}
+        className="mb-6"
+      >
+        ← Back to Tasks
+      </Button>
+      
+      <h1 className="text-3xl font-bold mb-2">Select Analysis Type</h1>
       <p className="text-muted-foreground mb-8">
-        Select a task to analyze your medical images using AI-powered bone health assessment
+        Choose the type of bone health analysis you would like to perform
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {ANALYSIS_TASKS.map(task => (
-          <Card 
-            key={task.id}
-            className={`border hover:shadow-md transition-all cursor-pointer overflow-hidden h-full`}
-            onClick={() => handleSelectTask(task.id)}
-          >
-            <div className={`${task.color} px-6 py-4 flex justify-center`}>
-              {task.icon}
-            </div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{task.title}</CardTitle>
+        {analysisOptions.map((option) => (
+          <Card key={option.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="mb-4">{option.icon}</div>
+              <CardTitle>{option.title}</CardTitle>
+              <CardDescription>{option.description}</CardDescription>
             </CardHeader>
-            <CardContent className="pt-0">
-              <CardDescription className="text-sm">{task.description}</CardDescription>
-            </CardContent>
             <CardFooter>
-              <Button size="sm" className="w-full">
-                Start Analysis
+              <Button 
+                className="w-full"
+                onClick={() => handleAnalysisSelect(option.id)}
+              >
+                Select
               </Button>
             </CardFooter>
           </Card>

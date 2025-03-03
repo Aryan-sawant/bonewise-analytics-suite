@@ -6,26 +6,28 @@ import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 
 interface ImageUploadProps {
-  onImageUpload: (file: File) => void;
+  onImageSelected: (file: File) => void;
   acceptedFileTypes?: string;
   maxSizeMB?: number;
   className?: string;
   buttonText?: string;
   description?: string;
   isLoading?: boolean;
+  imageUrl?: string | null;
 }
 
 const ImageUpload = ({
-  onImageUpload,
+  onImageSelected,
   acceptedFileTypes = "image/jpeg, image/png, image/jpg",
   maxSizeMB = 5,
   className,
   buttonText = "Select Image",
   description = "Upload an image for analysis",
   isLoading = false,
+  imageUrl = null,
 }: ImageUploadProps) => {
   const [dragActive, setDragActive] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(imageUrl);
   const [fileName, setFileName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -66,7 +68,7 @@ const ImageUpload = ({
     reader.readAsDataURL(file);
     
     setFileName(file.name);
-    onImageUpload(file);
+    onImageSelected(file);
   };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
