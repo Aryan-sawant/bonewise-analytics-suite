@@ -31,21 +31,15 @@ const LoginForm = () => {
       // Redirect is handled in the AuthContext
     } catch (error: any) {
       console.error('Login error:', error);
-      
-      // Set specific error message
-      if (error.message === 'Email not confirmed') {
-        setError('Please check your email inbox and confirm your account before logging in');
-      } else {
-        setError(error.message || 'Failed to login. Please try again.');
-      }
+      setError(error.message || 'Failed to login. Please try again.');
     }
   };
 
   return (
     <Card className="border shadow-md animate-scale-in">
       <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>
+        <CardTitle className="animate-fade-in">Welcome back</CardTitle>
+        <CardDescription className="animate-fade-in delay-75">
           Login to your account to continue
         </CardDescription>
       </CardHeader>
@@ -57,7 +51,7 @@ const LoginForm = () => {
             </div>
           )}
           
-          <div className="space-y-2">
+          <div className="space-y-2 animate-slide-in delay-100">
             <Label htmlFor="login-email">Email</Label>
             <Input 
               id="login-email" 
@@ -69,7 +63,7 @@ const LoginForm = () => {
               className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 animate-slide-in delay-150">
             <div className="flex items-center justify-between">
               <Label htmlFor="login-password">Password</Label>
               <Button 
@@ -107,7 +101,7 @@ const LoginForm = () => {
         <CardFooter>
           <Button 
             type="submit" 
-            className="w-full transition-all duration-300 hover:bg-primary/90" 
+            className="w-full transition-all duration-300 hover:bg-primary/90 animate-slide-in delay-200" 
             disabled={loading}
           >
             {loading ? (

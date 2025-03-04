@@ -71,26 +71,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
+      // Sign in with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
-        if (error.message === 'Email not confirmed') {
-          toast.error('Please check your email and confirm your account before logging in.');
-        } else {
-          toast.error(`Login failed: ${error.message}`);
-        }
+        // Display the error message
+        toast.error(`Login failed: ${error.message}`);
         throw error;
       }
       
       if (data?.user) {
-        const { data: profileData } = await supabase
+        // Fetch user profile data
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
           .single();
+        
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          // Continue even if profile fetch fails
+        }
         
         const userWithProfile: User = {
           id: data.user.id,
@@ -105,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Login failed:', error);
-      // Don't show generic error toast - we handle specific errors above
+      // Error toast is already shown above
     } finally {
       setLoading(false);
     }
@@ -121,6 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
+      // Sign up with email and password
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -129,6 +134,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             user_type: userType,
             name,
           },
+          // Disable email confirmation requirement
+          emailRedirectTo: window.location.origin + '/auth'
         },
       });
       
@@ -138,21 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       if (data?.user) {
-        // Check if email confirmation is required
-        if (data.session === null) {
-          toast.success('Account created! Please check your email to confirm your account before logging in.');
-          navigate('/auth');
-          return;
-        }
-        
-        const userProfile: User = {
-          id: data.user.id,
-          email: data.user.email || '',
-          name,
-          userType,
-        };
-        
-        // Update name in profile if provided
+        // Create user profile with name if provided
         if (name) {
           await supabase
             .from('profiles')
@@ -160,13 +153,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             .eq('id', data.user.id);
         }
         
-        setUser(userProfile);
-        toast.success('Account created successfully');
-        navigate('/tasks');
+        // Skip email verification and log user in directly
+        if (data.session) {
+          const userProfile: User = {
+            id: data.user.id,
+            email: data.user.email || '',
+            name,
+            userType,
+          };
+          
+          setUser(userProfile);
+          toast.success('Account created successfully');
+          navigate('/tasks');
+        } else {
+          // If for some reason session is null, redirect to login
+          toast.success('Account created! Please log in with your credentials.');
+          navigate('/auth?tab=login');
+        }
       }
     } catch (error) {
       console.error('Signup failed:', error);
-      // Don't show generic error toast - we handle specific errors above
+      // Error toast is already shown above
     } finally {
       setLoading(false);
     }

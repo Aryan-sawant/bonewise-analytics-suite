@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { useAuthContext } from "@/contexts/AuthContext";
 import { SignupFormData } from './types';
-import { Eye, EyeOff, User, UserCog } from 'lucide-react';
+import { Eye, EyeOff, User, UserCog, Loader2 } from 'lucide-react';
 
 const SignupForm = () => {
   const { signup, loading } = useAuthContext();
@@ -19,9 +19,11 @@ const SignupForm = () => {
     name: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!signupData.email || !signupData.password || !signupData.confirmPassword) {
       toast.error('Please fill in all required fields');
@@ -41,22 +43,29 @@ const SignupForm = () => {
     try {
       await signup(signupData.email, signupData.password, signupData.userType, signupData.name);
       // Redirect is handled in the AuthContext
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
+      setError(error.message || 'Failed to create account. Please try again.');
     }
   };
 
   return (
-    <Card className="border shadow-md">
+    <Card className="border shadow-md animate-scale-in">
       <CardHeader>
-        <CardTitle>Create an account</CardTitle>
-        <CardDescription>
+        <CardTitle className="animate-fade-in">Create an account</CardTitle>
+        <CardDescription className="animate-fade-in delay-75">
           Enter your details to create your BoneHealthAI account
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSignupSubmit}>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
+          {error && (
+            <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm animate-fade-in">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-2 animate-slide-in delay-100">
             <Label htmlFor="signup-name">Name (Optional)</Label>
             <Input 
               id="signup-name" 
@@ -66,7 +75,7 @@ const SignupForm = () => {
               onChange={(e) => setSignupData({...signupData, name: e.target.value})}
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 animate-slide-in delay-150">
             <Label htmlFor="signup-email">Email</Label>
             <Input 
               id="signup-email" 
@@ -77,7 +86,7 @@ const SignupForm = () => {
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 animate-slide-in delay-200">
             <Label htmlFor="signup-password">Password</Label>
             <div className="relative">
               <Input 
@@ -99,7 +108,7 @@ const SignupForm = () => {
               </Button>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 animate-slide-in delay-250">
             <Label htmlFor="signup-confirm-password">Confirm Password</Label>
             <Input 
               id="signup-confirm-password" 
@@ -110,14 +119,14 @@ const SignupForm = () => {
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 animate-slide-in delay-300">
             <Label>Account Type</Label>
             <div className="grid grid-cols-2 gap-4 pt-1">
               <Button
                 type="button"
                 variant={signupData.userType === 'common' ? 'default' : 'outline'}
                 onClick={() => setSignupData({...signupData, userType: 'common'})}
-                className="w-full h-24 flex flex-col items-center justify-center space-y-2"
+                className="w-full h-24 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:scale-105"
               >
                 <User size={24} />
                 <div className="text-sm">Common User</div>
@@ -126,7 +135,7 @@ const SignupForm = () => {
                 type="button"
                 variant={signupData.userType === 'doctor' ? 'default' : 'outline'}
                 onClick={() => setSignupData({...signupData, userType: 'doctor'})}
-                className="w-full h-24 flex flex-col items-center justify-center space-y-2"
+                className="w-full h-24 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:scale-105"
               >
                 <UserCog size={24} />
                 <div className="text-sm">Doctor</div>
@@ -135,9 +144,22 @@ const SignupForm = () => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create account'} 
-            <User size={16} className="ml-2" />
+          <Button 
+            type="submit" 
+            className="w-full transition-all duration-300 hover:bg-primary/90 animate-slide-in delay-350" 
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 size={16} className="mr-2 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              <>
+                Create account
+                <User size={16} className="ml-2" />
+              </>
+            )}
           </Button>
         </CardFooter>
       </form>
