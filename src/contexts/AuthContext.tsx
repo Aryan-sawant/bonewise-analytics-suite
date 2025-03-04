@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, AuthContextType } from '@/types/auth';
 import { toast } from 'sonner';
@@ -113,6 +114,104 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Google login function
+  const loginWithGoogle = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      console.log('Attempting Google login');
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth`
+        }
+      });
+      
+      if (error) {
+        console.error('Google login error:', error);
+        toast.error(`Google login failed: ${error.message}`);
+        throw error;
+      }
+      
+      // The redirect will happen automatically, so we don't need to do anything else here
+      console.log('Google auth initiated:', data);
+    } catch (error) {
+      console.error('Google login failed:', error);
+      toast.error('Failed to login with Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle OAuth callback
+  const handleAuthCallback = async (): Promise<void> => {
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Auth callback error:', error);
+      toast.error(`Authentication failed: ${error.message}`);
+      return;
+    }
+    
+    if (data?.session) {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      if (userData?.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userData.user.id)
+          .single();
+        
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error fetching profile:', profileError);
+          
+          // Create profile if it doesn't exist
+          if (profileError.code === 'PGRST104') {
+            const defaultUserType = 'common';
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert([
+                {
+                  id: userData.user.id,
+                  email: userData.user.email,
+                  name: userData.user.user_metadata?.full_name,
+                  user_type: defaultUserType
+                }
+              ]);
+              
+            if (insertError) {
+              console.error('Error creating profile:', insertError);
+            } else {
+              toast.success('Profile created successfully');
+            }
+          }
+        }
+        
+        const userProfile: User = {
+          id: userData.user.id,
+          email: userData.user.email || '',
+          name: userData.user.user_metadata?.full_name || profileData?.name,
+          userType: profileData?.user_type as 'common' | 'doctor' || 'common',
+        };
+        
+        setUser(userProfile);
+        toast.success('Logged in successfully');
+        navigate('/tasks');
+      }
+    }
+  };
+
+  // Check for OAuth callback on component mount
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    if (hashParams.get('access_token') || queryParams.get('code')) {
+      handleAuthCallback();
+    }
+  }, []);
+
   // Signup function using Supabase authentication
   const signup = async (
     email: string, 
@@ -199,7 +298,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Provide the auth context to children components
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
