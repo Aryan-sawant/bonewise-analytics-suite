@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, AuthContextType } from '@/types/auth';
 import { toast } from 'sonner';
@@ -70,6 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<void> => {
     try {
       setLoading(true);
+      console.log('Attempting login with:', email);
       
       // Sign in with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       
       if (error) {
-        // Display the error message
+        console.error('Login error:', error);
         toast.error(`Login failed: ${error.message}`);
         throw error;
       }
@@ -93,7 +93,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (profileError) {
           console.error('Error fetching profile:', profileError);
-          // Continue even if profile fetch fails
         }
         
         const userWithProfile: User = {
@@ -109,7 +108,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Login failed:', error);
-      // Error toast is already shown above
     } finally {
       setLoading(false);
     }
@@ -124,7 +122,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ): Promise<void> => {
     try {
       setLoading(true);
-      
+      console.log('Attempting signup with:', email);
+
       // Sign up with email and password
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -134,46 +133,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             user_type: userType,
             name,
           },
-          // Disable email confirmation requirement
-          emailRedirectTo: window.location.origin + '/auth'
         },
       });
       
       if (error) {
+        console.error('Signup error:', error);
         toast.error(`Signup failed: ${error.message}`);
         throw error;
       }
       
       if (data?.user) {
-        // Create user profile with name if provided
-        if (name) {
-          await supabase
-            .from('profiles')
-            .update({ name })
-            .eq('id', data.user.id);
+        // Create user profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: data.user.id,
+              email: data.user.email,
+              name: name,
+              user_type: userType
+            }
+          ]);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          toast.error('Failed to create user profile');
+          return;
         }
+
+        const userProfile: User = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name,
+          userType,
+        };
         
-        // Skip email verification and log user in directly
-        if (data.session) {
-          const userProfile: User = {
-            id: data.user.id,
-            email: data.user.email || '',
-            name,
-            userType,
-          };
-          
-          setUser(userProfile);
-          toast.success('Account created successfully');
-          navigate('/tasks');
-        } else {
-          // If for some reason session is null, redirect to login
-          toast.success('Account created! Please log in with your credentials.');
-          navigate('/auth?tab=login');
-        }
+        setUser(userProfile);
+        toast.success('Account created successfully');
+        navigate('/tasks');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup failed:', error);
-      // Error toast is already shown above
     } finally {
       setLoading(false);
     }
