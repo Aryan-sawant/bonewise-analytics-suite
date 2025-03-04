@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import { Bone, PlusCircle, ArrowRight } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
 interface Task {
   id: string;
   title: string;
@@ -17,14 +15,15 @@ interface Task {
   deadline: string | null;
   created_at: string | null;
 }
-
 const Tasks = () => {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const {
+    user
+  } = useAuthContext();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('all');
-  
+
   // Redirect if not logged in
   useEffect(() => {
     if (!user) {
@@ -32,24 +31,22 @@ const Tasks = () => {
       return;
     }
   }, [user, navigate]);
-  
+
   // Fetch tasks from Supabase
   useEffect(() => {
     const fetchTasks = async () => {
       if (!user) return;
-      
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        
+        const {
+          data,
+          error
+        } = await supabase.from('tasks').select('*').eq('user_id', user.id).order('created_at', {
+          ascending: false
+        });
         if (error) {
           throw error;
         }
-        
         setTasks(data || []);
       } catch (error) {
         console.error('Error fetching tasks:', error);
@@ -58,31 +55,20 @@ const Tasks = () => {
         setLoading(false);
       }
     };
-    
     fetchTasks();
   }, [user]);
-  
   const handleCreateTask = () => {
     // For now, just navigate to tasks page
     navigate('/tasks');
   };
-  
   const handleViewTask = (taskId: string) => {
     navigate(`/task-details/${taskId}`);
   };
-  
-  const filteredTasks = activeTab === 'completed' 
-    ? tasks.filter(task => task.completed) 
-    : activeTab === 'pending' 
-      ? tasks.filter(task => !task.completed)
-      : tasks;
-  
+  const filteredTasks = activeTab === 'completed' ? tasks.filter(task => task.completed) : activeTab === 'pending' ? tasks.filter(task => !task.completed) : tasks;
   if (!user) {
     return null;
   }
-  
-  return (
-    <div className="container mx-auto px-4 py-12">
+  return <div className="container mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -106,7 +92,7 @@ const Tasks = () => {
             <CardTitle className="text-xl">Bone Health</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-primary-foreground/90 mb-4">
+            <p className="text-primary-foreground/90 mb-4 text-base font-bold">
               Access AI-powered bone health analysis tools
             </p>
           </CardContent>
@@ -160,53 +146,36 @@ const Tasks = () => {
           </TabsList>
           
           <TabsContent value={activeTab}>
-            {loading ? (
-              <div className="text-center py-8">
+            {loading ? <div className="text-center py-8">
                 <p>Loading tasks...</p>
-              </div>
-            ) : filteredTasks.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed rounded-lg">
+              </div> : filteredTasks.length === 0 ? <div className="text-center py-8 border-2 border-dashed rounded-lg">
                 <p className="text-muted-foreground">No tasks found</p>
                 <Button variant="outline" className="mt-4" onClick={handleCreateTask}>
                   <PlusCircle className="mr-2 h-4 w-4" /> 
                   Create a task
                 </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredTasks.map((task) => (
-                  <Card key={task.id} className="transition-all hover:shadow-md">
+              </div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredTasks.map(task => <Card key={task.id} className="transition-all hover:shadow-md">
                     <CardHeader className="pb-2">
                       <CardTitle className={`text-lg ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
                         {task.title}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pb-2">
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
+                      {task.description && <p className="text-sm text-muted-foreground line-clamp-2">
                           {task.description}
-                        </p>
-                      )}
+                        </p>}
                     </CardContent>
                     <CardFooter>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => handleViewTask(task.id)}
-                      >
+                      <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewTask(task.id)}>
                         View
                       </Button>
                     </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
+                  </Card>)}
+              </div>}
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Tasks;
