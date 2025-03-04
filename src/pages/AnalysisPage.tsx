@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
@@ -39,6 +40,7 @@ const AnalysisPage = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     if (!user) {
@@ -58,6 +60,7 @@ const AnalysisPage = () => {
     setImage(file);
     setImageUrl(URL.createObjectURL(file));
     setResults(null);
+    setError(null);
 
     // Convert the file to base64 for API transmission
     const reader = new FileReader();
@@ -74,22 +77,27 @@ const AnalysisPage = () => {
     }
     
     setAnalyzing(true);
+    setError(null);
     
     try {
+      console.log("Sending image for analysis...");
+      
       // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('analyze-bone-image', {
         body: {
           image: imageBase64,
           taskId,
-          userType: user.userType
+          userType: user.userType === 'doctor' ? 'doctor' : 'common'
         }
       });
 
       if (error) {
-        throw error;
+        console.error('Function error:', error);
+        throw new Error(`Analysis failed: ${error.message}`);
       }
 
       if (data?.error) {
+        console.error('Data error:', data.error);
         throw new Error(data.error);
       }
 
@@ -97,6 +105,7 @@ const AnalysisPage = () => {
       toast.success('Analysis complete');
     } catch (error) {
       console.error('Analysis error:', error);
+      setError('Failed to analyze image. Please try again or try a different image.');
       toast.error('Failed to analyze image. Please try again.');
     } finally {
       setAnalyzing(false);
@@ -109,22 +118,22 @@ const AnalysisPage = () => {
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
   
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-12 animate-fade-in">
       <Button 
         variant="outline" 
         onClick={() => navigate('/tasks')}
-        className="mb-6"
+        className="mb-6 hover-scale"
       >
         ← Back to Tasks
       </Button>
       
-      <h1 className="text-3xl font-bold mb-2">{taskTitle}</h1>
-      <p className="text-muted-foreground mb-8">
+      <h1 className="text-3xl font-bold mb-2 animate-slide-in">{taskTitle}</h1>
+      <p className="text-muted-foreground mb-8 animate-fade-in">
         {user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}
       </p>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="border">
+        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
           <CardHeader>
             <CardTitle>Upload Medical Image</CardTitle>
           </CardHeader>
@@ -134,33 +143,47 @@ const AnalysisPage = () => {
             <ImageUpload
               onImageSelected={handleImageUpload}
               imageUrl={imageUrl}
+              isLoading={analyzing}
             />
             
             <div className="mt-4 flex justify-end">
               <Button 
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
-                className="w-full md:w-auto"
+                className="w-full md:w-auto transition-all duration-300 hover:bg-primary/90"
               >
-                {analyzing ? 'Analyzing...' : 'Analyze Image'}
+                {analyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : 'Analyze Image'}
               </Button>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border">
+        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
           <CardHeader>
             <CardTitle>Analysis Results</CardTitle>
           </CardHeader>
           <CardContent>
             {results ? (
-              <div className="prose dark:prose-invert max-w-none">
+              <div className="prose dark:prose-invert max-w-none animate-fade-in">
                 <p className="whitespace-pre-wrap">{results}</p>
               </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in">
+                <p className="text-destructive">
+                  {error}
+                </p>
+              </div>
             ) : (
-              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed">
+              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse">
                 <p className="text-muted-foreground">
-                  {analyzing ? 'Processing your image with Gemini AI...' : 'Upload an image and click "Analyze Image" to see results'}
+                  {analyzing ? (
+                    <>Processing your image with Gemini AI...</>
+                  ) : 'Upload an image and click "Analyze Image" to see results'}
                 </p>
               </div>
             )}

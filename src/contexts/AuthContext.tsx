@@ -77,6 +77,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       
       if (error) {
+        if (error.message === 'Email not confirmed') {
+          toast.error('Please check your email and confirm your account before logging in.');
+        } else {
+          toast.error(`Login failed: ${error.message}`);
+        }
         throw error;
       }
       
@@ -100,8 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Login failed:', error);
-      toast.error('Login failed. Please try again.');
-      throw error;
+      // Don't show generic error toast - we handle specific errors above
     } finally {
       setLoading(false);
     }
@@ -129,10 +133,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       
       if (error) {
+        toast.error(`Signup failed: ${error.message}`);
         throw error;
       }
       
       if (data?.user) {
+        // Check if email confirmation is required
+        if (data.session === null) {
+          toast.success('Account created! Please check your email to confirm your account before logging in.');
+          navigate('/auth');
+          return;
+        }
+        
         const userProfile: User = {
           id: data.user.id,
           email: data.user.email || '',
@@ -154,8 +166,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Signup failed:', error);
-      toast.error('Signup failed. Please try again.');
-      throw error;
+      // Don't show generic error toast - we handle specific errors above
     } finally {
       setLoading(false);
     }
@@ -167,6 +178,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        toast.error(`Logout failed: ${error.message}`);
         throw error;
       }
       
@@ -175,8 +187,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       navigate('/auth');
     } catch (error) {
       console.error('Logout failed:', error);
-      toast.error('Logout failed. Please try again.');
-      throw error;
     }
   };
 

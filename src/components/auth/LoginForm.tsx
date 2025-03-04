@@ -8,16 +8,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { useAuthContext } from "@/contexts/AuthContext";
 import { LoginFormData } from './types';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react';
 
 const LoginForm = () => {
   const navigate = useNavigate();
   const { login, loading } = useAuthContext();
   const [loginData, setLoginData] = useState<LoginFormData>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!loginData.email || !loginData.password) {
       toast.error('Please fill in all fields');
@@ -27,13 +29,20 @@ const LoginForm = () => {
     try {
       await login(loginData.email, loginData.password);
       // Redirect is handled in the AuthContext
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Set specific error message
+      if (error.message === 'Email not confirmed') {
+        setError('Please check your email inbox and confirm your account before logging in');
+      } else {
+        setError(error.message || 'Failed to login. Please try again.');
+      }
     }
   };
 
   return (
-    <Card className="border shadow-md">
+    <Card className="border shadow-md animate-scale-in">
       <CardHeader>
         <CardTitle>Welcome back</CardTitle>
         <CardDescription>
@@ -42,6 +51,12 @@ const LoginForm = () => {
       </CardHeader>
       <form onSubmit={handleLoginSubmit}>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm animate-fade-in">
+              {error}
+            </div>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="login-email">Email</Label>
             <Input 
@@ -51,6 +66,7 @@ const LoginForm = () => {
               value={loginData.email}
               onChange={(e) => setLoginData({...loginData, email: e.target.value})}
               required
+              className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
             />
           </div>
           <div className="space-y-2">
@@ -74,6 +90,7 @@ const LoginForm = () => {
                 value={loginData.password}
                 onChange={(e) => setLoginData({...loginData, password: e.target.value})}
                 required
+                className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
               />
               <Button
                 type="button"
@@ -90,11 +107,20 @@ const LoginForm = () => {
         <CardFooter>
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full transition-all duration-300 hover:bg-primary/90" 
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'} 
-            <LogIn size={16} className="ml-2" />
+            {loading ? (
+              <>
+                <Loader2 size={16} className="mr-2 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              <>
+                Login
+                <LogIn size={16} className="ml-2" />
+              </>
+            )}
           </Button>
         </CardFooter>
       </form>
