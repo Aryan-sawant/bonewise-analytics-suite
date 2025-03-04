@@ -157,41 +157,66 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: userData } = await supabase.auth.getUser();
       
       if (userData?.user) {
-        const { data: profileData, error: profileError } = await supabase
+        // Check if profile exists first
+        const { data: existingProfile, error: profileCheckError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userData.user.id)
+          .single();
+          
+        console.log('Existing profile check:', existingProfile, profileCheckError);
+        
+        // Only create profile if it doesn't exist
+        if (!existingProfile && (profileCheckError?.code === 'PGRST116' || profileCheckError?.message?.includes('No rows found'))) {
+          const defaultUserType = 'common';
+          const userName = userData.user.user_metadata?.full_name || 
+                          userData.user.user_metadata?.name || '';
+                          
+          console.log('Creating new profile for user:', userData.user.id, userName);
+          
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: userData.user.id,
+                email: userData.user.email,
+                name: userName,
+                user_type: defaultUserType
+              }
+            ])
+            .select()
+            .single();
+              
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+            toast.error(`Failed to create user profile: ${insertError.message}`);
+            
+            // Try to debug by checking what we attempted to insert
+            console.log('Attempted to insert profile:', {
+              id: userData.user.id,
+              email: userData.user.email,
+              name: userName,
+              user_type: defaultUserType
+            });
+          } else {
+            console.log('Profile created successfully:', newProfile);
+            toast.success('Profile created successfully');
+          }
+        }
+        
+        // Get the profile data whether it was just created or already existed
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', userData.user.id)
           .single();
         
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Error fetching profile:', profileError);
-          
-          // Create profile if it doesn't exist
-          if (profileError.code === 'PGRST104') {
-            const defaultUserType = 'common';
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert([
-                {
-                  id: userData.user.id,
-                  email: userData.user.email,
-                  name: userData.user.user_metadata?.full_name,
-                  user_type: defaultUserType
-                }
-              ]);
-              
-            if (insertError) {
-              console.error('Error creating profile:', insertError);
-            } else {
-              toast.success('Profile created successfully');
-            }
-          }
-        }
-        
         const userProfile: User = {
           id: userData.user.id,
           email: userData.user.email || '',
-          name: userData.user.user_metadata?.full_name || profileData?.name,
+          name: userData.user.user_metadata?.full_name || 
+                userData.user.user_metadata?.name || 
+                profileData?.name,
           userType: profileData?.user_type as 'common' | 'doctor' || 'common',
         };
         
@@ -221,7 +246,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ): Promise<void> => {
     try {
       setLoading(true);
-      console.log('Attempting signup with:', email);
+      console.log('Attempting signup with:', email, 'user type:', userType);
 
       // Sign up with email and password
       const { data, error } = await supabase.auth.signUp({
@@ -232,6 +257,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             user_type: userType,
             name,
           },
+          emailRedirectTo: `${window.location.origin}/auth`
         },
       });
       
@@ -242,23 +268,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       if (data?.user) {
+        console.log('User created:', data.user);
+        
         // Create user profile
-        const { error: profileError } = await supabase
+        const { error: profileError, data: profileData } = await supabase
           .from('profiles')
           .insert([
             {
               id: data.user.id,
               email: data.user.email,
-              name: name,
+              name: name || '',
               user_type: userType
             }
-          ]);
+          ])
+          .select()
+          .single();
 
         if (profileError) {
           console.error('Error creating profile:', profileError);
-          toast.error('Failed to create user profile');
+          toast.error(`Failed to create user profile: ${profileError.message}`);
+          
+          // Log the attempted data for debugging
+          console.log('Attempted to insert:', {
+            id: data.user.id,
+            email: data.user.email,
+            name: name || '',
+            user_type: userType
+          });
+          
           return;
         }
+
+        console.log('Profile created successfully:', profileData);
 
         const userProfile: User = {
           id: data.user.id,
