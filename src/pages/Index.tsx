@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -6,12 +5,13 @@ import Hero from '@/components/Hero';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from '@/contexts/AuthContext';
-
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { user } = useAuthContext();
+  const {
+    user
+  } = useAuthContext();
   const navigate = useNavigate();
-  
+
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -21,13 +21,10 @@ const Index = () => {
         setIsScrolled(false);
       }
     };
-    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       {/* Navbar */}
       <NavBar />
       
@@ -98,33 +95,14 @@ const Index = () => {
               that can help you understand more about your bone condition.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {user ? (
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-white text-primary hover:bg-white/90"
-                >
+              {user ? <Button size="lg" onClick={() => navigate('/dashboard')} className="bg-white text-primary hover:bg-white/90">
                   Go to Dashboard
-                </Button>
-              ) : (
-                <>
-                  <Button 
-                    size="lg" 
-                    onClick={() => navigate('/auth?tab=signup')}
-                    className="bg-white text-primary hover:bg-white/90"
-                  >
+                </Button> : <>
+                  <Button size="lg" onClick={() => navigate('/auth?tab=signup')} className="bg-white text-primary hover:bg-white/90">
                     Sign Up for Free
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    onClick={() => navigate('/auth')}
-                    className="border-white text-white hover:bg-white/10"
-                  >
-                    Learn More
-                  </Button>
-                </>
-              )}
+                  
+                </>}
             </div>
           </div>
         </section>
@@ -139,7 +117,7 @@ const Index = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-sm">B</span>
                 </div>
-                <span className="text-lg font-semibold">BoneHealthAI</span>
+                <span className="text-lg font-semibold">BoneHealthAISuite</span>
               </div>
               <p className="text-muted-foreground text-sm mt-2">
                 AI-Powered Bone Health Analysis
@@ -185,19 +163,11 @@ const Index = () => {
       </footer>
       
       {/* Fixed CTA Button */}
-      {isScrolled && !user && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
-          <Button 
-            size="lg" 
-            className="shadow-lg"
-            onClick={() => navigate('/auth?tab=signup')}
-          >
+      {isScrolled && !user && <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+          <Button size="lg" className="shadow-lg" onClick={() => navigate('/auth?tab=signup')}>
             Get Started
           </Button>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 };
-
 export default Index;
