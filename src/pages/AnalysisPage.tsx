@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Home } from 'lucide-react';
+import ChatbotButton from '@/components/ChatbotButton';
 
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
@@ -119,13 +120,24 @@ const AnalysisPage = () => {
   
   return (
     <div className="container mx-auto px-4 py-12 animate-fade-in">
-      <Button 
-        variant="outline" 
-        onClick={() => navigate('/tasks')}
-        className="mb-6 hover-scale"
-      >
-        ← Back to Tasks
-      </Button>
+      <div className="flex justify-between items-center mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/tasks')}
+          className="hover-scale"
+        >
+          ← Back to Tasks
+        </Button>
+        
+        <Button
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="hover-scale"
+        >
+          <Home className="mr-2 h-4 w-4" />
+          Home
+        </Button>
+      </div>
       
       <h1 className="text-3xl font-bold mb-2 animate-slide-in">{taskTitle}</h1>
       <p className="text-muted-foreground mb-8 animate-fade-in">
@@ -190,6 +202,11 @@ const AnalysisPage = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Add chatbot button that uses the analysis context */}
+      {results && (
+        <ChatbotButton analysisContext={results} taskTitle={taskTitle} />
+      )}
     </div>
   );
 };

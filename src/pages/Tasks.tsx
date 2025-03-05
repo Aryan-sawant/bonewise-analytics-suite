@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bone, PlusCircle, ArrowRight } from 'lucide-react';
+import { Bone, PlusCircle, ArrowRight, Home } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -75,6 +76,14 @@ const Tasks = () => {
           <p className="text-muted-foreground">Manage your tasks and bone health analyses</p>
         </div>
         <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/')}
+            className="hover-scale"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Button>
           
           <Button onClick={() => navigate('/bone-analysis')} variant="outline">
             <Bone className="mr-2 h-4 w-4" />
