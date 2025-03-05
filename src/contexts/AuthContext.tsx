@@ -174,6 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                           
           console.log('Creating new profile for user:', userData.user.id, userName);
           
+          // Use auth.uid() explicitly for the user ID to ensure RLS compliance
           const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
             .insert([
@@ -257,7 +258,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             user_type: userType,
             name,
           },
-          emailRedirectTo: `${window.location.origin}/auth`
         },
       });
       
@@ -270,36 +270,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data?.user) {
         console.log('User created:', data.user);
         
-        // Create user profile
-        const { error: profileError, data: profileData } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email: data.user.email,
-              name: name || '',
-              user_type: userType
-            }
-          ])
-          .select()
-          .single();
+        // Create user profile with the service_role client or rely on the trigger
+        try {
+          // Use direct insert for creating the profile
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: data.user.id,
+                email: data.user.email,
+                name: name || '',
+                user_type: userType
+              }
+            ]);
 
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          toast.error(`Failed to create user profile: ${profileError.message}`);
-          
-          // Log the attempted data for debugging
-          console.log('Attempted to insert:', {
-            id: data.user.id,
-            email: data.user.email,
-            name: name || '',
-            user_type: userType
-          });
-          
-          return;
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+            toast.error(`Failed to create user profile: ${profileError.message}`);
+            // Continue anyway as the user was created successfully
+          } else {
+            console.log('Profile created successfully for user:', data.user.id);
+          }
+        } catch (profileError) {
+          console.error('Exception creating profile:', profileError);
+          // Continue anyway as the user was created successfully
         }
-
-        console.log('Profile created successfully:', profileData);
 
         const userProfile: User = {
           id: data.user.id,
