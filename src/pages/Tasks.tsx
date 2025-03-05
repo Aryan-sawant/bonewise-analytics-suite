@@ -136,46 +136,7 @@ const Tasks = () => {
         </Card>
       </div>
       
-      <div className="bg-card rounded-lg border shadow-sm p-6">
-        <h2 className="text-2xl font-semibold mb-4">Tasks</h2>
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value={activeTab}>
-            {loading ? <div className="text-center py-8">
-                <p>Loading tasks...</p>
-              </div> : filteredTasks.length === 0 ? <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">No tasks found</p>
-                <Button variant="outline" className="mt-4" onClick={handleCreateTask}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> 
-                  Create a task
-                </Button>
-              </div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredTasks.map(task => <Card key={task.id} className="transition-all hover:shadow-md">
-                    <CardHeader className="pb-2">
-                      <CardTitle className={`text-lg ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                        {task.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      {task.description && <p className="text-sm text-muted-foreground line-clamp-2">
-                          {task.description}
-                        </p>}
-                    </CardContent>
-                    <CardFooter>
-                      <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewTask(task.id)}>
-                        View
-                      </Button>
-                    </CardFooter>
-                  </Card>)}
-              </div>}
-          </TabsContent>
-        </Tabs>
-      </div>
+      
     </div>;
 };
 export default Tasks;
