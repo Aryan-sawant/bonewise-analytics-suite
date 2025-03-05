@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageCircle, Send, X, Loader2 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 interface ChatbotButtonProps {
   analysisContext?: string;
   taskTitle?: string;
+  analysisId?: string;
 }
 
 interface ChatMessage {
@@ -18,7 +19,7 @@ interface ChatMessage {
   isLoading?: boolean;
 }
 
-const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitle }) => {
+const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitle, analysisId }) => {
   const { user } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -26,10 +27,18 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
     { text: `Hello! I'm your bone health assistant. How can I help you with your ${taskTitle || 'analysis'} results?`, isUser: false }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
   };
+
+  // Auto-scroll to the bottom of the chat
+  useEffect(() => {
+    if (isOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen]);
 
   const handleSendMessage = async () => {
     if (!message.trim() || isLoading) return;
@@ -63,7 +72,9 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
         body: {
           message: message,
           context: contextPrompt,
-          userType: user?.userType || 'common'
+          userType: user?.userType || 'common',
+          userId: user?.id,
+          analysisId: analysisId
         }
       });
       
@@ -150,6 +161,7 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
                   )}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </CardContent>
           <CardFooter className="p-3 pt-0">

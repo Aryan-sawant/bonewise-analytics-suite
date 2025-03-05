@@ -42,6 +42,7 @@ const AnalysisPage = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
   
   useEffect(() => {
     if (!user) {
@@ -62,6 +63,7 @@ const AnalysisPage = () => {
     setImageUrl(URL.createObjectURL(file));
     setResults(null);
     setError(null);
+    setAnalysisId(null);
 
     // Convert the file to base64 for API transmission
     const reader = new FileReader();
@@ -104,6 +106,24 @@ const AnalysisPage = () => {
       }
 
       setResults(data.analysis);
+      
+      // Fetch the latest analysis ID for this user
+      try {
+        const { data: analysisData, error: fetchError } = await supabase
+          .from('analyses')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('task_id', taskId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (!fetchError && analysisData && analysisData.length > 0) {
+          setAnalysisId(analysisData[0].id);
+        }
+      } catch (fetchError) {
+        console.error('Error fetching analysis ID:', fetchError);
+      }
+      
       toast.success('Analysis complete');
     } catch (error) {
       console.error('Analysis error:', error);
@@ -241,7 +261,11 @@ const AnalysisPage = () => {
       
       {/* Add chatbot button that uses the analysis context */}
       {results && (
-        <ChatbotButton analysisContext={results} taskTitle={taskTitle} />
+        <ChatbotButton 
+          analysisContext={results} 
+          taskTitle={taskTitle} 
+          analysisId={analysisId}
+        />
       )}
     </div>
   );

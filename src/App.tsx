@@ -9,6 +9,8 @@ import Tasks from "./pages/Tasks";
 import TaskDetails from "./pages/TaskDetails";
 import TaskSelector from "./pages/TaskSelector";
 import AnalysisPage from "./pages/AnalysisPage";
+import AnalysisHistory from "./pages/AnalysisHistory";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -22,6 +24,8 @@ const App = () => (
       <Route path="/task-details/:id" element={<TaskDetails />} />
       <Route path="/bone-analysis" element={<TaskSelector />} />
       <Route path="/analysis/:taskId" element={<AnalysisPage />} />
+      <Route path="/analysis-history" element={<AnalysisHistory />} />
+      <Route path="/profile" element={<ProfilePage />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>

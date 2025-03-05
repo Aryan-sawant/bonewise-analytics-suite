@@ -65,30 +65,50 @@ const Tasks = () => {
       }
     };
     
-    // Instead of fetching from a non-existent analyses table,
-    // we'll just use the most recent tasks as "recent activities" for now
+    // Fetch recent analyses if they exist, otherwise fall back to tasks
     const fetchRecentActivities = async () => {
       if (!user) return;
       try {
-        const { data, error } = await supabase
+        // First try to get analyses
+        const { data: analysesData, error: analysesError } = await supabase
+          .from('analyses')
+          .select('id, task_name as title, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (!analysesError && analysesData && analysesData.length > 0) {
+          // Map analyses data to our RecentActivity interface
+          const activities: RecentActivity[] = analysesData.map(analysis => ({
+            id: analysis.id,
+            title: analysis.title,
+            created_at: analysis.created_at,
+          }));
+          
+          setRecentActivities(activities);
+          return;
+        }
+        
+        // Fallback to tasks if no analyses
+        const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('id, title, created_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5);
           
-        if (error) {
-          throw error;
+        if (tasksError) {
+          throw tasksError;
         }
         
         // Map task data to our simpler RecentActivity interface
-        const activities: RecentActivity[] = (data || []).map(task => ({
+        const taskActivities: RecentActivity[] = (tasksData || []).map(task => ({
           id: task.id,
           title: task.title,
           created_at: task.created_at || new Date().toISOString(),
         }));
         
-        setRecentActivities(activities);
+        setRecentActivities(taskActivities);
       } catch (error) {
         console.error('Error fetching recent activities:', error);
       }
