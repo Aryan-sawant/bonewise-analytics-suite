@@ -101,7 +101,7 @@ const AnalysisPage = () => {
         throw new Error(data.error);
       }
 
-      setResults(data.result);
+      setResults(data.analysis);
       toast.success('Analysis complete');
     } catch (error) {
       console.error('Analysis error:', error);
