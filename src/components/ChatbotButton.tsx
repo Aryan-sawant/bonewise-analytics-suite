@@ -2,18 +2,27 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Send, X } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface ChatbotButtonProps {
   analysisContext?: string;
   taskTitle?: string;
 }
 
+interface ChatMessage {
+  text: string;
+  isUser: boolean;
+  isLoading?: boolean;
+}
+
 const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitle }) => {
+  const { user } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     { text: `Hello! I'm your bone health assistant. How can I help you with your ${taskTitle || 'analysis'} results?`, isUser: false }
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,33 +32,67 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || isLoading) return;
     
     // Add user message to chat
     const userMessage = { text: message, isUser: true };
     setMessages([...messages, userMessage]);
+    
+    // Add loading indicator
+    setMessages(prev => [...prev, { text: '', isUser: false, isLoading: true }]);
     
     // Clear input field
     setMessage('');
     setIsLoading(true);
     
     try {
-      // In a real implementation, you would send the message to a backend API
-      // along with the analysis context to get a relevant response
-      // For now, we'll simulate a response with the context
+      // Prepare the context for Gemini
+      const contextPrompt = `
+        You are a professional bone health assistant helping with medical image analysis results.
+        The user is asking about this analysis result: "${taskTitle || 'bone analysis'}"
+        
+        Context from the analysis:
+        ${analysisContext || 'No analysis data available.'}
+        
+        Please respond to the user's question in a professional, helpful way. Format your response
+        naturally without using markdown. Be direct, informative, and use paragraph breaks for readability.
+      `;
       
-      setTimeout(() => {
-        const botResponse = { 
-          text: `Based on your ${taskTitle || 'analysis'} results, I can help answer your question about "${message}". ${analysisContext ? 'The analysis showed: ' + analysisContext.substring(0, 100) + '...' : 'Please upload an image for analysis first.'}`, 
-          isUser: false 
-        };
-        setMessages(prev => [...prev, botResponse]);
-        setIsLoading(false);
-      }, 1000);
+      // Call Gemini via the edge function
+      const { data, error } = await supabase.functions.invoke('chat-with-gemini', {
+        body: {
+          message: message,
+          context: contextPrompt,
+          userType: user?.userType || 'common'
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Remove loading message
+      setMessages(prev => prev.filter(msg => !msg.isLoading));
+      
+      // Add AI response
+      const botResponse: ChatMessage = { 
+        text: data.response || "I'm sorry, I couldn't generate a response. Please try again.", 
+        isUser: false 
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
       
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove loading message
+      setMessages(prev => prev.filter(msg => !msg.isLoading));
+      // Add error message
+      setMessages(prev => [...prev, { 
+        text: "I'm sorry, I encountered an error processing your request. Please try again.", 
+        isUser: false 
+      }]);
       toast.error('Failed to send message');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -58,14 +101,14 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
     <>
       <Button
         onClick={toggleChat}
-        className="fixed bottom-6 right-6 rounded-full h-14 w-14 p-0 shadow-lg"
+        className="fixed bottom-6 right-6 rounded-full h-14 w-14 p-0 shadow-lg bg-primary hover:bg-primary/90"
         size="icon"
       >
         {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
       </Button>
 
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-96 max-h-[70vh] shadow-lg animate-fade-in">
+        <Card className="fixed bottom-24 right-6 w-96 max-h-[70vh] shadow-lg animate-fade-in z-50">
           <CardHeader className="bg-primary text-primary-foreground">
             <CardTitle className="text-lg flex justify-between items-center">
               Bone Health Assistant
@@ -80,34 +123,33 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="h-[40vh] overflow-y-auto p-4 space-y-3">
+            <div className="h-[40vh] overflow-y-auto p-4 space-y-3" id="chat-messages">
               {messages.map((msg, index) => (
                 <div 
                   key={index}
                   className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div 
-                    className={`max-w-[80%] p-3 rounded-lg ${
-                      msg.isUser 
-                        ? 'bg-primary text-primary-foreground rounded-tr-none' 
-                        : 'bg-muted rounded-tl-none'
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
+                  {msg.isLoading ? (
+                    <div className="max-w-[80%] p-3 rounded-lg bg-muted rounded-tl-none">
+                      <div className="flex space-x-2">
+                        <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
+                        <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                        <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      className={`max-w-[80%] p-3 rounded-lg ${
+                        msg.isUser 
+                          ? 'bg-primary text-primary-foreground rounded-tr-none' 
+                          : 'bg-muted rounded-tl-none'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  )}
                 </div>
               ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] p-3 rounded-lg bg-muted rounded-tl-none">
-                    <div className="flex space-x-2">
-                      <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
-                      <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-                      <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </CardContent>
           <CardFooter className="p-3 pt-0">
@@ -119,13 +161,15 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask about your analysis..."
                 className="flex-1 border rounded-md p-2 text-sm"
+                disabled={isLoading}
               />
               <Button 
                 onClick={handleSendMessage} 
                 size="icon" 
                 disabled={isLoading || !message.trim()}
+                className="bg-primary hover:bg-primary/90"
               >
-                <Send size={18} />
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </Button>
             </div>
           </CardFooter>

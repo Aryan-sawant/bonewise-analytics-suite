@@ -88,7 +88,8 @@ const AnalysisPage = () => {
         body: {
           image: imageBase64,
           taskId,
-          userType: user.userType === 'doctor' ? 'doctor' : 'common'
+          userType: user.userType === 'doctor' ? 'doctor' : 'common',
+          userId: user.id // Pass the user ID for history recording
         }
       });
 
@@ -117,6 +118,41 @@ const AnalysisPage = () => {
   
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
+
+  // Format the results for better visual display
+  const formatResults = (resultsText: string) => {
+    if (!resultsText) return null;
+    
+    // Split into paragraphs and format
+    const paragraphs = resultsText.split(/\n\n+/);
+    return (
+      <div className="space-y-4">
+        {paragraphs.map((para, index) => {
+          // Check if this paragraph looks like a heading (short and followed by a paragraph)
+          const isHeading = para.length < 50 && !para.includes('.') && paragraphs[index + 1];
+          
+          if (isHeading) {
+            return <h3 key={index} className="text-lg font-bold mt-6 first:mt-0">{para}</h3>;
+          }
+          
+          // Check for bullet points
+          if (para.includes('• ') || para.includes('- ')) {
+            const listItems = para.split(/[•\-]\s+/).filter(Boolean);
+            return (
+              <ul key={index} className="list-disc pl-5 space-y-1">
+                {listItems.map((item, i) => (
+                  <li key={i}>{item.trim()}</li>
+                ))}
+              </ul>
+            );
+          }
+          
+          // Regular paragraph
+          return <p key={index}>{para}</p>;
+        })}
+      </div>
+    );
+  };
   
   return (
     <div className="container mx-auto px-4 py-12 animate-fade-in">
@@ -182,7 +218,7 @@ const AnalysisPage = () => {
           <CardContent>
             {results ? (
               <div className="prose dark:prose-invert max-w-none animate-fade-in">
-                <p className="whitespace-pre-wrap">{results}</p>
+                {formatResults(results)}
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in">

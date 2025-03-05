@@ -58,6 +58,18 @@ const TASK_PROMPTS = {
     "For doctors: Provide insights on infection severity, possible antibiotic treatments, and surgical recommendations if needed,provide nutrition plan,steps to recover like remedies and exercises if required."
 };
 
+// Map taskId to readable task names
+const TASK_NAMES = {
+  'fracture-detection': 'Bone Fracture Detection',
+  'bone-marrow': 'Bone Marrow Cell Classification',
+  'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
+  'osteoporosis': 'Osteoporosis Stage & BMD Score',
+  'bone-age': 'Bone Age Detection',
+  'spine-fracture': 'Cervical Spine Fracture Detection',
+  'bone-tumor': 'Bone Tumor/Cancer Detection',
+  'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -66,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Extract the image data, taskId, and userType from the request
-    const { image, taskId, userType } = await req.json();
+    const { image, taskId, userType, userId } = await req.json();
 
     if (!image) {
       throw new Error('No image provided');
@@ -98,10 +110,15 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Tailor the prompt based on user type
     if (userType === 'doctor') {
-      prompt += "\nAs you're a medical professional, please provide detailed clinical analysis with medical terminology.";
+      prompt += "\nAs you're a medical professional, please provide detailed clinical analysis with medical terminology." +
+                "\nFormat your response in a professional clinical report style with clear headings and bullet points.";
     } else {
-      prompt += "\nPlease explain this in simple terms as I'm not a medical professional.";
+      prompt += "\nPlease explain this in simple terms as I'm not a medical professional." +
+                "\nFormat your response in a clear and readable way with headings and bullet points where appropriate.";
     }
+    
+    prompt += "\nMake sure to properly format your response with paragraphs, bullet points, and headings where appropriate. " +
+              "Don't use markdown syntax like **, __. Instead, structure the content in a clean, readable way.";
 
     console.log('Sending request to Gemini API with task:', taskId);
 
@@ -119,6 +136,34 @@ const handler = async (req: Request): Promise<Response> => {
     const text = response.text();
 
     console.log('Received response from Gemini API');
+    
+    // Save the analysis to the database if userId is provided
+    if (userId) {
+      try {
+        // Initialize Supabase client
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        // Record the analysis in the analyses table
+        const { error: insertError } = await supabase
+          .from('analyses')
+          .insert({
+            user_id: userId,
+            task_id: taskId,
+            task_name: TASK_NAMES[taskId] || taskId,
+            result: text
+          });
+          
+        if (insertError) {
+          console.error('Error recording analysis:', insertError);
+        } else {
+          console.log('Analysis recorded successfully for user:', userId);
+        }
+      } catch (dbError) {
+        console.error('Error connecting to database:', dbError);
+      }
+    }
 
     return new Response(
       JSON.stringify({ analysis: text }),
