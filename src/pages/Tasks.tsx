@@ -18,18 +18,18 @@ interface Task {
   created_at: string | null;
 }
 
-interface Analysis {
+// Define a simpler interface for recent analyses
+interface RecentActivity {
   id: string;
-  task_id: string;
-  task_name: string;
+  title: string;
   created_at: string;
 }
 
 const Tasks = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuthContext();
+  const { user, logout } = useAuthContext(); // Changed signOut to logout to match AuthContextType
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [recentAnalyses, setRecentAnalyses] = useState<Analysis[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('all');
 
@@ -65,13 +65,14 @@ const Tasks = () => {
       }
     };
     
-    // Fetch recent analyses
-    const fetchRecentAnalyses = async () => {
+    // Instead of fetching from a non-existent analyses table,
+    // we'll just use the most recent tasks as "recent activities" for now
+    const fetchRecentActivities = async () => {
       if (!user) return;
       try {
         const { data, error } = await supabase
-          .from('analyses')
-          .select('*')
+          .from('tasks')
+          .select('id, title, created_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5);
@@ -79,14 +80,22 @@ const Tasks = () => {
         if (error) {
           throw error;
         }
-        setRecentAnalyses(data || []);
+        
+        // Map task data to our simpler RecentActivity interface
+        const activities: RecentActivity[] = (data || []).map(task => ({
+          id: task.id,
+          title: task.title,
+          created_at: task.created_at || new Date().toISOString(),
+        }));
+        
+        setRecentActivities(activities);
       } catch (error) {
-        console.error('Error fetching analyses:', error);
+        console.error('Error fetching recent activities:', error);
       }
     };
     
     fetchTasks();
-    fetchRecentAnalyses();
+    fetchRecentActivities();
   }, [user]);
 
   const handleCreateTask = () => {
@@ -99,7 +108,7 @@ const Tasks = () => {
   
   const handleLogout = async () => {
     try {
-      await signOut();
+      await logout(); // Changed signOut to logout to match AuthContextType
       navigate('/auth');
       toast.success('Logged out successfully');
     } catch (error) {
@@ -165,21 +174,21 @@ const Tasks = () => {
         
         <Card className="bg-primary text-primary-foreground">
           <CardHeader>
-            <CardTitle className="text-xl">Recent Analyses</CardTitle>
+            <CardTitle className="text-xl">Recent Activities</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-primary-foreground/90 mb-4">
-              {recentAnalyses.length > 0 
-                ? `You have ${recentAnalyses.length} recent analysis results` 
-                : 'View your most recent bone health analysis results'}
+              {recentActivities.length > 0 
+                ? `You have ${recentActivities.length} recent activities` 
+                : 'View your most recent activities'}
             </p>
-            {recentAnalyses.length > 0 && (
+            {recentActivities.length > 0 && (
               <div className="space-y-2 max-h-32 overflow-y-auto">
-                {recentAnalyses.map((analysis) => (
-                  <div key={analysis.id} className="text-sm bg-primary-foreground/10 p-2 rounded">
-                    <p className="font-medium text-primary-foreground">{analysis.task_name}</p>
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="text-sm bg-primary-foreground/10 p-2 rounded">
+                    <p className="font-medium text-primary-foreground">{activity.title}</p>
                     <p className="text-xs text-primary-foreground/80">
-                      {new Date(analysis.created_at).toLocaleString()}
+                      {new Date(activity.created_at).toLocaleString()}
                     </p>
                   </div>
                 ))}
