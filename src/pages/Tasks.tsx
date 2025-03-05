@@ -75,10 +75,7 @@ const Tasks = () => {
           <p className="text-muted-foreground">Manage your tasks and bone health analyses</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={handleCreateTask}>
-            <PlusCircle className="mr-2 h-4 w-4" /> 
-            New Task
-          </Button>
+          
           <Button onClick={() => navigate('/bone-analysis')} variant="outline">
             <Bone className="mr-2 h-4 w-4" />
             Bone Analysis
