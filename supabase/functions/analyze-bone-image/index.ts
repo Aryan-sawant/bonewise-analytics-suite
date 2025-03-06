@@ -62,7 +62,8 @@ serve(async (req) => {
     // Call Gemini API to analyze the image
     console.log(`Processing ${taskId} task with Gemini AI...`)
 
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
+    // Use the correct Gemini model (gemini-1.5-flash-latest)
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Extract the base64 data from the data URI
@@ -131,6 +132,8 @@ serve(async (req) => {
       }
     }
 
+    console.log("Sending request to Gemini with model: gemini-1.5-flash-latest");
+    
     // Call the Gemini API
     const response = await fetch(url, {
       method: "POST",
