@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name?: string;
   userType: 'common' | 'doctor';
+  created_at?: string; // Add this field to fix the error
   // Additional user properties can be added here
 }
 
@@ -14,4 +15,5 @@ export interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string, userType: 'common' | 'doctor', name?: string) => Promise<void>;
   logout: () => void;
+  setUser?: (user: User) => void; // Add this optional method to fix the error
 }

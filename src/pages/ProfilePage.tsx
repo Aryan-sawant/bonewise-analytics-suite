@@ -13,7 +13,7 @@ import { Home, User, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, setUser } = useAuthContext();
+  const { user } = useAuthContext(); // Remove setUser as we'll handle updates differently
   const [name, setName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   
@@ -45,13 +45,12 @@ const ProfilePage = () => {
       }
       
       if (data && data.length > 0) {
-        // Update the user context
-        setUser({
-          ...user,
-          name: data[0].name
-        });
-        
+        // Update the user locally since we can't use setUser
+        // The context will refresh on next page load
         toast.success('Profile updated successfully');
+        
+        // Reload the page to refresh the user context
+        window.location.reload();
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -125,7 +124,7 @@ const ProfilePage = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Account Created</span>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(user.created_at || Date.now()).toLocaleDateString()}
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : new Date().toLocaleDateString()}
                   </span>
                 </div>
               </div>

@@ -62,8 +62,8 @@ serve(async (req) => {
     // Call Gemini API to analyze the image
     console.log(`Processing ${taskId} task with Gemini AI...`)
 
-    // Update to the requested model: gemini_2.0-flash-thinking-exp-01-21
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini_2.0-flash-thinking-exp-01-21:generateContent"
+    // Use the correct model name: gemini-2.0-flash-thinking-exp-01-21
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Extract the base64 data from the data URI
@@ -132,7 +132,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Sending request to Gemini with model: gemini_2.0-flash-thinking-exp-01-21`);
+    console.log(`Sending request to Gemini with model: gemini-2.0-flash-thinking-exp-01-21`);
     
     // Call the Gemini API
     const response = await fetch(url, {
