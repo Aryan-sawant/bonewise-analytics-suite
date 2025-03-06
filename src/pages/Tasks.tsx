@@ -1,33 +1,95 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bone, PlusCircle, ArrowRight, Home, User, History, LogOut } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, Clock, History, PlusCircle } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
+import { toast } from 'sonner';
+
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  completed: boolean | null;
+  deadline: string | null;
+  created_at: string | null;
+}
+
+// Define a simpler interface for recent analyses
+interface RecentActivity {
+  id: string;
+  title: string;
+  created_at: string;
+}
 
 const Tasks = () => {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
-  const [recentTasks, setRecentTasks] = useState<any[]>([]);
-  const [recentAnalyses, setRecentAnalyses] = useState<any[]>([]);
+  const { user, logout } = useAuthContext(); // Changed signOut to logout to match AuthContextType
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [activeTab, setActiveTab] = useState<string>('all');
+
+  // Redirect if not logged in
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    
-    async function fetchUserData() {
-      setLoading(true);
-      
+  }, [user, navigate]);
+
+  // Fetch tasks from Supabase
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!user) return;
       try {
-        // Fetch recent tasks
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
+        setTasks(data || []);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        toast.error('Failed to load tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Fetch recent analyses if they exist, otherwise fall back to tasks
+    const fetchRecentActivities = async () => {
+      if (!user) return;
+      try {
+        // First try to get analyses
+        const { data: analysesData, error: analysesError } = await supabase
+          .from('analyses')
+          .select('id, task_name as title, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (!analysesError && analysesData && analysesData.length > 0) {
+          // Map analyses data to our RecentActivity interface
+          const activities: RecentActivity[] = analysesData.map(analysis => ({
+            id: analysis.id,
+            title: analysis.title,
+            created_at: analysis.created_at,
+          }));
+          
+          setRecentActivities(activities);
+          return;
+        }
+        
+        // Fallback to tasks if no analyses
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('id, title, created_at')
@@ -35,172 +97,157 @@ const Tasks = () => {
           .order('created_at', { ascending: false })
           .limit(5);
           
-        if (tasksError) throw tasksError;
-        setRecentTasks(tasksData || []);
+        if (tasksError) {
+          throw tasksError;
+        }
         
-        // Fetch recent analyses
-        const { data: analysesData, error: analysesError } = await supabase
-          .from('analyses')
-          .select('id, task_name, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-          
-        if (analysesError) throw analysesError;
-        setRecentAnalyses(analysesData || []);
+        // Map task data to our simpler RecentActivity interface
+        const taskActivities: RecentActivity[] = (tasksData || []).map(task => ({
+          id: task.id,
+          title: task.title,
+          created_at: task.created_at || new Date().toISOString(),
+        }));
+        
+        setRecentActivities(taskActivities);
       } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error fetching recent activities:', error);
       }
-    }
+    };
     
-    fetchUserData();
-  }, [user, navigate]);
-  
-  const handleNewAnalysis = () => {
-    navigate('/tasks/analyze');
+    fetchTasks();
+    fetchRecentActivities();
+  }, [user]);
+
+  const handleCreateTask = () => {
+    navigate('/tasks');
   };
   
-  const handleViewHistory = () => {
-    navigate('/history');
+  const handleViewTask = (taskId: string) => {
+    navigate(`/task-details/${taskId}`);
   };
   
-  const formatDate = (dateString: string) => {
+  const handleLogout = async () => {
     try {
-      return format(new Date(dateString), 'MMM d, yyyy');
-    } catch (e) {
-      return 'Invalid date';
+      await logout(); // Changed signOut to logout to match AuthContextType
+      navigate('/auth');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Failed to log out');
     }
   };
   
-  if (!user) return null;
+  const filteredTasks = activeTab === 'completed' 
+    ? tasks.filter(task => task.completed) 
+    : activeTab === 'pending' 
+      ? tasks.filter(task => !task.completed) 
+      : tasks;
+      
+  if (!user) {
+    return null;
+  }
   
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-      <p className="text-muted-foreground mb-8">
-        {user.userType === 'doctor' ? 'Manage your analyses and patients' : 'Manage your bone health analyses'}
-      </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Manage your tasks and bone health analyses</p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/')}
+            className="hover-scale"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Button>
+          
+          <Button onClick={() => navigate('/bone-analysis')} variant="outline">
+            <Bone className="mr-2 h-4 w-4" />
+            Bone Analysis
+          </Button>
+          
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+      </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-6">
-        <div className="md:col-span-5">
-          <Tabs defaultValue="recent">
-            <TabsList>
-              <TabsTrigger value="recent">Recent Activity</TabsTrigger>
-              <TabsTrigger value="recommended">Recommended</TabsTrigger>
-            </TabsList>
-            <TabsContent value="recent">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Analyses</CardTitle>
-                  <CardDescription>View your recently performed bone analyses</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="flex justify-center p-6">
-                      <Clock className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : recentAnalyses.length > 0 ? (
-                    <div className="space-y-4">
-                      {recentAnalyses.map((analysis) => (
-                        <div key={analysis.id} className="flex items-center justify-between p-2 rounded-md hover:bg-accent/50">
-                          <div>
-                            <h3 className="font-medium">{analysis.task_name}</h3>
-                            <p className="text-sm text-muted-foreground">{formatDate(analysis.created_at)}</p>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => navigate(`/result/${analysis.id}`)}
-                          >
-                            View
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center p-6 border rounded-md border-dashed">
-                      <p className="text-muted-foreground mb-4">No recent analyses found</p>
-                      <Button onClick={handleNewAnalysis}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        New Analysis
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-end">
-                  <Button variant="outline" onClick={handleViewHistory}>
-                    <History className="mr-2 h-4 w-4" />
-                    View History
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-            <TabsContent value="recommended">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recommended Analyses</CardTitle>
-                  <CardDescription>Analyses recommended based on your profile</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 border rounded-md border-dashed flex items-start">
-                      <CheckCircle className="h-5 w-5 text-primary mr-3 mt-0.5" />
-                      <div>
-                        <h3 className="font-medium">Annual Bone Density Scan</h3>
-                        <p className="text-sm text-muted-foreground">Recommended for monitoring bone health over time</p>
-                        <Button size="sm" variant="link" className="p-0 h-auto mt-1" onClick={() => navigate('/analysis/osteoporosis')}>
-                          Start Analysis
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 border rounded-md border-dashed flex items-start">
-                      <CheckCircle className="h-5 w-5 text-primary mr-3 mt-0.5" />
-                      <div>
-                        <h3 className="font-medium">Joint Health Assessment</h3>
-                        <p className="text-sm text-muted-foreground">Evaluate knee joints for early signs of osteoarthritis</p>
-                        <Button size="sm" variant="link" className="p-0 h-auto mt-1" onClick={() => navigate('/analysis/osteoarthritis')}>
-                          Start Analysis
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="bg-primary text-primary-foreground">
+          <CardHeader>
+            <CardTitle className="text-xl">Bone Health</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-primary-foreground/90 mb-4 text-base font-bold">
+              Access AI-powered bone health analysis tools
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button variant="secondary" className="w-full" onClick={() => navigate('/bone-analysis')}>
+              Start Analysis <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardFooter>
+        </Card>
         
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button className="w-full" onClick={handleNewAnalysis}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  New Analysis
-                </Button>
-                
-                <Button variant="outline" className="w-full" onClick={handleViewHistory}>
-                  <History className="mr-2 h-4 w-4" />
-                  View History
-                </Button>
-                
-                <Separator />
-                
-                <div className="text-sm text-center text-muted-foreground">
-                  {user.userType === 'doctor' ? 
-                    'Access advanced tools for clinical assessment' : 
-                    'Track your bone health journey over time'}
-                </div>
+        <Card className="bg-primary text-primary-foreground">
+          <CardHeader>
+            <CardTitle className="text-xl">Recent Activities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-primary-foreground/90 mb-4">
+              {recentActivities.length > 0 
+                ? `You have ${recentActivities.length} recent activities` 
+                : 'View your most recent activities'}
+            </p>
+            {recentActivities.length > 0 && (
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="text-sm bg-primary-foreground/10 p-2 rounded">
+                    <p className="font-medium text-primary-foreground">{activity.title}</p>
+                    <p className="text-xs text-primary-foreground/80">
+                      {new Date(activity.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button variant="secondary" className="w-full" onClick={() => navigate('/analysis-history')}>
+              <History className="mr-2 h-4 w-4" />
+              View History
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <Card className="bg-primary text-primary-foreground">
+          <CardHeader>
+            <CardTitle className="text-xl">My Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-primary-foreground/90 mb-4">
+              {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}: {user.email}
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 bg-primary-foreground/10 p-2 rounded">
+                <User className="h-4 w-4" />
+                <span className="text-sm">Profile: {user.name || 'Not set'}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-primary-foreground/10 p-2 rounded">
+                <span className="text-sm">Account type: {user.userType}</span>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button variant="secondary" className="w-full" onClick={() => navigate('/profile')}>
+              <User className="mr-2 h-4 w-4" />
+              Account Settings
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

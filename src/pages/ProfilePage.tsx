@@ -2,21 +2,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format } from 'date-fns';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Home, User, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuthContext();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [userType, setUserType] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { user, setUser } = useAuthContext();
+  const [name, setName] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   
   useEffect(() => {
     if (!user) {
@@ -24,28 +23,36 @@ const ProfilePage = () => {
       return;
     }
     
-    setName(user.name || '');
-    setEmail(user.email || '');
-    setUserType(user.userType || 'common');
+    if (user.name) {
+      setName(user.name);
+    }
   }, [user, navigate]);
   
-  const handleUpdateProfile = async () => {
+  const handleSaveProfile = async () => {
     if (!user) return;
     
-    setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name,
-          user_type: userType
-        })
-        .eq('id', user.id);
-        
-      if (error) throw error;
+      setLoading(true);
       
-      await refreshUser();
-      toast.success('Profile updated successfully');
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ name })
+        .eq('id', user.id)
+        .select();
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        // Update the user context
+        setUser({
+          ...user,
+          name: data[0].name
+        });
+        
+        toast.success('Profile updated successfully');
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
@@ -54,130 +61,126 @@ const ProfilePage = () => {
     }
   };
   
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Failed to sign out');
-    }
-  };
-  
   if (!user) return null;
   
-  const getInitials = (name: string) => {
-    if (!name) return 'U';
-    return name.split(' ')
-      .map(part => part.charAt(0).toUpperCase())
-      .join('')
-      .substring(0, 2);
-  };
-  
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    try {
-      return format(new Date(dateString), 'MMMM d, yyyy');
-    } catch (e) {
-      return 'Invalid date';
-    }
-  };
-
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
+      <div className="flex justify-between items-center mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/tasks')}
+          className="hover-scale"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Button>
+        
+        <Button
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="hover-scale"
+        >
+          <Home className="mr-2 h-4 w-4" />
+          Home
+        </Button>
+      </div>
+      
+      <h1 className="text-3xl font-bold mb-2">Account Settings</h1>
       <p className="text-muted-foreground mb-8">
-        Manage your account and preferences
+        Manage your account details and preferences
       </p>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-1">
+          <Card className="border shadow-sm sticky top-20">
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <CardTitle className="flex items-center">
+                <User className="mr-2 h-5 w-5" />
+                Profile
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Full Name</label>
-                  <Input 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your full name"
-                    className="mt-1"
-                  />
+              <div className="flex flex-col items-center justify-center p-4">
+                <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold mb-4">
+                  {user.name ? user.name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
                 </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <Input 
-                    value={email} 
-                    disabled
-                    className="mt-1 bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Email changes are not supported at this time
-                  </p>
+                <h3 className="font-medium text-lg">{user.name || 'User'}</h3>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+                <div className="mt-2 px-3 py-1 text-xs rounded-full bg-muted">
+                  {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}
                 </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Account Type</label>
-                  <div className="mt-1 text-sm p-2 bg-muted rounded-md">
-                    {userType === 'doctor' ? 'Healthcare Professional' : 'Patient'} Account
-                  </div>
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Email Verified</span>
+                  {true ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  )}
                 </div>
-                
-                <div className="pt-4">
-                  <Button 
-                    onClick={handleUpdateProfile}
-                    disabled={loading}
-                  >
-                    {loading ? 'Updating...' : 'Save Changes'}
-                  </Button>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Account Created</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(user.created_at || Date.now()).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
         
-        <div>
-          <Card>
+        <div className="md:col-span-2">
+          <Card className="border shadow-sm">
             <CardHeader>
-              <CardTitle>Account Summary</CardTitle>
+              <CardTitle>Personal Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center space-y-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="text-lg">
-                    {getInitials(name)}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="text-center">
-                  <h3 className="font-medium text-lg">{name || 'User'}</h3>
-                  <p className="text-sm text-muted-foreground">{email}</p>
-                </div>
-                
-                <div className="w-full pt-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Member since</span>
-                    <span>{formatDate(user?.created_at?.toString())}</span>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input 
+                      id="name" 
+                      value={name} 
+                      onChange={(e) => setName(e.target.value)} 
+                      placeholder="Your name"
+                    />
                   </div>
                   
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Account type</span>
-                    <span>{userType === 'doctor' ? 'Healthcare Professional' : 'Patient'}</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      value={user.email} 
+                      disabled 
+                      className="bg-muted"
+                    />
                   </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="accountType">Account Type</Label>
+                  <Input 
+                    id="accountType" 
+                    value={user.userType === 'doctor' ? 'Doctor' : 'User'} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Account type cannot be changed. Contact support if you need to change your account type.
+                  </p>
                 </div>
                 
                 <Button 
-                  variant="outline" 
-                  className="w-full mt-6" 
-                  onClick={handleSignOut}
+                  onClick={handleSaveProfile} 
+                  disabled={loading || !name.trim()}
+                  className="w-full md:w-auto"
                 >
-                  Sign Out
+                  {loading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </CardContent>

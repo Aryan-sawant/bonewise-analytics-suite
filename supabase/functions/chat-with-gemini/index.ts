@@ -42,8 +42,7 @@ serve(async (req) => {
     // Call Gemini API
     console.log(`Processing chat request with Gemini AI...`)
 
-    // Updated to use gemini-1.5-flash model
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Prepare enhanced context with user type
