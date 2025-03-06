@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,6 @@ interface Task {
   created_at: string | null;
 }
 
-// Define a simpler interface for recent analyses
 interface RecentActivity {
   id: string;
   title: string;
@@ -27,13 +25,12 @@ interface RecentActivity {
 
 const Tasks = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuthContext(); // Changed signOut to logout to match AuthContextType
+  const { user, logout } = useAuthContext();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('all');
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!user) {
       navigate('/auth');
@@ -41,7 +38,6 @@ const Tasks = () => {
     }
   }, [user, navigate]);
 
-  // Fetch tasks from Supabase
   useEffect(() => {
     const fetchTasks = async () => {
       if (!user) return;
@@ -65,23 +61,20 @@ const Tasks = () => {
       }
     };
     
-    // Fetch recent analyses if they exist, otherwise fall back to tasks
     const fetchRecentActivities = async () => {
       if (!user) return;
       try {
-        // First try to get analyses
         const { data: analysesData, error: analysesError } = await supabase
           .from('analyses')
-          .select('id, task_name as title, created_at')
+          .select('id, task_name, created_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5);
         
         if (!analysesError && analysesData && analysesData.length > 0) {
-          // Map analyses data to our RecentActivity interface
           const activities: RecentActivity[] = analysesData.map(analysis => ({
             id: analysis.id,
-            title: analysis.title,
+            title: analysis.task_name,
             created_at: analysis.created_at,
           }));
           
@@ -89,7 +82,6 @@ const Tasks = () => {
           return;
         }
         
-        // Fallback to tasks if no analyses
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('id, title, created_at')
@@ -101,7 +93,6 @@ const Tasks = () => {
           throw tasksError;
         }
         
-        // Map task data to our simpler RecentActivity interface
         const taskActivities: RecentActivity[] = (tasksData || []).map(task => ({
           id: task.id,
           title: task.title,
@@ -128,7 +119,7 @@ const Tasks = () => {
   
   const handleLogout = async () => {
     try {
-      await logout(); // Changed signOut to logout to match AuthContextType
+      await logout();
       navigate('/auth');
       toast.success('Logged out successfully');
     } catch (error) {

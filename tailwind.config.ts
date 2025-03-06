@@ -146,7 +146,31 @@ export default {
 			},
 			backdropBlur: {
 				'xs': '2px',
-			}
+			},
+			// Add 3D transform utilities
+			transformStyle: {
+				'flat': 'flat',
+				'preserve-3d': 'preserve-3d',
+			},
+			perspective: {
+				'none': 'none',
+				'500': '500px',
+				'800': '800px',
+				'1000': '1000px',
+				'1500': '1500px',
+			},
+			rotate: {
+				'y-5': 'rotateY(5deg)',
+				'y-10': 'rotateY(10deg)',
+				'y-15': 'rotateY(15deg)',
+				'x-5': 'rotateX(5deg)',
+				'x-10': 'rotateX(10deg)',
+			},
+			translate: {
+				'z-0': 'translateZ(0px)',
+				'z-10': 'translateZ(10px)',
+				'z-20': 'translateZ(20px)',
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

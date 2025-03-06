@@ -42,8 +42,8 @@ serve(async (req) => {
     // Call Gemini API
     console.log(`Processing chat request with Gemini AI...`)
 
-    // Use the updated model: gemini-1.5-flash-latest
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+    // Update to the requested model: gemini_2.0-flash-thinking-exp-01-21
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini_2.0-flash-thinking-exp-01-21:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Prepare enhanced context with user type
@@ -68,7 +68,7 @@ serve(async (req) => {
       }
     }
 
-    console.log("Sending request to Gemini with model: gemini-1.5-flash-latest");
+    console.log(`Sending request to Gemini with model: gemini_2.0-flash-thinking-exp-01-21`);
 
     // Call the Gemini API
     const response = await fetch(url, {

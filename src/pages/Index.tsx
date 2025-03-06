@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
@@ -5,11 +6,10 @@ import Hero from '@/components/Hero';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from '@/contexts/AuthContext';
+
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const {
-    user
-  } = useAuthContext();
+  const { user } = useAuthContext();
   const navigate = useNavigate();
 
   // Handle scroll effect
@@ -24,7 +24,9 @@ const Index = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  return <div className="min-h-screen flex flex-col">
+
+  return (
+    <div className="min-h-screen flex flex-col">
       {/* Navbar */}
       <NavBar />
       
@@ -44,7 +46,8 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              <Card className="border-none bg-white shadow-card hover:shadow-lg transition-all duration-300">
+              <Card className="border-none bg-white shadow-card hover:shadow-lg transition-all duration-300 transform hover:scale-[1.03] hover:-translate-y-1 hover:rotate-y-2" 
+                style={{ transformStyle: 'preserve-3d', perspective: '800px' }}>
                 <CardContent className="p-6">
                   <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
                     <span className="font-bold text-lg">1</span>
@@ -56,7 +59,8 @@ const Index = () => {
                 </CardContent>
               </Card>
               
-              <Card className="border-none bg-white shadow-card hover:shadow-lg transition-all duration-300">
+              <Card className="border-none bg-white shadow-card hover:shadow-lg transition-all duration-300 transform hover:scale-[1.03] hover:-translate-y-1 hover:rotate-y-2"
+                style={{ transformStyle: 'preserve-3d', perspective: '800px' }}>
                 <CardContent className="p-6">
                   <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
                     <span className="font-bold text-lg">2</span>
@@ -68,7 +72,8 @@ const Index = () => {
                 </CardContent>
               </Card>
               
-              <Card className="border-none bg-white shadow-card hover:shadow-lg transition-all duration-300">
+              <Card className="border-none bg-white shadow-card hover:shadow-lg transition-all duration-300 transform hover:scale-[1.03] hover:-translate-y-1 hover:rotate-y-2"
+                style={{ transformStyle: 'preserve-3d', perspective: '800px' }}>
                 <CardContent className="p-6">
                   <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
                     <span className="font-bold text-lg">3</span>
@@ -95,14 +100,23 @@ const Index = () => {
               that can help you understand more about your bone condition.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {user ? <Button size="lg" onClick={() => navigate('/dashboard')} className="bg-white text-primary hover:bg-white/90">
+              {user ? 
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate('/dashboard')} 
+                  className="bg-white text-primary hover:bg-white/90 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                >
                   Go to Dashboard
-                </Button> : <>
-                  <Button size="lg" onClick={() => navigate('/auth?tab=signup')} className="bg-white text-primary hover:bg-white/90">
-                    Sign Up for Free
-                  </Button>
-                  
-                </>}
+                </Button> 
+              : 
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate('/auth?tab=signup')} 
+                  className="bg-white text-primary hover:bg-white/90 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                >
+                  Sign Up for Free
+                </Button>
+              }
             </div>
           </div>
         </section>
@@ -128,27 +142,27 @@ const Index = () => {
               <div>
                 <h4 className="text-sm font-medium mb-4">Product</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Features</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Pricing</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">FAQ</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Features</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Pricing</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">FAQ</a></li>
                 </ul>
               </div>
               
               <div>
                 <h4 className="text-sm font-medium mb-4">Company</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">About</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Blog</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Contact</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">About</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Blog</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Contact</a></li>
                 </ul>
               </div>
               
               <div>
                 <h4 className="text-sm font-medium mb-4">Legal</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Privacy</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Terms</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Disclaimer</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Disclaimer</a></li>
                 </ul>
               </div>
             </div>
@@ -163,11 +177,19 @@ const Index = () => {
       </footer>
       
       {/* Fixed CTA Button */}
-      {isScrolled && !user && <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
-          <Button size="lg" className="shadow-lg" onClick={() => navigate('/auth?tab=signup')}>
+      {isScrolled && !user && 
+        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+          <Button 
+            size="lg" 
+            className="shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300" 
+            onClick={() => navigate('/auth?tab=signup')}
+          >
             Get Started
           </Button>
-        </div>}
-    </div>;
+        </div>
+      }
+    </div>
+  );
 };
+
 export default Index;
