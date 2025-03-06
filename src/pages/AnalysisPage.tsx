@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home } from 'lucide-react';
+import { Loader2, Home, Download } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 
 const TASK_TITLES: Record<string, string> = {
@@ -43,6 +43,7 @@ const AnalysisPage = () => {
   const [results, setResults] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null);
   
   useEffect(() => {
     if (!user) {
@@ -64,6 +65,7 @@ const AnalysisPage = () => {
     setResults(null);
     setError(null);
     setAnalysisId(null);
+    setStoredImageUrl(null);
 
     // Convert the file to base64 for API transmission
     const reader = new FileReader();
@@ -107,21 +109,13 @@ const AnalysisPage = () => {
 
       setResults(data.analysis);
       
-      // Fetch the latest analysis ID for this user
-      try {
-        const { data: analysisData, error: fetchError } = await supabase
-          .from('analyses')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('task_id', taskId)
-          .order('created_at', { ascending: false })
-          .limit(1);
-          
-        if (!fetchError && analysisData && analysisData.length > 0) {
-          setAnalysisId(analysisData[0].id);
-        }
-      } catch (fetchError) {
-        console.error('Error fetching analysis ID:', fetchError);
+      // Set analysis ID and image URL if available
+      if (data.analysisId) {
+        setAnalysisId(data.analysisId);
+      }
+      
+      if (data.imageUrl) {
+        setStoredImageUrl(data.imageUrl);
       }
       
       toast.success('Analysis complete');
@@ -132,6 +126,22 @@ const AnalysisPage = () => {
     } finally {
       setAnalyzing(false);
     }
+  };
+  
+  const handleDownloadResults = () => {
+    if (!results) return;
+    
+    const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
+    const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.txt`;
+    
+    const blob = new Blob([results], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
   
   if (!taskId || !user) return null;
@@ -146,29 +156,29 @@ const AnalysisPage = () => {
     // Split into paragraphs and format
     const paragraphs = resultsText.split(/\n\n+/);
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 leading-relaxed">
         {paragraphs.map((para, index) => {
-          // Check if this paragraph looks like a heading (short and followed by a paragraph)
-          const isHeading = para.length < 50 && !para.includes('.') && paragraphs[index + 1];
-          
-          if (isHeading) {
-            return <h3 key={index} className="text-lg font-bold mt-6 first:mt-0">{para}</h3>;
+          // Check if this paragraph looks like a heading 
+          if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
+            // Extract heading text without the marker
+            const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
+            return <h3 key={index} className="text-xl font-bold mt-6 first:mt-0 text-primary/90 border-b pb-1">{headingText}</h3>;
           }
           
           // Check for bullet points
-          if (para.includes('• ') || para.includes('- ')) {
-            const listItems = para.split(/[•\-]\s+/).filter(Boolean);
+          if (para.includes('• ') || para.includes('- ') || para.includes('* ')) {
+            const listItems = para.split(/[•\-*]\s+/).filter(Boolean);
             return (
-              <ul key={index} className="list-disc pl-5 space-y-1">
+              <ul key={index} className="list-disc pl-5 space-y-2">
                 {listItems.map((item, i) => (
-                  <li key={i}>{item.trim()}</li>
+                  <li key={i} className="text-gray-800 dark:text-gray-200">{item.trim()}</li>
                 ))}
               </ul>
             );
           }
           
-          // Regular paragraph
-          return <p key={index}>{para}</p>;
+          // Regular paragraph with better typography
+          return <p key={index} className="text-gray-800 dark:text-gray-200">{para}</p>;
         })}
       </div>
     );
@@ -232,12 +242,23 @@ const AnalysisPage = () => {
         </Card>
         
         <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Analysis Results</CardTitle>
+            {results && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownloadResults}
+                className="flex items-center gap-1"
+              >
+                <Download size={14} />
+                Download
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {results ? (
-              <div className="prose dark:prose-invert max-w-none animate-fade-in">
+              <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif">
                 {formatResults(results)}
               </div>
             ) : error ? (

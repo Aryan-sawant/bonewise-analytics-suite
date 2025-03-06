@@ -108,7 +108,7 @@ serve(async (req) => {
         break
     }
 
-    promptText += `\n\nFormat your response with clear sections and be thorough yet concise.`
+    promptText += `\n\nFormat your response with clear sections including Summary, Findings, Interpretation, and Recommendations. Use proper headings and make the report look professional.`
 
     // Prepare the request to Gemini
     const payload = {
@@ -156,10 +156,48 @@ serve(async (req) => {
     const analysisText = data.candidates[0].content.parts[0].text
     
     // Store the analysis in the database if userId is provided
+    let imageUrl = null
+    let analysisId = null
+    
     if (userId && analysisText) {
       try {
-        // Store the image in a storage bucket (would need to be created)
-        // For now we'll just store the analysis text
+        // First, let's try to store the image in storage if it exists
+        if (image) {
+          // Check if storage bucket exists, create if not
+          const { data: buckets } = await supabase.storage.listBuckets()
+          const bucketName = 'bone-analysis-images'
+          
+          if (!buckets?.find(b => b.name === bucketName)) {
+            await supabase.storage.createBucket(bucketName, {
+              public: false,
+              fileSizeLimit: 5242880 // 5MB
+            })
+          }
+          
+          // Create a unique file name
+          const fileName = `${userId}/${taskId}/${Date.now()}.jpg`
+          
+          // Upload the image
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from(bucketName)
+            .upload(fileName, Buffer.from(base64Data, 'base64'), {
+              contentType: 'image/jpeg',
+              upsert: true
+            })
+            
+          if (uploadError) {
+            console.error("Error uploading image:", uploadError)
+          } else if (uploadData) {
+            // Get the public URL
+            const { data: publicUrlData } = supabase.storage
+              .from(bucketName)
+              .getPublicUrl(fileName)
+              
+            imageUrl = publicUrlData?.publicUrl || null
+          }
+        }
+        
+        // Now store the analysis data
         const { data: analysisData, error: insertError } = await supabase
           .from('analyses')
           .insert({
@@ -167,14 +205,15 @@ serve(async (req) => {
             task_id: taskId,
             task_name: taskTitle,
             result_text: analysisText,
-            // We would store image_url here if we were uploading to storage
+            image_url: imageUrl
           })
           .select()
         
         if (insertError) {
           console.error("Error storing analysis:", insertError)
-        } else {
-          console.log("Analysis stored successfully:", analysisData)
+        } else if (analysisData && analysisData.length > 0) {
+          analysisId = analysisData[0].id
+          console.log("Analysis stored successfully with ID:", analysisId)
         }
       } catch (storageError) {
         console.error("Error in storage process:", storageError)
@@ -183,7 +222,11 @@ serve(async (req) => {
 
     // Return the analysis result
     return new Response(
-      JSON.stringify({ analysis: analysisText }),
+      JSON.stringify({ 
+        analysis: analysisText,
+        analysisId,
+        imageUrl
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 

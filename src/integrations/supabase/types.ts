@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analyses: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          result_text: string | null
+          task_id: string
+          task_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          result_text?: string | null
+          task_id: string
+          task_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          result_text?: string | null
+          task_id?: string
+          task_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_interactions: {
+        Row: {
+          ai_response: string
+          analysis_id: string
+          created_at: string
+          id: string
+          user_id: string
+          user_message: string
+        }
+        Insert: {
+          ai_response: string
+          analysis_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          user_message: string
+        }
+        Update: {
+          ai_response?: string
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          user_message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_interactions_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null

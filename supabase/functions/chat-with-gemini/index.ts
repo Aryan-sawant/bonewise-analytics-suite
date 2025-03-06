@@ -34,7 +34,7 @@ serve(async (req) => {
     }
 
     // Create the Supabase client if we need to store the interaction
-    const supabase = userId ? createClient(
+    const supabase = userId && analysisId ? createClient(
       Deno.env.get('SUPABASE_URL') as string,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     ) : null;
@@ -45,13 +45,18 @@ serve(async (req) => {
     const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
+    // Prepare enhanced context with user type
+    const enhancedContext = context ? 
+      `${context}\n\nAdditional context: The user asking the question is a ${userType === 'doctor' ? 'healthcare professional (write in technical medical terms)' : 'patient (explain in simple terms that a non-medical person can understand)'}.\n\nUser: ${message}` 
+      : message;
+
     // Prepare the request to Gemini
     const payload = {
       contents: [
         {
           parts: [
             { 
-              text: context ? `${context}\n\nUser: ${message}` : message 
+              text: enhancedContext
             }
           ]
         }
