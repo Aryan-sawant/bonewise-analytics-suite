@@ -137,7 +137,7 @@ const Hero = () => {
           </span>
         </div>
 
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{ // Adjusted text-4xl to text-3xl for mobile
           animationDelay: '0.1s'
         }}>
           Advanced Bone Analysis with Artificial Intelligence
