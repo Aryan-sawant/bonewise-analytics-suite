@@ -51,8 +51,8 @@ serve(async (req) => {
         doctor: "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. Suggest medical treatment options, possible surgeries, immobilization techniques, and follow-up care strategies, provide nutrition plan, steps to recover like remedies and exercises if required."
       },
       'bone-marrow': {
-        common: "Analyze the biopsy or MRI image and classify bone marrow cells into relevant categories, identifying concerning cells. The image will be analyzed to check for abnormalities in bone marrow cells. You will receive a simple explanation of the findings, including whether there are unusual cell changes and what they might indicate, provide nutrition plan, steps to recover like remedies and exercises if required.",
-        doctor: "Analyze the biopsy or MRI image and classify bone marrow cells into relevant categories, identifying concerning cells. Provide detailed insights into abnormal cell structures, possible diagnoses, and recommended medical interventions, provide nutrition plan, steps to recover like remedies and exercises if required."
+        common: "Analyze the microscopic biopsy or MRI image of bone marrow cells. Classify the bone marrow cells into relevant categories and identify any concerning or abnormal cells. Explain your findings in simple terms, indicating any unusual cell changes and their potential implications. Provide a nutrition plan and steps to recover, including remedies and exercises if required.",
+        doctor: "Analyze the microscopic biopsy or MRI image of bone marrow cells. Classify bone marrow cells into detailed categories, identifying and describing any abnormal cell structures. Provide insights into possible diagnoses and recommend medical interventions, nutrition plans, and recovery steps, including remedies and exercises if required."
       },
       'osteoarthritis': {
         common: "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading. The image will be assessed for signs of knee osteoarthritis, including joint space narrowing and bone changes. You will get an easy-to-understand report on whether osteoarthritis is present and its severity level, along with its impact on knee function, provide nutrition plan, steps to recover like remedies and exercises if required.",
@@ -151,6 +151,13 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Gemini API error:", errorText)
+      console.error("Gemini API full response:", response) // Log the full response for more details
+      try {
+        const errorJson = await response.json();
+        console.error("Gemini API error JSON:", errorJson); // Try to log JSON error if available
+      } catch (jsonError) {
+        console.error("Failed to parse Gemini error JSON:", jsonError);
+      }
       throw new Error(`Gemini API error: ${response.status} ${errorText}`)
     }
 
