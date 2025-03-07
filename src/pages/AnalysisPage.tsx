@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -9,6 +8,65 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Home, Download } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
+
+const task_prompts = {
+    "fracture-detection": (
+        "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. \n" +
+        "**For common users:** The image will be analyzed to check for fractures, identifying the affected bone and the type of break. \n" +
+        "You will receive an easy-to-understand explanation of the fracture, including its severity and possible effects on movement, provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
+        "**For doctors:** Suggest medical treatment options, possible surgeries, immobilization techniques, and follow-up care strategies,provide nutrition plan,steps to recover like remedies and exercises if required."
+    ),
+
+    "bone-marrow": (
+        "Analyze the biopsy or MRI image and classify bone marrow cells into relevant categories, identifying concerning cells. \n" +
+        "**For common users:** The image will be analyzed to check for abnormalities in bone marrow cells. \n" +
+        "You will receive a simple explanation of the findings, including whether there are unusual cell changes and what they might indicate,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
+        "**For doctors:** Provide detailed insights into abnormal cell structures, possible diagnoses, and recommended medical interventions,provide nutrition plan,steps to recover like remedies and exercises if required."
+    ),
+
+    "osteoarthritis": (
+        "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading. \n" +
+        "**For common users:** The image will be assessed for signs of knee osteoarthritis, including joint space narrowing and bone changes. \n" +
+        "You will get an easy-to-understand report on whether osteoarthritis is present and its severity level, along with its impact on knee function,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
+        "**For doctors:** Suggest advanced treatments, medications, physiotherapy plans, and surgical options such as knee replacement,provide nutrition plan,steps to recover like remedies and exercises if required."
+
+    ),
+
+    "osteoporosis": (
+        "Analyze the bone X-ray and determine osteoporosis stage with estimated Bone Mineral Density (BMD) score. \n" +
+        "**For common users:** The scan will be analyzed to determine how strong or weak the bones are and whether osteoporosis is present. \n" +
+        "You will receive a simple explanation of the results, including whether bone density is lower than normal and what it means for bone health,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
+        "**For doctors:** Recommend specific medications, hormone therapy, and advanced treatments to manage and prevent complications,provide nutrition plan,steps to recover like remedies and exercises if required."
+    ),
+
+    "bone-age": (
+        "Analyze the X-ray of a child's hand and predict bone age with insights into growth patterns. \n" +
+        "**For common users:** The scan will be assessed to check how well the bones are developing compared to the expected growth pattern for the child’s age. \n" +
+        "You will receive an easy-to-understand result explaining whether the bone growth is normal, advanced, or delayed,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
+        "**For doctors:** Offer insights into growth abnormalities, hormonal imbalances, and necessary medical interventions if delayed growth is detected,provide nutrition plan,steps to recover like remedies and exercises if required."
+    ),
+
+    "spine-fracture": (
+        "Analyze the X-ray, MRI, or CT scan of the cervical spine for fractures and provide a severity assessment. \n" +
+        "**For common users:** The scan will be analyzed for fractures in the neck bones, and you will receive an explanation of the findings. \n" +
+        "The report will describe whether a fracture is present, its severity, and how it may affect movement or pain levels,provide nutrition plan,steps to recover like remedies and exercises if required\n" +
+        "**For doctors:** Suggest medical treatment plans, possible surgical options, and rehabilitation strategies for full recovery,provide nutrition plan,steps to recover like remedies and exercises if required"
+    ),
+
+    "bone-tumor": (
+        "Analyze the X-ray, MRI, CT scan, or biopsy image for possible bone tumors or cancerous growths. \n" +
+        "**For common users:** The image will be checked for any unusual growths or masses in the bone, and you will receive a simple explanation of the findings. \n" +
+        "If any suspicious areas are detected, the report will describe their size, location, and whether they appear concerning,provide nutrition plan,steps to recover like remedies and exercises if required.\n" +
+        "**For doctors:** Provide detailed insights into tumor classification, possible malignancy assessment, and treatment options,provide nutrition plan,steps to recover like remedies and exercises if required. "
+    ),
+
+    "bone-infection": (
+        "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). \n" +
+        "**For common users:** The image will be checked for any signs of infection in the bone, such as swelling, bone damage, or abscess formation. \n" +
+        "You will receive an easy-to-understand explanation of whether an infection is present and how it may be affecting the bone,provide nutrition plan,steps to recover like remedies and exercises if required.\n" +
+        "**For doctors:** Provide insights on infection severity, possible antibiotic treatments, and surgical recommendations if needed,provide nutrition plan,steps to recover like remedies and exercises if required."
+    )
+}
 
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
@@ -44,14 +102,14 @@ const AnalysisPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
   }, [user, navigate]);
-  
+
   useEffect(() => {
     if (taskId && !TASK_TITLES[taskId]) {
       toast.error('Invalid analysis task');
@@ -73,19 +131,19 @@ const AnalysisPage = () => {
     };
     reader.readAsDataURL(file);
   };
-  
+
   const handleAnalyze = async () => {
     if (!image || !imageBase64 || !taskId || !user) {
       toast.error('Please upload an image first');
       return;
     }
-    
+
     setAnalyzing(true);
     setError(null);
-    
+
     try {
       console.log("Sending image for analysis...");
-      
+
       const { data, error } = await supabase.functions.invoke('analyze-bone-image', {
         body: {
           image: imageBase64,
@@ -106,15 +164,15 @@ const AnalysisPage = () => {
       }
 
       setResults(data.analysis);
-      
+
       if (data.analysisId) {
         setAnalysisId(data.analysisId);
       }
-      
+
       if (data.imageUrl) {
         setStoredImageUrl(data.imageUrl);
       }
-      
+
       toast.success('Analysis complete');
     } catch (error) {
       console.error('Analysis error:', error);
@@ -124,13 +182,13 @@ const AnalysisPage = () => {
       setAnalyzing(false);
     }
   };
-  
+
   const handleDownloadResults = () => {
     if (!results) return;
-    
+
     const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
     const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.txt`;
-    
+
     const blob = new Blob([results], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -140,15 +198,17 @@ const AnalysisPage = () => {
     link.click();
     document.body.removeChild(link);
   };
-  
+
   if (!taskId || !user) return null;
-  
+
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
+  const taskPrompt = task_prompts[taskId] || 'Detailed instructions for this analysis type are not available.';
+
 
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
-    
+
     const paragraphs = resultsText.split(/\n\n+/);
     return (
       <div className="space-y-4 leading-relaxed">
@@ -157,7 +217,7 @@ const AnalysisPage = () => {
             const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
             return <h3 key={index} className="text-xl font-bold mt-6 first:mt-0 text-primary/90 border-b pb-1">{headingText}</h3>;
           }
-          
+
           if (para.includes('• ') || para.includes('- ') || para.includes('* ')) {
             const listItems = para.split(/[•\-*]\s+/).filter(Boolean);
             return (
@@ -168,24 +228,24 @@ const AnalysisPage = () => {
               </ul>
             );
           }
-          
+
           return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para }} />;
         })}
       </div>
     );
   };
-  
+
   return (
     <div className="container mx-auto px-4 py-12 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => navigate('/tasks')}
           className="transition-all duration-300"
         >
           ← Back to Tasks
         </Button>
-        
+
         <Button
           variant="outline"
           onClick={() => navigate('/')}
@@ -195,12 +255,12 @@ const AnalysisPage = () => {
           Home
         </Button>
       </div>
-      
+
       <h1 className="text-3xl font-bold mb-2 animate-slide-in">{taskTitle}</h1>
       <p className="text-muted-foreground mb-8 animate-fade-in">
         {user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}
       </p>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
           <CardHeader>
@@ -208,15 +268,19 @@ const AnalysisPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">{taskGuidance}</p>
-            
+            <div className="mb-4 p-3 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Analysis Task Prompt:</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{taskPrompt}</p>
+            </div>
+
             <ImageUpload
               onImageSelected={handleImageUpload}
               imageUrl={imageUrl}
               isLoading={analyzing}
             />
-            
+
             <div className="mt-4 flex justify-end">
-              <Button 
+              <Button
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
                 className="w-full md:w-auto transition-all duration-300"
@@ -231,14 +295,14 @@ const AnalysisPage = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Analysis Results</CardTitle>
             {results && (
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleDownloadResults}
                 className="flex items-center gap-1 transition-all duration-300"
               >
@@ -270,11 +334,11 @@ const AnalysisPage = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       {results && (
-        <ChatbotButton 
-          analysisContext={results} 
-          taskTitle={taskTitle} 
+        <ChatbotButton
+          analysisContext={results}
+          taskTitle={taskTitle}
           analysisId={analysisId}
         />
       )}
