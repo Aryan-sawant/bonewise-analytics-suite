@@ -231,7 +231,8 @@ const AnalysisPage = () => {
             );
           }
 
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>') }} />;
+          // More comprehensive regex for bold: handles **, __, and whitespace
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/(\*\*|__)\s*([^*_]+?)\s*(\*\*|__)/g, '<b>$2</b>') }} />;
         })}
       </div>
     );
