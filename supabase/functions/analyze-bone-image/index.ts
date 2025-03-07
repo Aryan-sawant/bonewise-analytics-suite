@@ -1,4 +1,3 @@
-
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -31,21 +30,21 @@ serve(async (req) => {
       )
     }
 
-    // Task information lookup
+    // Task information lookup (Task Titles - for descriptions in DB and UI)
     const taskTitles: Record<string, string> = {
       'fracture-detection': 'Bone Fracture Detection',
       'bone-marrow': 'Bone Marrow Cell Classification',
       'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
       'osteoporosis': 'Osteoporosis Stage & BMD Score',
       'bone-age': 'Bone Age Detection',
-      'spine-fracture': 'Cervical Spine Fracture Detection', 
+      'spine-fracture': 'Cervical Spine Fracture Detection',
       'bone-tumor': 'Bone Tumor/Cancer Detection',
       'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
     }
 
     const taskTitle = taskTitles[taskId] || 'Unknown Analysis Type'
 
-    // Define detailed task prompts exactly as provided by the user
+    // Detailed task prompts - EXACTLY as provided by the user - for Gemini instructions
     const taskPrompts: Record<string, Record<string, string>> = {
       'fracture-detection': {
         common: "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. The image will be analyzed to check for fractures, identifying the affected bone and the type of break. You will receive an easy-to-understand explanation of the fracture, including its severity and possible effects on movement, provide nutrition plan, steps to recover like remedies and exercises if required.",
@@ -81,7 +80,7 @@ serve(async (req) => {
       }
     }
 
-    // Initialize Gemini API
+    // Initialize Gemini API - API Key is read from Deno Environment Variables
     const apiKey = Deno.env.get('GEMINI_API_KEY')
     if (!apiKey) {
       return new Response(
@@ -90,32 +89,32 @@ serve(async (req) => {
       )
     }
 
-    // Create the Supabase client
+    // Initialize Supabase Client - for database interactions and storage
     const supabaseUrl = Deno.env.get('SUPABASE_URL') as string
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Call Gemini API to analyze the image
+    // Log task processing - for debugging and monitoring
     console.log(`Processing ${taskId} task with Gemini AI...`)
 
-    // Use the correct model name: gemini-pro-vision with a clear API endpoint
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
+    // Gemini  API Endpoint - Model is explicitly set to 'gemini-2.0-flash-thinking-exp-01-21'
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
-    // Extract the base64 data from the data URI
+    // Data URI to Base64 Conversion - Extracts base64 image data from Data URI format
     let base64Data = image
     if (image.includes('base64,')) {
       base64Data = image.split('base64,')[1]
     }
 
-    // Get the appropriate prompt based on task ID and user type
+    // Prompt Selection - Chooses prompt based on task ID and user type (common/doctor)
     const userCategory = userType === 'doctor' ? 'doctor' : 'common'
     const promptText = taskPrompts[taskId]?.[userCategory] || `Analyze this medical image for ${taskTitle}.`
 
-    // Add instruction for using HTML bold tags instead of markdown
+    // Formatting Instruction - Ensures Gemini uses HTML bold tags in the response
     const formattingInstruction = "Make sure to format important information using HTML <b> tags for bold (not markdown asterisks)."
 
-    // Prepare the request to Gemini
+    // Gemini API Request Payload - Structured request body for Gemini API
     const payload = {
       contents: [
         {
@@ -123,7 +122,7 @@ serve(async (req) => {
             { text: promptText + " " + formattingInstruction },
             {
               inline_data: {
-                mime_type: "image/jpeg",
+                mime_type: "image/jpeg", // Assuming JPEG images for now
                 data: base64Data
               }
             }
@@ -131,14 +130,15 @@ serve(async (req) => {
         }
       ],
       generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 1024,
+        temperature: 0.4, // Lower temperature for more deterministic and focused responses
+        maxOutputTokens: 1024, // Increased maxOutputTokens for potentially longer analysis results
       }
     }
 
-    console.log(`Sending request to Gemini with model: gemini-pro-vision`);
-    
-    // Call the Gemini API
+    // Log API Request Model -  For transparency, logging which model is being called
+    console.log(`Sending request to Gemini with model: gemini-2.0-flash-thinking-exp-01-21`);
+
+    // Gemini API Call -  Fetch request to the Gemini API
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -147,64 +147,69 @@ serve(async (req) => {
       body: JSON.stringify(payload)
     })
 
+    // Gemini API Response Error Handling - Checks for HTTP errors from Gemini API
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Gemini API error:", errorText)
       throw new Error(`Gemini API error: ${response.status} ${errorText}`)
     }
 
+    // Parse Gemini API Response - Parses JSON response from Gemini API
     const data = await response.json()
-    
+
+    // Gemini API No Candidates Check - Checks if Gemini returned any valid candidates in the response
     if (!data.candidates || data.candidates.length === 0) {
       throw new Error("No response generated by the model")
     }
 
-    // Extract the analysis text from the response
+    // Extract Analysis Text - Extracts the text analysis from Gemini's response
     const analysisText = data.candidates[0].content.parts[0].text
-    
-    // Store the analysis in the database if userId is provided
+
+    // Initialize Storage Variables - Variables to store image URL and analysis ID
     let imageUrl = null
     let analysisId = null
-    
+
+    // Database Storage - Stores analysis results, image (optionally) in Supabase
     if (userId && analysisText) {
       try {
-        // First, let's try to store the image in storage if it exists
+        // Image Storage in Supabase Storage (Conditional) - Stores image in Supabase Storage if image data is available
         if (image) {
-          // Check if storage bucket exists, create if not
+          // Bucket Existence Check - Checks if the storage bucket exists, creates it if not
           const { data: buckets } = await supabase.storage.listBuckets()
           const bucketName = 'bone-analysis-images'
-          
+
           if (!buckets?.find(b => b.name === bucketName)) {
             await supabase.storage.createBucket(bucketName, {
-              public: false,
-              fileSizeLimit: 5242880 // 5MB
+              public: false, // Bucket is private for security
+              fileSizeLimit: 5242880 // 5MB file size limit
             })
           }
-          
-          // Create a unique file name
+
+          // Unique File Name Generation - Creates a unique file name to avoid collisions
           const fileName = `${userId}/${taskId}/${Date.now()}.jpg`
-          
-          // Upload the image
+
+          // Image Upload to Supabase Storage - Uploads the base64 image data to Supabase Storage
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from(bucketName)
             .upload(fileName, Buffer.from(base64Data, 'base64'), {
               contentType: 'image/jpeg',
-              upsert: true
+              upsert: true // Overwrites file if it already exists (for updates if needed)
             })
-            
+
+          // Image Upload Error Handling - Handles errors during image upload to Supabase Storage
           if (uploadError) {
             console.error("Error uploading image:", uploadError)
           } else if (uploadData) {
-            // Get the public URL
+            // Public URL Retrieval - Gets the public URL of the uploaded image from Supabase Storage
             const { data: publicUrlData } = supabase.storage
               .from(bucketName)
               .getPublicUrl(fileName)
-              
-            imageUrl = publicUrlData?.publicUrl || null
+
+            imageUrl = publicUrlData?.publicUrl || null // Assigns public URL if available
           }
         }
-        
-        // Now store the analysis data
+
+        // Analysis Data Insertion to Supabase DB - Stores analysis metadata and results in 'analyses' table
         const { data: analysisData, error: insertError } = await supabase
           .from('analyses')
           .insert({
@@ -214,22 +219,23 @@ serve(async (req) => {
             result_text: analysisText,
             image_url: imageUrl
           })
-          .select()
-        
+          .select() // Select data after insert to get the new analysis ID
+
+        // Analysis Data Insertion Error Handling - Handles errors during analysis data insertion
         if (insertError) {
           console.error("Error storing analysis:", insertError)
         } else if (analysisData && analysisData.length > 0) {
-          analysisId = analysisData[0].id
+          analysisId = analysisData[0].id // Extracts the newly created analysis ID
           console.log("Analysis stored successfully with ID:", analysisId)
         }
       } catch (storageError) {
-        console.error("Error in storage process:", storageError)
+        console.error("Error in storage process:", storageError) // Catches any errors during storage operations
       }
     }
 
-    // Return the analysis result
+    // Return Analysis Result - Returns the analysis text, analysis ID, and image URL in the HTTP response
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         analysis: analysisText,
         analysisId,
         imageUrl
@@ -238,7 +244,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error("Error processing image:", error)
+    console.error("Error processing image:", error) // General error handler for the entire function
     return new Response(
       JSON.stringify({ error: `Failed to process the image: ${error.message}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
