@@ -198,10 +198,14 @@ serve(async (req) => {
           // Unique File Name Generation - Creates a unique file name to avoid collisions
           const fileName = `${userId}/${taskId}/${Date.now()}.jpg`
 
-          // Image Upload to Supabase Storage - Uploads the base64 image data to Supabase Storage
+          // Image Upload to Supabase Storage - Uploads the image using Deno-compatible method
+          const base64ImageData = image.split('base64,')[1];
+          const imageBuffer = Uint8Array.from(atob(base64ImageData), c => c.charCodeAt(0));
+
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from(bucketName)
-            .upload(fileName, Buffer.from(base64Data, 'base64'), {
+            .upload(fileName, imageBuffer, {  // Use imageBuffer (Uint8Array) here
               contentType: 'image/jpeg',
               upsert: true // Overwrites file if it already exists (for updates if needed)
             })
