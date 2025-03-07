@@ -208,7 +208,10 @@ const AnalysisPage = () => {
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
 
-    const paragraphs = resultsText.split(/\n\n+/);
+    // Remove code blocks
+    const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
+
+    const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
     return (
       <div className="space-y-4 leading-relaxed">
         {paragraphs.map((para, index) => {
@@ -228,11 +231,12 @@ const AnalysisPage = () => {
             );
           }
 
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>') }} />; // Modified line
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>') }} />;
         })}
       </div>
     );
   };
+
 
   return (
     <div className="container mx-auto px-4 py-12 animate-fade-in">
