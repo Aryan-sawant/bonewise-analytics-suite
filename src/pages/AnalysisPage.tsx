@@ -203,8 +203,7 @@ const AnalysisPage = () => {
 
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
-  const taskPrompt = task_prompts[taskId] || 'Detailed instructions for this analysis type are not available.';
-
+  // const taskPrompt = task_prompts[taskId] || 'Detailed instructions for this analysis type are not available.'; // Removed from frontend
 
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
@@ -268,10 +267,11 @@ const AnalysisPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">{taskGuidance}</p>
-            <div className="mb-4 p-3 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            {/* Removed prompt display from frontend */}
+            {/* <div className="mb-4 p-3 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Analysis Task Prompt:</p>
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{taskPrompt}</p>
-            </div>
+            </div> */}
 
             <ImageUpload
               onImageSelected={handleImageUpload}
