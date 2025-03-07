@@ -45,6 +45,42 @@ serve(async (req) => {
 
     const taskTitle = taskTitles[taskId] || 'Unknown Analysis Type'
 
+    // Define detailed task prompts
+    const taskPrompts: Record<string, Record<string, string>> = {
+      'fracture-detection': {
+        common: "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. The image will be analyzed to check for fractures, identifying the affected bone and the type of break. You will receive an easy-to-understand explanation of the fracture, including its severity and possible effects on movement, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. Suggest medical treatment options, possible surgeries, immobilization techniques, and follow-up care strategies, provide nutrition plan, steps to recover like remedies and exercises if required."
+      },
+      'bone-marrow': {
+        common: "Analyze the biopsy or MRI image and classify bone marrow cells into relevant categories, identifying concerning cells. The image will be analyzed to check for abnormalities in bone marrow cells. You will receive a simple explanation of the findings, including whether there are unusual cell changes and what they might indicate, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the biopsy or MRI image and classify bone marrow cells into relevant categories, identifying concerning cells. Provide detailed insights into abnormal cell structures, possible diagnoses, and recommended medical interventions, provide nutrition plan, steps to recover like remedies and exercises if required."
+      },
+      'osteoarthritis': {
+        common: "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading. The image will be assessed for signs of knee osteoarthritis, including joint space narrowing and bone changes. You will get an easy-to-understand report on whether osteoarthritis is present and its severity level, along with its impact on knee function, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading. Suggest advanced treatments, medications, physiotherapy plans, and surgical options such as knee replacement, provide nutrition plan, steps to recover like remedies and exercises if required."
+      },
+      'osteoporosis': {
+        common: "Analyze the bone X-ray and determine osteoporosis stage with estimated Bone Mineral Density (BMD) score. The scan will be analyzed to determine how strong or weak the bones are and whether osteoporosis is present. You will receive a simple explanation of the results, including whether bone density is lower than normal and what it means for bone health, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the bone X-ray and determine osteoporosis stage with estimated Bone Mineral Density (BMD) score. Recommend specific medications, hormone therapy, and advanced treatments to manage and prevent complications, provide nutrition plan, steps to recover like remedies and exercises if required."
+      },
+      'bone-age': {
+        common: "Analyze the X-ray of a child's hand and predict bone age with insights into growth patterns. The scan will be assessed to check how well the bones are developing compared to the expected growth pattern for the child's age. You will receive an easy-to-understand result explaining whether the bone growth is normal, advanced, or delayed, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the X-ray of a child's hand and predict bone age with insights into growth patterns. Offer insights into growth abnormalities, hormonal imbalances, and necessary medical interventions if delayed growth is detected, provide nutrition plan, steps to recover like remedies and exercises if required."
+      },
+      'spine-fracture': {
+        common: "Analyze the X-ray, MRI, or CT scan of the cervical spine for fractures and provide a severity assessment. The scan will be analyzed for fractures in the neck bones, and you will receive an explanation of the findings. The report will describe whether a fracture is present, its severity, and how it may affect movement or pain levels, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the X-ray, MRI, or CT scan of the cervical spine for fractures and provide a severity assessment. Suggest medical treatment plans, possible surgical options, and rehabilitation strategies for full recovery, provide nutrition plan, steps to recover like remedies and exercises if required."
+      },
+      'bone-tumor': {
+        common: "Analyze the X-ray, MRI, CT scan, or biopsy image for possible bone tumors or cancerous growths. The image will be checked for any unusual growths or masses in the bone, and you will receive a simple explanation of the findings. If any suspicious areas are detected, the report will describe their size, location, and whether they appear concerning, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the X-ray, MRI, CT scan, or biopsy image for possible bone tumors or cancerous growths. Provide detailed insights into tumor classification, possible malignancy assessment, and treatment options, provide nutrition plan, steps to recover like remedies and exercises if required."
+      },
+      'bone-infection': {
+        common: "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). The image will be checked for any signs of infection in the bone, such as swelling, bone damage, or abscess formation. You will receive an easy-to-understand explanation of whether an infection is present and how it may be affecting the bone, provide nutrition plan, steps to recover like remedies and exercises if required.",
+        doctor: "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). Provide insights on infection severity, possible antibiotic treatments, and surgical recommendations if needed, provide nutrition plan, steps to recover like remedies and exercises if required."
+      }
+    }
+
     // Initialize Gemini API
     const apiKey = Deno.env.get('GEMINI_API_KEY')
     if (!apiKey) {
@@ -72,51 +108,19 @@ serve(async (req) => {
       base64Data = image.split('base64,')[1]
     }
 
-    // Create prompt based on task type with specific instructions for different user types
-    let promptText = `Analyze this medical image for ${taskTitle}.\n\n`
+    // Get the appropriate prompt based on task ID and user type
+    const userCategory = userType === 'doctor' ? 'doctor' : 'common'
+    const promptText = taskPrompts[taskId]?.[userCategory] || `Analyze this medical image for ${taskTitle}.`
 
-    if (userType === 'doctor') {
-      promptText += `Provide a detailed professional medical analysis with specific technical terms and measurements appropriate for a healthcare professional. Include likely diagnoses, relevant measurements, and potential clinical implications.`
-    } else {
-      promptText += `Provide a clear, informative analysis in simple terms suitable for a patient. Avoid overly technical language, but ensure the information is accurate and helpful. Include educational content about the condition, if relevant.`
-    }
-
-    // Add task-specific instructions
-    switch (taskId) {
-      case 'fracture-detection':
-        promptText += `\n\nSpecifically, identify any visible fractures, their location, type (e.g., simple, comminuted, spiral), and severity.`
-        break
-      case 'bone-marrow':
-        promptText += `\n\nIdentify and classify visible cell types, assess cell morphology, and note any abnormalities in the bone marrow sample.`
-        break
-      case 'osteoarthritis':
-        promptText += `\n\nAssess joint space narrowing, presence of osteophytes, subchondral sclerosis, and other signs of knee osteoarthritis. If possible, estimate severity (mild, moderate, severe).`
-        break
-      case 'osteoporosis':
-        promptText += `\n\nEvaluate bone mineral density, identify any compression fractures, and assess overall bone quality. If visible, note T-score ranges.`
-        break
-      case 'bone-age':
-        promptText += `\n\nAnalyze skeletal maturity markers to determine approximate bone age. Compare with chronological age if that information is available.`
-        break
-      case 'spine-fracture':
-        promptText += `\n\nIdentify any fractures in the cervical spine, note their location, stability concerns, and if there are any signs of spinal cord involvement.`
-        break
-      case 'bone-tumor':
-        promptText += `\n\nDescribe any visible bone lesions, their characteristics (lytic, blastic, mixed), borders (well-defined vs. infiltrative), and possible differential diagnoses.`
-        break
-      case 'bone-infection':
-        promptText += `\n\nEvaluate for signs of osteomyelitis including periosteal reaction, bone destruction, soft tissue involvement, and sequestrum/involucrum if present.`
-        break
-    }
-
-    promptText += `\n\nFormat your response with clear sections including Summary, Findings, Interpretation, and Recommendations. Use proper headings and make the report look professional.`
+    // Add instructions for formatting
+    const formattingInstructions = "\n\nFormat your response with clear sections including Summary, Findings, Interpretation, and Recommendations. Use proper headings and make the report look professional. Make sure to format important information as bold (using HTML <b> tags instead of markdown asterisks) to highlight key findings. Don't use markdown for bold text, use HTML <b> tags instead."
 
     // Prepare the request to Gemini
     const payload = {
       contents: [
         {
           parts: [
-            { text: promptText },
+            { text: promptText + formattingInstructions },
             {
               inline_data: {
                 mime_type: "image/jpeg",

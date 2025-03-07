@@ -48,7 +48,7 @@ serve(async (req) => {
 
     // Prepare enhanced context with user type
     const enhancedContext = context ? 
-      `${context}\n\nAdditional context: The user asking the question is a ${userType === 'doctor' ? 'healthcare professional (write in technical medical terms)' : 'patient (explain in simple terms that a non-medical person can understand)'}.\n\nUser: ${message}` 
+      `${context}\n\nAdditional context: The user asking the question is a ${userType === 'doctor' ? 'healthcare professional (write in technical medical terms)' : 'patient (explain in simple terms that a non-medical person can understand)'}.\n\nMake sure to format important information using HTML <b> tags for bold (not markdown asterisks).\n\nUser: ${message}` 
       : message;
 
     // Prepare the request to Gemini

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -67,7 +66,6 @@ const AnalysisPage = () => {
     setAnalysisId(null);
     setStoredImageUrl(null);
 
-    // Convert the file to base64 for API transmission
     const reader = new FileReader();
     reader.onloadend = () => {
       setImageBase64(reader.result as string);
@@ -87,13 +85,12 @@ const AnalysisPage = () => {
     try {
       console.log("Sending image for analysis...");
       
-      // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('analyze-bone-image', {
         body: {
           image: imageBase64,
           taskId,
           userType: user.userType === 'doctor' ? 'doctor' : 'common',
-          userId: user.id // Pass the user ID for history recording
+          userId: user.id
         }
       });
 
@@ -109,7 +106,6 @@ const AnalysisPage = () => {
 
       setResults(data.analysis);
       
-      // Set analysis ID and image URL if available
       if (data.analysisId) {
         setAnalysisId(data.analysisId);
       }
@@ -149,36 +145,30 @@ const AnalysisPage = () => {
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
 
-  // Format the results for better visual display
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
     
-    // Split into paragraphs and format
     const paragraphs = resultsText.split(/\n\n+/);
     return (
       <div className="space-y-4 leading-relaxed">
         {paragraphs.map((para, index) => {
-          // Check if this paragraph looks like a heading 
           if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
-            // Extract heading text without the marker
             const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
             return <h3 key={index} className="text-xl font-bold mt-6 first:mt-0 text-primary/90 border-b pb-1">{headingText}</h3>;
           }
           
-          // Check for bullet points
           if (para.includes('• ') || para.includes('- ') || para.includes('* ')) {
             const listItems = para.split(/[•\-*]\s+/).filter(Boolean);
             return (
               <ul key={index} className="list-disc pl-5 space-y-2">
                 {listItems.map((item, i) => (
-                  <li key={i} className="text-gray-800 dark:text-gray-200">{item.trim()}</li>
+                  <li key={i} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: item.trim() }} />
                 ))}
               </ul>
             );
           }
           
-          // Regular paragraph with better typography
-          return <p key={index} className="text-gray-800 dark:text-gray-200">{para}</p>;
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para }} />;
         })}
       </div>
     );
@@ -190,7 +180,7 @@ const AnalysisPage = () => {
         <Button 
           variant="outline" 
           onClick={() => navigate('/tasks')}
-          className="hover-scale"
+          className="hover-scale transition-all duration-300 transform hover:scale-110"
         >
           ← Back to Tasks
         </Button>
@@ -198,7 +188,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/')}
-          className="hover-scale"
+          className="hover-scale transition-all duration-300 transform hover:scale-110"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
@@ -211,7 +201,7 @@ const AnalysisPage = () => {
       </p>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
+        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in transform hover:scale-105">
           <CardHeader>
             <CardTitle>Upload Medical Image</CardTitle>
           </CardHeader>
@@ -228,7 +218,7 @@ const AnalysisPage = () => {
               <Button 
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
-                className="w-full md:w-auto transition-all duration-300 hover:bg-primary/90"
+                className="w-full md:w-auto transition-all duration-300 hover:bg-primary/90 transform hover:scale-110"
               >
                 {analyzing ? (
                   <>
@@ -241,7 +231,7 @@ const AnalysisPage = () => {
           </CardContent>
         </Card>
         
-        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
+        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in transform hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Analysis Results</CardTitle>
             {results && (
@@ -249,7 +239,7 @@ const AnalysisPage = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={handleDownloadResults}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 transition-all duration-300 transform hover:scale-110"
               >
                 <Download size={14} />
                 Download
@@ -280,7 +270,6 @@ const AnalysisPage = () => {
         </Card>
       </div>
       
-      {/* Add chatbot button that uses the analysis context */}
       {results && (
         <ChatbotButton 
           analysisContext={results} 
