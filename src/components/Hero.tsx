@@ -23,6 +23,16 @@ const Hero = () => {
     {
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="m4.9 4.9 14.2 14.2"></path>
+        </svg>
+      ),
+      title: "Bone Marrow Analysis",
+      description: "Analyze bone marrow cell classifications and distributions"
+    },
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
           <path d="M17 18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12Z"></path>
           <path d="M12 6v10"></path>
           <path d="M10 6v1"></path>
@@ -31,8 +41,8 @@ const Hero = () => {
           <path d="M14 15v1"></path>
         </svg>
       ),
-      title: "Osteoporosis Analysis",
-      description: "Predict osteoporosis stages and calculate bone mineral density"
+      title: "Osteoarthritis Analysis",
+      description: "Predict osteoarthritis stages and calculate bone mineral density"
     },
     {
       icon: (
@@ -40,18 +50,8 @@ const Hero = () => {
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
         </svg>
       ),
-      title: "Medical-Grade Results",
-      description: "Receive detailed analysis with simple explanations for everyone"
-    },
-    {
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="m4.9 4.9 14.2 14.2"></path>
-        </svg>
-      ),
-      title: "Bone Marrow Analysis",
-      description: "Analyze bone marrow cell classifications and distributions"
+      title: "Osteoporosis Analysis",
+      description: "Evaluate bone density and osteoporosis staging"
     },
     {
       icon: (
@@ -74,8 +74,33 @@ const Hero = () => {
           <circle cx="12" cy="12" r="10"></circle>
         </svg>
       ),
+      title: "Spine Fracture Detection",
+      description: "Identify fractures in the cervical spine"
+    },
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="m15 9-6 6"></path>
+          <path d="m9 9 6 6"></path>
+        </svg>
+      ),
       title: "Bone Tumor Detection",
       description: "Identify potential bone tumors and classify their characteristics"
+    },
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+          <path d="M8 2v4"></path>
+          <path d="M16 2v4"></path>
+          <rect width="16" height="16" x="4" y="4" rx="2"></rect>
+          <path d="M10 16H8v-5a2 2 0 1 1 4 0"></path>
+          <path d="M16 11h-2"></path>
+          <path d="M16 16h-2"></path>
+        </svg>
+      ),
+      title: "Bone Infection Detection",
+      description: "Detect signs of osteomyelitis or bone infection"
     }
   ];
 
@@ -129,13 +154,13 @@ const Hero = () => {
         animationDelay: '0.3s'
       }}>
           <Link to="/auth?tab=signup">
-            <Button size="lg" className="gap-2 px-6 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300">
+            <Button size="lg" className="gap-2 px-6 transition-all duration-300">
               Get Started
               <ArrowRight size={16} />
             </Button>
           </Link>
           <Link to="/auth">
-            <Button variant="outline" size="lg" className="hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300">
+            <Button variant="outline" size="lg" className="transition-all duration-300">
               Log in
             </Button>
           </Link>
@@ -152,17 +177,12 @@ const Hero = () => {
               {features.map((feature, index) => (
                 <div 
                   key={index}
-                  className={`p-6 min-w-[280px] rounded-xl glass-card backdrop-blur-xs snap-center
-                    hover:shadow-xl transition-all duration-300 transform perspective-800
-                    hover:rotate-y-5 hover:-rotate-x-2 hover:scale-[1.03]
+                  className={`p-6 min-w-[280px] rounded-xl shadow-sm backdrop-blur-xs snap-center transition-all
                     ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border border-transparent'}
                   `}
-                  style={{ 
-                    transformStyle: 'preserve-3d',
-                  }}
                   onClick={() => setActiveFeature(index)}
                 >
-                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto transform hover:translate-z-10">
+                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto">
                     {feature.icon}
                   </div>
                   <h3 className="text-lg font-semibold mb-2 text-center">{feature.title}</h3>

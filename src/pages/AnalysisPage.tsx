@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -180,7 +181,7 @@ const AnalysisPage = () => {
         <Button 
           variant="outline" 
           onClick={() => navigate('/tasks')}
-          className="hover-scale transition-all duration-300 transform hover:scale-110"
+          className="transition-all duration-300"
         >
           ← Back to Tasks
         </Button>
@@ -188,7 +189,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/')}
-          className="hover-scale transition-all duration-300 transform hover:scale-110"
+          className="transition-all duration-300"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
@@ -201,7 +202,7 @@ const AnalysisPage = () => {
       </p>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in transform hover:scale-105">
+        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
           <CardHeader>
             <CardTitle>Upload Medical Image</CardTitle>
           </CardHeader>
@@ -218,7 +219,7 @@ const AnalysisPage = () => {
               <Button 
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
-                className="w-full md:w-auto transition-all duration-300 hover:bg-primary/90 transform hover:scale-110"
+                className="w-full md:w-auto transition-all duration-300"
               >
                 {analyzing ? (
                   <>
@@ -231,7 +232,7 @@ const AnalysisPage = () => {
           </CardContent>
         </Card>
         
-        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in transform hover:scale-105">
+        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Analysis Results</CardTitle>
             {results && (
@@ -239,7 +240,7 @@ const AnalysisPage = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={handleDownloadResults}
-                className="flex items-center gap-1 transition-all duration-300 transform hover:scale-110"
+                className="flex items-center gap-1 transition-all duration-300"
               >
                 <Download size={14} />
                 Download

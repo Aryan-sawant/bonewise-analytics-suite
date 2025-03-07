@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const taskTitle = taskTitles[taskId] || 'Unknown Analysis Type'
 
-    // Define detailed task prompts
+    // Define detailed task prompts exactly as provided by the user
     const taskPrompts: Record<string, Record<string, string>> = {
       'fracture-detection': {
         common: "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. The image will be analyzed to check for fractures, identifying the affected bone and the type of break. You will receive an easy-to-understand explanation of the fracture, including its severity and possible effects on movement, provide nutrition plan, steps to recover like remedies and exercises if required.",
@@ -98,8 +98,8 @@ serve(async (req) => {
     // Call Gemini API to analyze the image
     console.log(`Processing ${taskId} task with Gemini AI...`)
 
-    // Use the correct model name: gemini-2.0-flash-thinking-exp-01-21
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent"
+    // Use the correct model name: gemini-pro-vision with a clear API endpoint
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Extract the base64 data from the data URI
@@ -112,15 +112,15 @@ serve(async (req) => {
     const userCategory = userType === 'doctor' ? 'doctor' : 'common'
     const promptText = taskPrompts[taskId]?.[userCategory] || `Analyze this medical image for ${taskTitle}.`
 
-    // Add instructions for formatting
-    const formattingInstructions = "\n\nFormat your response with clear sections including Summary, Findings, Interpretation, and Recommendations. Use proper headings and make the report look professional. Make sure to format important information as bold (using HTML <b> tags instead of markdown asterisks) to highlight key findings. Don't use markdown for bold text, use HTML <b> tags instead."
+    // Add instruction for using HTML bold tags instead of markdown
+    const formattingInstruction = "Make sure to format important information using HTML <b> tags for bold (not markdown asterisks)."
 
     // Prepare the request to Gemini
     const payload = {
       contents: [
         {
           parts: [
-            { text: promptText + formattingInstructions },
+            { text: promptText + " " + formattingInstruction },
             {
               inline_data: {
                 mime_type: "image/jpeg",
@@ -136,7 +136,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Sending request to Gemini with model: gemini-2.0-flash-thinking-exp-01-21`);
+    console.log(`Sending request to Gemini with model: gemini-pro-vision`);
     
     // Call the Gemini API
     const response = await fetch(url, {
