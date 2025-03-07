@@ -1,7 +1,6 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +14,7 @@ serve(async (req) => {
   }
 
   try {
+    // Parse the request body
     const { message, context, userType, userId, analysisId } = await req.json()
 
     if (!message) {
@@ -33,43 +33,33 @@ serve(async (req) => {
       )
     }
 
-    // Create the Supabase client if we need to store the interaction
-    const supabase = userId && analysisId ? createClient(
-      Deno.env.get('SUPABASE_URL') as string,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
-    ) : null;
+    console.log(`Processing chat message with Gemini...`)
 
-    // Call Gemini API
-    console.log(`Processing chat request with Gemini AI...`)
-
-    // Use the correct model: gemini-2.0-flash-thinking-exp-01-21
+    // Use the specified model "gemini-2.0-flash-thinking-exp-01-21"
     const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
-    // Prepare enhanced context with user type
-    const enhancedContext = context ? 
-      `${context}\n\nAdditional context: The user asking the question is a ${userType === 'doctor' ? 'healthcare professional (write in technical medical terms)' : 'patient (explain in simple terms that a non-medical person can understand)'}.\n\nMake sure to format important information using HTML <b> tags for bold (not markdown asterisks).\n\nUser: ${message}` 
-      : message;
+    // Prepare the message context
+    const userPrompt = message
+    const systemContext = context || "You are a professional bone health assistant. Be concise, accurate, and professional in your responses."
 
-    // Prepare the request to Gemini
+    // Prepare the request payload
     const payload = {
       contents: [
         {
           parts: [
-            { 
-              text: enhancedContext
-            }
+            { text: systemContext + "\n\nUser message: " + userPrompt }
           ]
         }
       ],
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.2,
         maxOutputTokens: 800,
       }
     }
 
-    console.log(`Sending request to Gemini with model: gemini-2.0-flash-thinking-exp-01-21`);
-
+    console.log("Sending request to Gemini")
+    
     // Call the Gemini API
     const response = await fetch(url, {
       method: "POST",
@@ -92,40 +82,21 @@ serve(async (req) => {
     }
 
     // Extract the response text
-    const aiResponse = data.candidates[0].content.parts[0].text
-    
-    // Store the chat interaction if we have user ID and analysis ID
-    if (userId && analysisId && supabase) {
-      try {
-        const { data: chatData, error: insertError } = await supabase
-          .from('chat_interactions')
-          .insert({
-            user_id: userId,
-            analysis_id: analysisId,
-            user_message: message,
-            ai_response: aiResponse
-          })
-        
-        if (insertError) {
-          console.error("Error storing chat interaction:", insertError)
-        } else {
-          console.log("Chat interaction stored successfully")
-        }
-      } catch (storageError) {
-        console.error("Error storing chat:", storageError)
-      }
-    }
+    const responseText = data.candidates[0].content.parts[0].text
 
-    // Return the AI response
+    // Store the chat interaction in the database if userId is provided
+    // This could be implemented in a future update
+
+    // Return the response
     return new Response(
-      JSON.stringify({ response: aiResponse }),
+      JSON.stringify({ response: responseText }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     console.error("Error processing chat:", error)
     return new Response(
-      JSON.stringify({ error: `Failed to process the chat: ${error.message}` }),
+      JSON.stringify({ error: `Failed to process the message: ${error.message}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

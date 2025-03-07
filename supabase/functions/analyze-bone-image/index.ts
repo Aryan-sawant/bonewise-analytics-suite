@@ -96,10 +96,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Call Gemini API to analyze the image
-    console.log(`Processing ${taskId} task with Gemini AI...`)
+    console.log(`Processing ${taskId} task with specified Gemini 2.0 Flash model...`)
 
-    // Use the correct model name: gemini-pro-vision with a clear API endpoint
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
+    // Use the specified model name
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Extract the base64 data from the data URI
@@ -136,7 +136,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Sending request to Gemini with model: gemini-pro-vision`);
+    console.log(`Sending request to Gemini with model: gemini-2.0-flash-thinking-exp-01-21`);
     
     // Call the Gemini API
     const response = await fetch(url, {

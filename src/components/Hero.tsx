@@ -6,7 +6,10 @@ import { useEffect, useRef, useState } from 'react';
 
 const Hero = () => {
   const [activeFeature, setActiveFeature] = useState(0);
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const featuresRef = useRef<HTMLDivElement>(null);
+  
+  const textOptions = ["Artificial Intelligence", "Assistance Intelligence"];
   
   const features = [
     {
@@ -113,6 +116,15 @@ const Hero = () => {
     return () => clearInterval(interval);
   }, [features.length]);
 
+  // Alternate the text every 3 seconds
+  useEffect(() => {
+    const textInterval = setInterval(() => {
+      setCurrentTextIndex((prevIndex) => (prevIndex + 1) % textOptions.length);
+    }, 3000);
+    
+    return () => clearInterval(textInterval);
+  }, []);
+
   // Scroll to active feature
   useEffect(() => {
     if (featuresRef.current) {
@@ -139,20 +151,32 @@ const Hero = () => {
         </div>
         
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{
-        animationDelay: '0.1s'
-      }}>
-          Advanced Bone Analysis with Artificial Intelligence
+          animationDelay: '0.1s'
+        }}>
+          Advanced Bone Analysis with{' '}
+          <span className="relative inline-block overflow-hidden h-[calc(1.2em)]">
+            <span 
+              className={`absolute transition-transform duration-500 ${currentTextIndex === 0 ? 'translate-y-0' : '-translate-y-full'}`}
+            >
+              Artificial Intelligence
+            </span>
+            <span 
+              className={`absolute transition-transform duration-500 ${currentTextIndex === 1 ? 'translate-y-0' : 'translate-y-full'}`}
+            >
+              Assistance Intelligence
+            </span>
+          </span>
         </h1>
         
         <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up" style={{
-        animationDelay: '0.2s'
-      }}>
+          animationDelay: '0.2s'
+        }}>
           BoneHealthAI provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{
-        animationDelay: '0.3s'
-      }}>
+          animationDelay: '0.3s'
+        }}>
           <Link to="/auth?tab=signup">
             <Button size="lg" className="gap-2 px-6 transition-all duration-300">
               Get Started
