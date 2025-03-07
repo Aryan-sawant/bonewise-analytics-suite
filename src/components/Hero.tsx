@@ -147,7 +147,7 @@ return (
     <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up" style={{
     animationDelay: '0.2s'
   }}>
-      BoneHealthAI provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.
+      BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.
     </p>
     
     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{
