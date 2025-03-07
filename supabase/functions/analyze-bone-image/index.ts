@@ -172,6 +172,9 @@ serve(async (req) => {
     // Extract Analysis Text - Extracts the text analysis from Gemini's response
     const analysisText = data.candidates[0].content.parts[0].text
 
+    // **IMPORTANT LOGGING FOR DEBUGGING TRUNCATION - PLEASE PROVIDE THESE LOGS**
+    console.log("Full Gemini analysisText (before DB storage):", analysisText);
+
     // Initialize Storage Variables - Variables to store image URL and analysis ID
     let imageUrl = null
     let analysisId = null
