@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -33,34 +32,34 @@ const AnalysisHistory = () => {
   const [chatInteractions, setChatInteractions] = useState<Record<string, ChatInteraction[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    
+
     fetchAnalyses();
   }, [user, navigate]);
-  
+
   const fetchAnalyses = async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase
         .from('analyses')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-        
+
       if (error) {
         throw error;
       }
-      
+
       setAnalyses(data || []);
-      
+
       if (data && data.length > 0) {
         setSelectedAnalysis(data[0].id);
         await fetchChatInteractions(data[0].id);
@@ -72,10 +71,10 @@ const AnalysisHistory = () => {
       setLoading(false);
     }
   };
-  
+
   const fetchChatInteractions = async (analysisId: string) => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('chat_interactions')
@@ -83,11 +82,11 @@ const AnalysisHistory = () => {
         .eq('analysis_id', analysisId)
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
-        
+
       if (error) {
         throw error;
       }
-      
+
       setChatInteractions(prev => ({
         ...prev,
         [analysisId]: data || []
@@ -96,67 +95,66 @@ const AnalysisHistory = () => {
       console.error('Error fetching chat interactions:', error);
     }
   };
-  
+
   const handleSelectAnalysis = async (analysisId: string) => {
     setSelectedAnalysis(analysisId);
-    
+
     if (!chatInteractions[analysisId]) {
       await fetchChatInteractions(analysisId);
     }
   };
-  
+
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
-    
-    // Split into paragraphs and format
-    const paragraphs = resultsText.split(/\n\n+/);
+
+    // Remove code blocks
+    const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
+
+    const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 leading-relaxed">
         {paragraphs.map((para, index) => {
-          // Check if this paragraph looks like a heading (short and followed by a paragraph)
-          const isHeading = para.length < 50 && !para.includes('.') && paragraphs[index + 1];
-          
-          if (isHeading) {
-            return <h3 key={index} className="text-lg font-bold mt-6 first:mt-0">{para}</h3>;
+          if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
+            const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
+            return <h3 key={index} className="text-xl font-bold mt-6 first:mt-0 text-primary/90 border-b pb-1">{headingText}</h3>;
           }
-          
-          // Check for bullet points
-          if (para.includes('• ') || para.includes('- ')) {
-            const listItems = para.split(/[•\-]\s+/).filter(Boolean);
+
+          if (para.includes('• ') || para.includes('- ') || para.includes('* ')) {
+            const listItems = para.split(/[•\-*]\s+/).filter(Boolean);
             return (
-              <ul key={index} className="list-disc pl-5 space-y-1">
+              <ul key={index} className="list-disc pl-5 space-y-2">
                 {listItems.map((item, i) => (
-                  <li key={i}>{item.trim()}</li>
+                  <li key={i} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: item.trim() }} />
                 ))}
               </ul>
             );
           }
-          
-          // Regular paragraph
-          return <p key={index}>{para}</p>;
+
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>') }} />;
         })}
       </div>
     );
   };
-  
+
+
   const getAnalysisById = (id: string | null) => {
     if (!id) return null;
     return analyses.find(analysis => analysis.id === id) || null;
   };
-  
+
   const selectedAnalysisData = getAnalysisById(selectedAnalysis);
-  
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="flex justify-between items-center mb-6">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => navigate('/tasks')}
           className="hover-scale"
         >
           ← Back to Dashboard
         </Button>
-        
+
         <Button
           variant="outline"
           onClick={() => navigate('/')}
@@ -166,12 +164,12 @@ const AnalysisHistory = () => {
           Home
         </Button>
       </div>
-      
+
       <h1 className="text-3xl font-bold mb-2">Analysis History</h1>
       <p className="text-muted-foreground mb-8">
         View your past bone health analyses and chatbot interactions
       </p>
-      
+
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -182,7 +180,7 @@ const AnalysisHistory = () => {
             <Clock className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-medium mb-2">No Analysis History</h3>
             <p className="text-muted-foreground mb-6 text-center max-w-md">
-              You haven't performed any bone health analyses yet. 
+              You haven't performed any bone health analyses yet.
               Start by analyzing an image to build your history.
             </p>
             <Button onClick={() => navigate('/bone-analysis')}>
@@ -200,11 +198,11 @@ const AnalysisHistory = () => {
             <CardContent>
               <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
                 {analyses.map((analysis) => (
-                  <div 
-                    key={analysis.id} 
+                  <div
+                    key={analysis.id}
                     className={`p-3 rounded-md cursor-pointer transition-colors ${
-                      selectedAnalysis === analysis.id 
-                        ? 'bg-primary text-primary-foreground' 
+                      selectedAnalysis === analysis.id
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-muted hover:bg-muted/80'
                     }`}
                     onClick={() => handleSelectAnalysis(analysis.id)}
@@ -218,7 +216,7 @@ const AnalysisHistory = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="col-span-1 lg:col-span-2 border shadow-sm">
             <CardHeader>
               <CardTitle>
@@ -232,7 +230,7 @@ const AnalysisHistory = () => {
                     <TabsTrigger value="results">Analysis Results</TabsTrigger>
                     <TabsTrigger value="chat">Chat History</TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="results" className="space-y-4">
                     {selectedAnalysisData.result_text ? (
                       <div className="prose dark:prose-invert max-w-none">
@@ -241,21 +239,21 @@ const AnalysisHistory = () => {
                     ) : (
                       <p className="text-muted-foreground">No analysis results available</p>
                     )}
-                    
+
                     {selectedAnalysisData.image_url && (
                       <div className="mt-6 border rounded p-4">
                         <h3 className="font-medium mb-2">Analyzed Image</h3>
                         <div className="flex justify-center">
-                          <img 
-                            src={selectedAnalysisData.image_url} 
-                            alt="Analyzed bone" 
+                          <img
+                            src={selectedAnalysisData.image_url}
+                            alt="Analyzed bone"
                             className="max-h-64 object-contain"
                           />
                         </div>
                       </div>
                     )}
                   </TabsContent>
-                  
+
                   <TabsContent value="chat">
                     {chatInteractions[selectedAnalysisData.id]?.length > 0 ? (
                       <div className="space-y-4">
