@@ -1,13 +1,29 @@
-
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { motion } from "framer-motion";
 
 const Hero = () => {
   const [activeFeature, setActiveFeature] = useState(0);
   const featuresRef = useRef<HTMLDivElement>(null);
-  
+  const [titleNumber, setTitleNumber] = useState(0);
+  const titles = useMemo(
+    () => ["Assistance Intelligence"],
+    []
+  );
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (titleNumber === titles.length - 1) {
+        setTitleNumber(0);
+      } else {
+        setTitleNumber(titleNumber + 1);
+      }
+    }, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [titleNumber, titles]);
+
   const features = [
     {
       icon: (
@@ -109,7 +125,7 @@ const Hero = () => {
     const interval = setInterval(() => {
       setActiveFeature((prev) => (prev + 1) % features.length);
     }, 3000);
-    
+
     return () => clearInterval(interval);
   }, [features.length]);
 
@@ -129,7 +145,7 @@ const Hero = () => {
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10 bg-gradient-radial from-blue-50 to-background opacity-70"></div>
       <div className="absolute inset-0 -z-10 bg-bone-pattern opacity-5"></div>
-      
+
       {/* Content */}
       <div className="max-w-4xl mx-auto text-center">
         <div className="mb-6 inline-block">
@@ -137,22 +153,46 @@ const Hero = () => {
             AI-Powered Bone Health Analysis
           </span>
         </div>
-        
+
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{
-        animationDelay: '0.1s'
-      }}>
-          Advanced Bone Analysis with Artificial Intelligence
+          animationDelay: '0.1s'
+        }}>
+          Advanced Bone Analysis with
+          <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1">
+             
+            {titles.map((title, index) => (
+              <motion.span
+                key={index}
+                className="absolute font-semibold"
+                initial={{ opacity: 0, y: "-100" }}
+                transition={{ type: "spring", stiffness: 50 }}
+                animate={
+                  titleNumber === index
+                    ? {
+                      y: 0,
+                      opacity: 1,
+                    }
+                    : {
+                      y: titleNumber > index ? -150 : 150,
+                      opacity: 0,
+                    }
+                }
+              >
+                {title}
+              </motion.span>
+            ))}
+          </span>
         </h1>
-        
+
         <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up" style={{
-        animationDelay: '0.2s'
-      }}>
+          animationDelay: '0.2s'
+        }}>
           BoneHealthAI provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.
         </p>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{
-        animationDelay: '0.3s'
-      }}>
+          animationDelay: '0.3s'
+        }}>
           <Link to="/auth?tab=signup">
             <Button size="lg" className="gap-2 px-6 transition-all duration-300">
               Get Started
@@ -165,17 +205,17 @@ const Hero = () => {
             </Button>
           </Link>
         </div>
-        
+
         {/* Features - Now with horizontal scrolling */}
         <div className="mt-20 animate-fade-in-up overflow-hidden" style={{ animationDelay: '0.4s' }}>
-          <div 
+          <div
             ref={featuresRef}
             className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <div className="flex space-x-6 px-4">
               {features.map((feature, index) => (
-                <div 
+                <div
                   key={index}
                   className={`p-6 min-w-[280px] rounded-xl shadow-sm backdrop-blur-xs snap-center transition-all
                     ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border border-transparent'}
@@ -193,13 +233,13 @@ const Hero = () => {
               ))}
             </div>
           </div>
-          
+
           {/* Navigation dots */}
           <div className="flex justify-center space-x-2 mt-4">
             {features.map((_, index) => (
               <button
                 key={index}
-                className={`w-2 h-2 rounded-full transition-all duration-300 
+                className={`w-2 h-2 rounded-full transition-all duration-300
                   ${activeFeature === index ? 'bg-primary w-4' : 'bg-primary/30'}`}
                 onClick={() => setActiveFeature(index)}
                 aria-label={`View feature ${index + 1}`}
