@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download } from 'lucide-react';
+import { Loader2, Home, Download, Maximize, Minimize } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 
 const task_prompts = {
@@ -102,6 +102,7 @@ const AnalysisPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null);
+  const [isResultsMaximized, setIsResultsMaximized] = useState(false); // State for maximize
 
   useEffect(() => {
     if (!user) {
@@ -203,7 +204,6 @@ const AnalysisPage = () => {
 
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
-  // const taskPrompt = task_prompts[taskId] || 'Detailed instructions for this analysis type are not available.'; // Removed from frontend
 
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
@@ -267,12 +267,6 @@ const AnalysisPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">{taskGuidance}</p>
-            {/* Removed prompt display from frontend */}
-            {/* <div className="mb-4 p-3 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Analysis Task Prompt:</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{taskPrompt}</p>
-            </div> */}
-
             <ImageUpload
               onImageSelected={handleImageUpload}
               imageUrl={imageUrl}
@@ -296,22 +290,32 @@ const AnalysisPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="border transition-all duration-300 hover:shadow-md animate-fade-in">
+        <Card className={`border transition-all duration-300 hover:shadow-md animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : ''}`}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Analysis Results</CardTitle>
-            {results && (
+            <div className="flex items-center space-x-2">
+              {results && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadResults}
+                  className="flex items-center gap-1 transition-all duration-300"
+                >
+                  <Download size={14} />
+                  Download
+                </Button>
+              )}
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={handleDownloadResults}
-                className="flex items-center gap-1 transition-all duration-300"
+                onClick={() => setIsResultsMaximized(!isResultsMaximized)}
+                className="transition-all duration-300"
               >
-                <Download size={14} />
-                Download
+                {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
               </Button>
-            )}
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className={isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''}>
             {results ? (
               <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif">
                 {formatResults(results)}
