@@ -29,49 +29,49 @@ const TaskSelector = () => {
     {
       id: 'fracture-detection',
       title: 'Bone Fracture Detection',
-      description: 'AI detects fractures in bones from X-ray images, aiding diagnosis.',
+      description: 'Detect fractures in bones using X-ray images.',
       icon: <Bone className="h-10 w-10 text-primary" />,
     },
     {
       id: 'bone-marrow',
-      title: 'Bone Marrow Analysis',
-      description: 'Classifies bone marrow cells from microscope images, assisting in hematology.',
+      title: 'Bone Marrow Cell Classification',
+      description: 'Analyze bone marrow cells from microscope images.',
       icon: <Microscope className="h-10 w-10 text-primary" />,
     },
     {
       id: 'osteoarthritis',
-      title: 'Knee Osteoarthritis Check',
-      description: 'Evaluates knee osteoarthritis severity from X-rays or MRIs for joint health.',
+      title: 'Knee Joint Osteoarthritis',
+      description: 'Assess knee joint osteoarthritis from X-ray or MRI.',
       icon: <ActivitySquare className="h-10 w-10 text-primary" />,
     },
     {
       id: 'osteoporosis',
-      title: 'Osteoporosis Risk Assessment',
-      description: 'Determines osteoporosis stage and BMD score from bone scans for bone strength.',
+      title: 'Osteoporosis Stage & BMD Score',
+      description: 'Evaluate bone density and osteoporosis staging.',
       icon: <BarChart4 className="h-10 w-10 text-primary" />,
     },
     {
       id: 'bone-age',
-      title: 'Pediatric Bone Age Detection',
-      description: 'Predicts bone age from hand X-rays, crucial for monitoring child growth.',
+      title: 'Bone Age Detection',
+      description: 'Determine bone age from hand X-ray images.',
       icon: <CalendarDays className="h-10 w-10 text-primary" />,
     },
     {
       id: 'spine-fracture',
-      title: 'Cervical Fracture Scan',
-      description: 'Identifies fractures in the cervical spine from medical imaging for trauma cases.',
+      title: 'Cervical Spine Fracture Detection',
+      description: 'Detect fractures in the cervical spine.',
       icon: <Spline className="h-10 w-10 text-primary" />,
     },
     {
       id: 'bone-tumor',
-      title: 'Bone Tumor Screening',
-      description: 'Screens for bone tumors or cancerous growths from various imaging modalities.',
+      title: 'Bone Tumor/Cancer Detection',
+      description: 'Identify potential bone tumors or cancerous lesions.',
       icon: <Skull className="h-10 w-10 text-primary" />,
     },
     {
       id: 'bone-infection',
-      title: 'Osteomyelitis Detection',
-      description: 'Detects bone infections (osteomyelitis) using imaging and biopsy analysis.',
+      title: 'Bone Infection Detection',
+      description: 'Detect signs of osteomyelitis or bone infections.',
       icon: <FlaskConical className="h-10 w-10 text-primary" />,
     },
   ];
@@ -87,34 +87,30 @@ const TaskSelector = () => {
       <Button
         variant="outline"
         onClick={() => navigate('/tasks')}
-        className="mb-8 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+        className="mb-6 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // 3D Hover to Back Button
       >
-        ← Back to Dashboard
+        ← Back to Tasks
       </Button>
 
-      <div className="mb-10">
-        <h1 className="text-4xl font-extrabold tracking-tight animate-slide-in mb-3" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.1)', color: 'black' }}> {/* Removed Emoji and Set Color to Black */}
-          AI-Powered Medical Image Analysis
-        </h1>
-        <p className="text-muted-foreground text-lg animate-fade-in">
-          Select the type of bone health analysis you wish to perform. Each option utilizes advanced AI for accurate results.
-        </p>
-      </div>
+      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground">Select Analysis Type</h1>
+      <p className="text-muted-foreground mb-8 animate-fade-in">
+        Choose the type of bone health analysis you would like to perform
+      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {analysisOptions.map((option) => (
-          <Card key={option.id} className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg border-primary-foreground/10 bg-primary text-primary-foreground"> {/* Set bg-primary for blue background */}
-            <CardHeader className="pb-2">
-              <div className="mb-3">{option.icon}</div>
-              <CardTitle className="text-lg font-semibold">{option.title}</CardTitle>
-              <CardDescription className="text-sm text-primary-foreground/80 mt-2">{option.description}</CardDescription> {/* Changed description color to text-primary-foreground/80 for better contrast on blue */}
+          <Card key={option.id} className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg"> {/* 3D Hover to Card */}
+            <CardHeader>
+              <div className="mb-4">{option.icon}</div>
+              <CardTitle className="font-semibold">{option.title}</CardTitle>
+              <CardDescription className="text-muted-foreground text-sm">{option.description}</CardDescription>
             </CardHeader>
-            <CardFooter className="pt-4">
+            <CardFooter>
               <Button
-                className="w-full rounded-md transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105"
+                className="w-full transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // 3D Hover to Select Button
                 onClick={() => handleAnalysisSelect(option.id)}
               >
-                Analyze Now
+                Select
               </Button>
             </CardFooter>
           </Card>
