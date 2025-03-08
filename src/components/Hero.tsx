@@ -17,14 +17,14 @@ icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 
 title: "Fracture Detection",
 description: "Identify bone fractures from X-ray images with high accuracy"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <circle cx="12" cy="12" r="10"></circle>
 <path d="m4.9 4.9 14.2 14.2"></path>
 </svg>,
 title: "Bone Marrow Analysis",
 description: "Analyze bone marrow cell classifications and distributions"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="M17 18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12Z"></path>
 <path d="M12 6v10"></path>
 <path d="M10 6v1"></path>
@@ -113,9 +113,10 @@ return (
         </div>
 
         <h1 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4 animate-fade-in-up" style={{ // Reduced mt-4 and font size slightly
-        animationDelay: '0.1s'
+        animationDelay: '0.1s',
+        whiteSpace: 'pre-line' // Added whiteSpace: 'pre-line'
       }}>
-          Advanced Bone Analysis with <br className="sm:hidden" /> Artificial Intelligence {/* Line break here, hidden on small screens */}
+          Advanced Bone Analysis with{`\n`}Artificial Intelligence {/* Line break using newline character */}
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{ // Reduced mb-8
