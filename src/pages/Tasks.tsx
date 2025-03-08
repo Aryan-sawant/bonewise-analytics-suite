@@ -141,7 +141,7 @@ const Tasks = () => {
     <div className="container mx-auto px-4 py-12 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary-foreground" style={{ color: 'black' }}>Dashboard</h1> {/* Explicitly set color to white */}
+          <h1 className="text-3xl font-bold text-primary-foreground animate-slide-in" style={{ color: 'black' }}>Dashboard</h1> {/* Explicitly set color to white and Added Animation */}
           <p className="text-muted-foreground animate-fade-in">Manage your tasks and bone health analyses</p>
         </div>
         <div className="flex gap-3">
@@ -167,7 +167,7 @@ const Tasks = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="bg-primary text-primary-foreground transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg">
+        <Card className="bg-primary text-primary-foreground transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in"> {/* Added animate-fade-in */}
           <CardHeader>
             <CardTitle className="text-xl font-semibold">Bone Health</CardTitle>
           </CardHeader>
@@ -183,7 +183,7 @@ const Tasks = () => {
           </CardFooter>
         </Card>
 
-        <Card className="bg-primary text-primary-foreground transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg">
+        <Card className="bg-primary text-primary-foreground transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in"> {/* Added animate-fade-in */}
           <CardHeader>
             <CardTitle className="text-xl font-semibold">Recent Activities</CardTitle>
           </CardHeader>
@@ -214,7 +214,7 @@ const Tasks = () => {
           </CardFooter>
         </Card>
 
-        <Card className="bg-primary text-primary-foreground transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg">
+        <Card className="bg-primary text-primary-foreground transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in"> {/* Added animate-fade-in */}
           <CardHeader>
             <CardTitle className="text-xl font-semibold">My Account</CardTitle>
           </CardHeader>
