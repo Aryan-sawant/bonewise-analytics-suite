@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize } from 'lucide-react';
+import { Loader2, Home, Download, Maximize, Minimize, Eye } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 
 const task_prompts = {
@@ -102,7 +102,8 @@ const AnalysisPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null);
-  const [isResultsMaximized, setIsResultsMaximized] = useState(false); // State for maximize
+  const [isResultsMaximized, setIsResultsMaximized] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false); // State for image modal
 
   useEffect(() => {
     if (!user) {
@@ -125,6 +126,7 @@ const AnalysisPage = () => {
     setError(null);
     setAnalysisId(null);
     setStoredImageUrl(null);
+    setIsImageModalOpen(false); // Close image modal on new upload
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -199,6 +201,15 @@ const AnalysisPage = () => {
     link.click();
     document.body.removeChild(link);
   };
+
+  const openImageModal = () => {
+    setIsImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setIsImageModalOpen(false);
+  };
+
 
   if (!taskId || !user) return null;
 
@@ -278,7 +289,17 @@ const AnalysisPage = () => {
               isLoading={analyzing}
             />
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-between">
+              {imageUrl && (
+                <Button
+                  variant="secondary"
+                  onClick={openImageModal}
+                  className="mr-2 transition-all duration-300"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Image
+                </Button>
+              )}
               <Button
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
@@ -350,6 +371,23 @@ const AnalysisPage = () => {
           taskTitle={taskTitle}
           analysisId={analysisId}
         />
+      )}
+
+      {/* Image Modal */}
+      {isImageModalOpen && imageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative bg-white dark:bg-gray-900 rounded-lg p-6 max-w-3xl max-h-full overflow-auto">
+            <Button
+              variant="ghost"
+              onClick={closeImageModal}
+              className="absolute top-2 right-2"
+            >
+              <Minimize size={16} />
+            </Button>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">Uploaded Image</h3>
+            <img src={imageUrl} alt="Uploaded Image" className="rounded-md max-w-full max-h-[70vh] object-contain" />
+          </div>
+        </div>
       )}
     </div>
   );
