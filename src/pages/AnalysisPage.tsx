@@ -231,7 +231,7 @@ const AnalysisPage = () => {
 
     const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
     return (
-      <div className="space-y-4 leading-relaxed">
+      <div className="space-y-4 leading-relaxed" style={{ color: 'black' }}> {/* Added style for black color here */}
         {paragraphs.map((para, index) => {
           if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
             const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
@@ -351,18 +351,19 @@ const AnalysisPage = () => {
             </div>
           </CardHeader>
           <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
+            {/* Added conditional rendering for results here */}
             {results ? (
-              <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif">
+              <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" style={{ color: 'black' }}>
                 {formatResults(results)}
               </div>
             ) : error ? (
-              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in bg-background dark:bg-background-dark">
+              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in">
                 <p className="text-destructive">
                   {error}
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse bg-background dark:bg-background-dark">
+              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse">
                 <p className="text-muted-foreground">
                   {analyzing ? (
                     <>Processing your image with Gemini AI...</>
