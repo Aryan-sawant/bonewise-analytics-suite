@@ -9,7 +9,7 @@ const Hero = () => {
 const [activeFeature, setActiveFeature] = useState(0);
 const featuresRef = useRef<HTMLDivElement>(null);
 const features = [{
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"></path>
 <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"></path>
 <circle cx="20" cy="10" r="2"></circle>
@@ -114,9 +114,9 @@ return (
 
         <h1 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4 animate-fade-in-up" style={{ // Reduced mt-4 and font size slightly
         animationDelay: '0.1s',
-        whiteSpace: 'pre-line' // Added whiteSpace: 'pre-line'
+        whiteSpace: 'pre-line'
       }}>
-          Advanced Bone Analysis with{`\n`}Artificial Intelligence {/* Line break using newline character */}
+          Advanced Bone Analysis{`\n`}        <span className="sm:block hidden">with</span>{`\n`}                Artificial Intelligence {/* Conditional line breaks */}
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{ // Reduced mb-8
