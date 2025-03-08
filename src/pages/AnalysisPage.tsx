@@ -271,7 +271,7 @@ const AnalysisPage = () => {
       <div className="flex justify-between items-center mb-6">
         <Button
           variant="outline"
-          onClick={() => navigate('/taskselector')}
+          onClick={() => navigate('/TaskSelector')}
           className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary rounded-lg"
         >
           ← Back to Tasks
