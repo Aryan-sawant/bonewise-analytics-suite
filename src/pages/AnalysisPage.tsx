@@ -189,8 +189,13 @@ const AnalysisPage = () => {
   const handleDownloadResults = () => {
     if (!results) return;
 
-    // Remove ** and __ markers for bold in the downloaded text
-    let textForDownload = results.replace(/(\*\*|__)(.*?)\1/g, '$2'); // Remove markers, keep content
+    // More robust removal of bold markers for download - handles stray asterisks
+    let textForDownload = results
+        .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markers, keep content
+        .replace(/__([^_]+)__/g, '$1')     // Remove __ markers, keep content
+        .replace(/\*\*([^*]+)\*/g, '$1')    // Remove cases like **word* (aggressive cleanup)
+        .replace(/__([^_]+)_/g, '$1');      // Remove cases like __word_ (aggressive cleanup)
+
 
     const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
     const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.txt`;
@@ -245,8 +250,13 @@ const AnalysisPage = () => {
             );
           }
 
-          // Correct bold regex and ensure no extra whitespace is captured
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/__([^_]+)__/g, '<b>$1</b>') }} />;
+          // More robust bold regex to handle cases like **word* and ensure bolding
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para
+                .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>') // Standard **bold**
+                .replace(/__([^_]+)__/g, '<b>$1</b>')     // Standard __bold__
+                .replace(/\*\*([^*]+)\*/g, '<b>$1</b>')    // Handle **bold* (more forgiving - aggressive approach)
+                .replace(/__([^_]+)_/g, '<b>$1</b>')      // Handle __bold_ (more forgiving - aggressive approach)
+             }} />;
         })}
       </div>
     );
