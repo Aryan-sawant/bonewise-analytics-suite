@@ -8,6 +8,7 @@ import { AuroraBackground } from "@/components/ui/component";
 const Hero = () => {
     const [activeFeature, setActiveFeature] = useState(0);
     const featuresRef = useRef<HTMLDivElement>(null);
+    const progressBarRef = useRef<HTMLDivElement>(null); // Ref for progress bar
     const features = [{
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"></path>
@@ -15,14 +16,14 @@ const Hero = () => {
             <circle cx="20" cy="10" r="2"></circle>
         </svg>,
         title: "Fracture Detection",
-        description: "Identify bone fractures from X-ray images with high accuracy"
+        description: "Identify bone fractures from X-ray images with high accuracy."
     }, {
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <circle cx="12" cy="12" r="10"></circle>
             <path d="m4.9 4.9 14.2 14.2"></path>
         </svg>,
         title: "Bone Marrow Analysis",
-        description: "Analyze bone marrow cell classifications and distributions"
+        description: "Analyze bone marrow cell classifications and distributions."
     }, {
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="M17 18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12Z"></path>
@@ -33,13 +34,13 @@ const Hero = () => {
             <path d="M14 15v1"></path>
         </svg>,
         title: "Osteoarthritis Analysis",
-        description: "Predict osteoarthritis stages and calculate bone mineral density"
+        description: "Predict osteoarthritis stages and calculate bone mineral density."
     }, {
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
         </svg>,
         title: "Osteoporosis Analysis",
-        description: "Evaluate bone density and osteoporosis staging"
+        description: "Evaluate bone density and osteoporosis staging."
     }, {
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="M16 18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h8"></path>
@@ -49,7 +50,7 @@ const Hero = () => {
             <path d="M8 17h8"></path>
         </svg>,
         title: "Bone Age Detection",
-        description: "Accurately determine bone age from hand X-rays"
+        description: "Accurately determine bone age from hand X-rays."
     }, {
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="m9 9-2 2 2 2"></path>
@@ -57,7 +58,7 @@ const Hero = () => {
             <circle cx="12" cy="12" r="10"></circle>
         </svg>,
         title: "Spine Fracture Detection",
-        description: "Identify fractures in the cervical spine"
+        description: "Identify fractures in the cervical spine."
     }, {
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <circle cx="12" cy="12" r="10"></circle>
@@ -65,7 +66,7 @@ const Hero = () => {
             <path d="m9 9 6 6"></path>
         </svg>,
         title: "Bone Tumor Detection",
-        description: "Identify potential bone tumors and classify their characteristics"
+        description: "Identify potential bone tumors and classify their characteristics."
     }, {
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="M8 2v4"></path>
@@ -76,7 +77,7 @@ const Hero = () => {
             <path d="M16 16h-2"></path>
         </svg>,
         title: "Bone Infection Detection",
-        description: "Detect signs of osteomyelitis or bone infection"
+        description: "Detect signs of osteomyelitis or bone infection."
     }];
 
     // Auto-scroll features every 3 seconds
@@ -87,16 +88,18 @@ const Hero = () => {
         return () => clearInterval(interval);
     }, [features.length]);
 
-    // Scroll to active feature
+    // Scroll to active feature and update progress bar
     useEffect(() => {
-        if (featuresRef.current) {
-            const scrollPosition = activeFeature * 320; // Approximate width of each card + gap
-            featuresRef.current.scrollTo({
-                left: scrollPosition,
-                behavior: 'smooth'
-            });
+        if (featuresRef.current && progressBarRef.current) {
+            const scrollPosition = activeFeature * 320;
+            featuresRef.current.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+
+            // Update progress bar width
+            const progressPercentage = ((activeFeature + 1) / features.length) * 100;
+            progressBarRef.current.style.width = `${progressPercentage}%`;
         }
-    }, [activeFeature]);
+    }, [activeFeature, features.length]);
+
 
     return (
         <AuroraBackground>
@@ -109,11 +112,11 @@ const Hero = () => {
                         </span>
                     </div>
 
-                    <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-slide-in-down" style={{ animationDelay: '0.1s' }}> {/* Reduced font size on mobile, added animation */}
+                    <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-slide-in-down leading-tight" style={{ animationDelay: '0.1s' }}> {/* Adjusted leading-tight for mobile */}
                         Advanced Bone Analysis with Artificial Intelligence
                     </h1>
 
-                    <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.</p>
+                    <p className="text-base md:text-lg text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.</p>
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                         <Link to="/auth?tab=signup">
@@ -129,32 +132,42 @@ const Hero = () => {
                         </Link>
                     </div>
 
-                    {/* New Heading */}
-                    <h2 className="text-2xl font-bold text-black mt-16 mb-8 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>The Analyses We Provide</h2>
+                    {/* New Heading and Description */}
+                    <div className="mt-20 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+                        <h2 className="text-2xl font-bold text-black mb-2">The Analyses We Provide</h2>
+                        <p className="text-muted-foreground text-center max-w-xl mx-auto mb-8">
+                            Explore our wide range of AI-powered analysis options, each designed to provide detailed insights into different aspects of bone health.
+                        </p>
 
-                    {/* Features */}
-                    <div className="mt-8 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                        <div ref={featuresRef} className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                            <div className="flex space-x-6 px-4">
-                                {features.map((feature, index) => (
-                                    <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 active:scale-95 transform hover:translate-z-0 hover:scale-103 snap-center bg-card dark:bg-card-dark border dark:border-gray-700 ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border-transparent'}`} onClick={() => setActiveFeature(index)}>
-                                        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto">
-                                            {feature.icon}
+                        {/* Features */}
+                        <div className="mt-4">
+                            <div ref={featuresRef} className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                <div className="flex space-x-6 px-4">
+                                    {features.map((feature, index) => (
+                                        <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 active:scale-95 transform hover:translate-z-0 hover:scale-103 snap-center bg-card dark:bg-card-dark border dark:border-gray-700 ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border-transparent'}`} onClick={() => setActiveFeature(index)}>
+                                            <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto">
+                                                {feature.icon}
+                                            </div>
+                                            <h3 className="text-lg font-semibold mb-2 text-center text-card-foreground dark:text-card-foreground-dark">{feature.title}</h3>
+                                            <p className="text-muted-foreground text-center">
+                                                {feature.description}
+                                            </p>
                                         </div>
-                                        <h3 className="text-lg font-semibold mb-2 text-center text-card-foreground dark:text-card-foreground-dark">{feature.title}</h3>
-                                        <p className="text-muted-foreground text-center">
-                                            {feature.description}
-                                        </p>
-                                    </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="relative mt-4 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                <div ref={progressBarRef} className="absolute top-0 left-0 h-full bg-primary transition-width duration-300" style={{ width: '0%' }} />
+                            </div>
+
+                            {/* Navigation dots (optional - keep or remove) */}
+                            <div className="flex justify-center space-x-2 mt-4">
+                                {features.map((_, index) => (
+                                    <button key={index} className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 transform hover:translate-z-0 hover:scale-105 ${activeFeature === index ? 'bg-primary w-4 shadow-md' : 'bg-primary/30'}`} onClick={() => setActiveFeature(index)} aria-label={`View feature ${index + 1}`} />
                                 ))}
                             </div>
-                        </div>
-
-                        {/* Navigation dots */}
-                        <div className="flex justify-center space-x-2 mt-4">
-                            {features.map((_, index) => (
-                                <button key={index} className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 transform hover:translate-z-0 hover:scale-105 ${activeFeature === index ? 'bg-primary w-4 shadow-md' : 'bg-primary/30'}`} onClick={() => setActiveFeature(index)} aria-label={`View feature ${index + 1}`} />
-                            ))}
                         </div>
                     </div>
                 </div>
