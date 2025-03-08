@@ -93,8 +93,8 @@ const TaskSelector = () => {
       </Button>
 
       <div className="mb-10">
-        <h1 className="text-4xl font-extrabold tracking-tight text-primary-foreground animate-slide-in mb-3" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.1)' }}>
-          🔍 AI-Powered Medical Image Analysis
+        <h1 className="text-4xl font-extrabold tracking-tight animate-slide-in mb-3" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.1)', color: 'black' }}> {/* Removed Emoji and Set Color to Black */}
+          AI-Powered Medical Image Analysis
         </h1>
         <p className="text-muted-foreground text-lg animate-fade-in">
           Select the type of bone health analysis you wish to perform. Each option utilizes advanced AI for accurate results.
@@ -103,11 +103,11 @@ const TaskSelector = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {analysisOptions.map((option) => (
-          <Card key={option.id} className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg border-primary-foreground/10 bg-card-content dark:bg-card-content-dark">
+          <Card key={option.id} className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg border-primary-foreground/10 bg-primary text-primary-foreground"> {/* Set bg-primary for blue background */}
             <CardHeader className="pb-2">
               <div className="mb-3">{option.icon}</div>
-              <CardTitle className="text-lg font-semibold text-primary-foreground">{option.title}</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground mt-2">{option.description}</CardDescription>
+              <CardTitle className="text-lg font-semibold">{option.title}</CardTitle>
+              <CardDescription className="text-sm text-primary-foreground/80 mt-2">{option.description}</CardDescription> {/* Changed description color to text-primary-foreground/80 for better contrast on blue */}
             </CardHeader>
             <CardFooter className="pt-4">
               <Button
