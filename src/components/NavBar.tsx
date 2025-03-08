@@ -34,7 +34,7 @@ const NavBar = () => {
     name: 'Home',
     path: '/'
   }, {
-    name: 'Tasks',
+    name: 'Dashboard',
     path: '/tasks',
     requiresAuth: true
   }, {
