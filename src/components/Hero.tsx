@@ -112,7 +112,7 @@ return (
           </span>
         </div>
 
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-slide-in-up" style={{ // Added animate-slide-in-up
         // Adjusted text-4xl to text-3xl for mobile
         animationDelay: '0.1s'
       }}>
@@ -127,13 +127,13 @@ return (
         animationDelay: '0.3s'
       }}>
           <Link to="/auth?tab=signup">
-            <Button size="lg" className="gap-2 px-6 transition-all duration-300">
+            <Button size="lg" className="gap-2 px-6 transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105">
               Get Started
               <ArrowRight size={16} />
             </Button>
           </Link>
           <Link to="/auth">
-            <Button variant="outline" size="lg" className="transition-all duration-300">
+            <Button variant="outline" size="lg" className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105"> {/* Hover effects for Log In Button */}
               Log in
             </Button>
           </Link>
@@ -156,24 +156,27 @@ return (
           msOverflowStyle: 'none'
         }}>
             <div className="flex space-x-6 px-4">
-              {features.map((feature, index) => <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-sm backdrop-blur-xs snap-center transition-all
+              {features.map((feature, index) => (
+                <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-sm backdrop-blur-xs snap-center transition-all duration-300 hover:shadow-lg transform hover:translate-z-0 hover:scale-103 cursor-pointer
                     ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border border-transparent'}
-                  `} onClick={() => setActiveFeature(index)}>
-                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto">
+                  `} onClick={() => setActiveFeature(index)}> {/* Hover effects for Feature Cards and cursor pointer */}
+                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto transition-all duration-300 hover:scale-110"> {/* Hover effect for icon container */}
                     {feature.icon}
                   </div>
                   <h3 className="text-lg font-semibold mb-2 text-center">{feature.title}</h3>
                   <p className="text-muted-foreground text-center">
                     {feature.description}
                   </p>
-                </div>)}
+                </div>))}
             </div>
           </div>
 
           {/* Navigation dots */}
           <div className="flex justify-center space-x-2 mt-4">
-            {features.map((_, index) => <button key={index} className={`w-2 h-2 rounded-full transition-all duration-300
-                  ${activeFeature === index ? 'bg-primary w-4' : 'bg-primary/30'}`} onClick={() => setActiveFeature(index)} aria-label={`View feature ${index + 1}`} />)}
+            {features.map((_, index) => (
+              <button key={index} className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-110
+                  ${activeFeature === index ? 'bg-primary w-4' : 'bg-primary/30'}`} onClick={() => setActiveFeature(index)} aria-label={`View feature ${index + 1}`} /> // Hover effect for Navigation Dots
+            ))}
           </div>
         </div>
       </div>
