@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from 'react';
-import { AuroraBackground } from "@/components/ui/aurora-background"; // Import AuroraBackground
+import { AuroraBackground } from "@/components/ui/component"; // Import AuroraBackground
 
 const Hero = () => {
 const [activeFeature, setActiveFeature] = useState(0);
