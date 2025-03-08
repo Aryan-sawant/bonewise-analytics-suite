@@ -139,8 +139,16 @@ return (
           </Link>
         </div>
 
+                    {/* New Heading and Description */}
+                    <div className="mt-20 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+                        <h2 className="text-2xl font-bold text-black mb-2">The Analyses We Provide</h2>
+                        <p className="text-muted-foreground text-center max-w-xl mx-auto mb-8">
+                            Explore our wide range of AI-powered analysis options, each designed to provide detailed insights into different aspects of bone health.
+                        </p>
+                    </div>
+
         {/* Features - Now with horizontal scrolling */}
-        <div className="mt-20 animate-fade-in-up overflow-hidden" style={{
+        <div className="mt-20 animate-fade-in-up" style={{
         animationDelay: '0.4s'
       }}>
           <div ref={featuresRef} className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth" style={{
