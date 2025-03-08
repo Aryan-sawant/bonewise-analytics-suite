@@ -170,7 +170,16 @@ serve(async (req) => {
     }
 
     // Extract Analysis Text - Extracts the text analysis from Gemini's response
-    const analysisText = data.candidates[0].content.parts[0].text
+    let analysisText = data.candidates[0].content.parts[0].text;
+
+    // Remove asterisks for bold if they are present, assuming Gemini might still use them sometimes.
+    // Replace markdown bold (**) with HTML bold tags. This is a fallback in case Gemini uses markdown.
+    analysisText = analysisText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    // Remove any remaining single asterisks that might be around words.
+    analysisText = analysisText.replace(/\*(.*?)\*/g, '<b>$1</b>');
+    // Remove any standalone asterisks that are not part of bold formatting.
+    analysisText = analysisText.replace(/\*/g, '');
+
 
     // **IMPORTANT LOGGING FOR DEBUGGING TRUNCATION - PLEASE PROVIDE THESE LOGS**
     console.log("Full Gemini analysisText (before DB storage):", analysisText);
