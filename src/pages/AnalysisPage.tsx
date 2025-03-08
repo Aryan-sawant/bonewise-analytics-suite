@@ -265,7 +265,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/tasks')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary rounded-lg" // Rounded corners and blue background
+          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary rounded-lg"
         >
           ← Back to Tasks
         </Button>
@@ -273,21 +273,21 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary rounded-lg" // Rounded corners and blue background
+          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary rounded-lg"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
         </Button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground">{taskTitle}</h1>
+      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground" style={{ color: 'black' }}>{TASK_TITLES[taskId] || 'Analysis'}</h1> {/* Added Title with Black Color */}
       <p className="text-muted-foreground mb-8 animate-fade-in">
         {user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark rounded-lg"> {/* Rounded corners for Card */}
-          <CardHeader className="bg-primary text-primary-foreground rounded-t-lg"> {/* Rounded top corners for CardHeader */}
+        <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark rounded-lg">
+          <CardHeader className="bg-primary text-primary-foreground rounded-t-lg">
             <CardTitle className="text-lg font-semibold text-primary-foreground">Upload Medical Image</CardTitle>
           </CardHeader>
           <CardContent>
@@ -303,7 +303,7 @@ const AnalysisPage = () => {
                 <Button
                   variant="secondary"
                   onClick={openImageModal}
-                  className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // Rounded corners for Button
+                  className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   View Image
@@ -312,7 +312,7 @@ const AnalysisPage = () => {
               <Button
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
-                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-primary rounded-lg" // Rounded corners and colors for Analyze Button
+                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-primary rounded-lg"
               >
                 {analyzing ? (
                   <>
@@ -325,8 +325,8 @@ const AnalysisPage = () => {
           </CardContent>
         </Card>
 
-        <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark rounded-lg'}`}> {/* Rounded corners for Card */}
-          <CardHeader className="flex flex-row items-center justify-between bg-primary text-primary-foreground rounded-t-lg"> {/* Rounded top corners for CardHeader */}
+        <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark rounded-lg'}`}>
+          <CardHeader className="flex flex-row items-center justify-between bg-primary text-primary-foreground rounded-t-lg">
             <CardTitle className="text-lg font-semibold text-primary-foreground">Analysis Results</CardTitle>
             <div className="flex items-center space-x-2">
               {results && (
@@ -334,7 +334,7 @@ const AnalysisPage = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleDownloadResults}
-                  className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // Rounded corners for Button
+                  className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
                 >
                   <Download size={14} />
                   Download
@@ -344,13 +344,13 @@ const AnalysisPage = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsResultsMaximized(!isResultsMaximized)}
-                className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // Rounded corners for Button
+                className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
               >
                 {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
               </Button>
             </div>
           </CardHeader>
-          <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}> {/* Rounded bottom corners for CardContent */}
+          <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
             {results ? (
               <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif">
                 {formatResults(results)}
@@ -389,7 +389,7 @@ const AnalysisPage = () => {
             <Button
               variant="ghost"
               onClick={closeImageModal}
-              className="absolute top-2 right-2 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // Rounded corners for Button
+              className="absolute top-2 right-2 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
             >
               <Minimize size={16} />
             </Button>
