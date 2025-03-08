@@ -87,27 +87,27 @@ const TaskSelector = () => {
       <Button
         variant="outline"
         onClick={() => navigate('/tasks')}
-        className="mb-6 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // 3D Hover to Back Button
+        className="mb-6 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
       >
         ← Back to Tasks
       </Button>
 
-      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground">Select Analysis Type</h1>
+      <h1 className="text-3xl font-bold mb-2 text-primary-foreground" style={{ color: 'black' }}>Select Analysis Type</h1> {/* Explicitly set color to black, removed animation */}
       <p className="text-muted-foreground mb-8 animate-fade-in">
         Choose the type of bone health analysis you would like to perform
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {analysisOptions.map((option) => (
-          <Card key={option.id} className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg"> {/* 3D Hover to Card */}
-            <CardHeader>
-              <div className="mb-4">{option.icon}</div>
-              <CardTitle className="font-semibold">{option.title}</CardTitle>
-              <CardDescription className="text-muted-foreground text-sm">{option.description}</CardDescription>
+          <Card key={option.id} className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg border"> {/* Added border for professional look */}
+            <CardHeader className="pb-2"> {/* Reduced padding in header */}
+              <div className="mb-3">{option.icon}</div> {/* Reduced margin-bottom */}
+              <CardTitle className="font-semibold text-lg">{option.title}</CardTitle> {/* Reduced title size */}
+              <CardDescription className="text-muted-foreground text-sm mt-1">{option.description}</CardDescription> {/* Adjusted description style */}
             </CardHeader>
-            <CardFooter>
+            <CardFooter className="pt-4"> {/* Added padding-top in footer */}
               <Button
-                className="w-full transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" // 3D Hover to Select Button
+                className="w-full transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
                 onClick={() => handleAnalysisSelect(option.id)}
               >
                 Select
