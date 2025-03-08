@@ -103,7 +103,7 @@ const Index = () => {
               {user ? 
                 <Button 
                   size="lg" 
-                  onClick={() => navigate('/dashboard')} 
+                  onClick={() => navigate('/task')} 
                   className="bg-white text-primary hover:bg-white/90 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
                 >
                   Go to Dashboard
