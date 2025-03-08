@@ -8,7 +8,7 @@ import { AuroraBackground } from "@/components/ui/component";
 const Hero = () => {
     const [activeFeature, setActiveFeature] = useState(0);
     const featuresRef = useRef<HTMLDivElement>(null);
-    const progressBarRef = useRef<HTMLDivElement>(null); // Ref for progress bar
+    const progressBarRef = useRef<HTMLDivElement>(null);
     const features = [{
         icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"></path>
@@ -42,7 +42,7 @@ const Hero = () => {
         title: "Osteoporosis Analysis",
         description: "Evaluate bone density and osteoporosis staging."
     }, {
-        icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+        icon: <svg xmlns="http://www.w3.org/24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
             <path d="M16 18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h8"></path>
             <path d="m12 8 4-4 4 4"></path>
             <path d="M8 9h4"></path>
@@ -97,6 +97,10 @@ const Hero = () => {
             // Update progress bar width
             const progressPercentage = ((activeFeature + 1) / features.length) * 100;
             progressBarRef.current.style.width = `${progressPercentage}%`;
+
+            // Debug logs - uncomment to check in console
+            // console.log("progressBarRef.current:", progressBarRef.current);
+            // console.log("progressPercentage:", progressPercentage);
         }
     }, [activeFeature, features.length]);
 
@@ -112,7 +116,7 @@ const Hero = () => {
                         </span>
                     </div>
 
-                    <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-slide-in-down leading-tight" style={{ animationDelay: '0.1s' }}> {/* Adjusted leading-tight for mobile */}
+                    <h1 className="text-3xl md:text-4xl lg:text-6xl font-extrabold tracking-tight text-foreground mb-6 animate-slide-in-down leading-tight" style={{ animationDelay: '0.1s' }}> {/* Increased font-extrabold */}
                         Advanced Bone Analysis with Artificial Intelligence
                     </h1>
 
@@ -144,7 +148,7 @@ const Hero = () => {
                             <div ref={featuresRef} className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                                 <div className="flex space-x-6 px-4">
                                     {features.map((feature, index) => (
-                                        <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 active:scale-95 transform hover:translate-z-0 hover:scale-103 snap-center bg-card dark:bg-card-dark border dark:border-gray-700 ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border-transparent'}`} onClick={() => setActiveFeature(index)}>
+                                        <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 active:scale-95 transform hover:translate-z-0 hover:scale-103 snap-center bg-card dark:bg-card-dark border dark:border-gray-700 ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border-transparent'}`}>
                                             <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto">
                                                 {feature.icon}
                                             </div>
@@ -158,8 +162,8 @@ const Hero = () => {
                             </div>
 
                             {/* Progress Bar */}
-                            <div className="relative mt-4 h-1 bg-gray-200 rounded-full overflow-hidden">
-                                <div ref={progressBarRef} className="absolute top-0 left-0 h-full bg-primary transition-width duration-300" style={{ width: '0%' }} />
+                            <div className="relative mt-4 h-2 bg-gray-200 rounded-full overflow-hidden"> {/* Increased progress bar height to h-2 */}
+                                <div ref={progressBarRef} className="absolute top-0 left-0 h-full bg-primary transition-width duration-300" style={{ width: '0%', height: '100%' }} /> {/* Ensured progress bar inner element also has h-full */}
                             </div>
 
                             {/* Navigation dots (optional - keep or remove) */}
