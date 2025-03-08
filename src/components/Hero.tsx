@@ -101,6 +101,7 @@ const Hero = () => {
     return (
         <AuroraBackground>
             <section className="relative min-h-[90vh] flex items-center justify-center px-6 overflow-hidden">
+
                 <div className="max-w-4xl mx-auto text-center">
                     <div className="mb-6 inline-block">
                         <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium animate-pulse-subtle">
@@ -108,7 +109,7 @@ const Hero = () => {
                         </span>
                     </div>
 
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                    <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-slide-in-down" style={{ animationDelay: '0.1s' }}> {/* Reduced font size on mobile, added animation */}
                         Advanced Bone Analysis with Artificial Intelligence
                     </h1>
 
