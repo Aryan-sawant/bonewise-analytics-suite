@@ -141,7 +141,7 @@ const Tasks = () => {
     <div className="container mx-auto px-4 py-12 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary-foreground">Dashboard</h1> {/* Removed animate-slide-in */}
+          <h1 className="text-3xl font-bold text-primary-foreground" style={{ color: 'white' }}>Dashboard</h1> {/* Explicitly set color to white */}
           <p className="text-muted-foreground animate-fade-in">Manage your tasks and bone health analyses</p>
         </div>
         <div className="flex gap-3">
