@@ -233,8 +233,6 @@ const AnalysisPage = () => {
     return (
       <div className="space-y-4 leading-relaxed">
         {paragraphs.map((para, index) => {
-          // console.log("Raw Paragraph:", para); // Debugging Log - Raw Paragraph
-
           if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
             const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
             return <h3 key={index} className="text-xl font-bold mt-6 first:mt-0 text-primary/90 border-b pb-1">{headingText}</h3>;
@@ -251,10 +249,10 @@ const AnalysisPage = () => {
             );
           }
 
-          // Simplified Bold Regex for debugging - using only standard **bold**
-          const formattedPara = para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
-          // console.log("Formatted Paragraph:", formattedPara); // Debugging Log - Formatted Paragraph
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: formattedPara }} />;
+          // More lenient bold regex to handle cases like **word*, *word**, *word*, **word**
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para
+                .replace(/(\*\*|__)\s*([^*_]+?)\s*(\*\*|\*|_)/g, '<b>$2</b>') // Matches **, __, *, _ for bold
+             }} />;
         })}
       </div>
     );
@@ -267,7 +265,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/tasks')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary" // Blue Background, White Text
+          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary"
         >
           ← Back to Tasks
         </Button>
@@ -275,7 +273,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary" // Blue Background, White Text
+          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
@@ -289,8 +287,8 @@ const AnalysisPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark">
-          <CardHeader className="bg-primary-foreground text-primary"> {/* Blue Card Header */}
-            <CardTitle className="text-lg font-semibold text-card-foreground dark:text-card-foreground-dark">Upload Medical Image</CardTitle>
+          <CardHeader className="bg-primary text-primary-foreground"> {/* Blue Card Header with white text */}
+            <CardTitle className="text-lg font-semibold text-primary-foreground">Upload Medical Image</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">{taskGuidance}</p>
@@ -314,7 +312,7 @@ const AnalysisPage = () => {
               <Button
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
-                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-primary" // White Analyze Button, Blue Background
+                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-primary"
               >
                 {analyzing ? (
                   <>
@@ -328,8 +326,8 @@ const AnalysisPage = () => {
         </Card>
 
         <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark'}`}>
-          <CardHeader className="flex flex-row items-center justify-between bg-primary-foreground text-primary"> {/* Blue Card Header */}
-            <CardTitle className="text-lg font-semibold text-card-foreground dark:text-card-foreground-dark">Analysis Results</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between bg-primary text-primary-foreground"> {/* Blue Card Header with white text */}
+            <CardTitle className="text-lg font-semibold text-primary-foreground">Analysis Results</CardTitle>
             <div className="flex items-center space-x-2">
               {results && (
                 <Button
@@ -395,7 +393,7 @@ const AnalysisPage = () => {
             >
               <Minimize size={16} />
             </Button>
-            <h3 className="text-lg font-semibold mb-4 text-card-foreground dark:text-card-foreground-dark">Uploaded Image</h3>
+            <h3 className="text-lg font-semibold mb-4 text-primary-foreground dark:text-card-foreground-dark">Uploaded Image</h3>
             <img src={imageUrl} alt="Uploaded Image" className="rounded-md max-w-full max-h-[70vh] object-contain" />
           </div>
         </div>
