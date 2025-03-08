@@ -121,7 +121,7 @@ const AnalysisPage = () => {
 
   const handleImageUpload = (file: File) => {
     setImage(file);
-    setImageUrl(URL.createObjectURL(file));
+    setImageUrl(URL.createObjectURL(file);
     setResults(null);
     setError(null);
     setAnalysisId(null);
@@ -189,14 +189,14 @@ const AnalysisPage = () => {
   const handleDownloadResults = () => {
     if (!results) return;
 
-    // More robust removal of bold markers for download - remove stray asterisks more aggressively
+    // Even MORE aggressive removal of bold markers for download - remove absolutely all asterisks and underscores
     let textForDownload = results
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/__([^_]+)__/g, '$1')
-        .replace(/\*\*([^*]+)\*/g, '$1') // Aggressive cleanup for stray asterisks
-        .replace(/__([^_]+)_/g, '$1')  // Aggressive cleanup for stray underscores
-        .replace(/\*/g, '') // Remove any remaining single asterisks
-        .replace(/_/g, '');  // Remove any remaining single underscores
+        .replace(/\*\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)_/g, '$1')
+        .replace(/\*/g, '') // Remove absolutely all asterisks
+        .replace(/_/g, '');  // Remove absolutely all underscores
 
 
     const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
@@ -234,7 +234,7 @@ const AnalysisPage = () => {
 
     const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
     return (
-      <div className="space-y-4 leading-relaxed" style={{ color: 'black' }}> {/* Added style for black color here */}
+      <div className="space-y-4 leading-relaxed" style={{ color: 'black' }}>
         {paragraphs.map((para, index) => {
           if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
             const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
@@ -252,11 +252,12 @@ const AnalysisPage = () => {
             );
           }
 
-          // More robust bold regex and *remove asterisks from output HTML*
+          // Even MORE robust bold regex and remove ALL asterisks and underscores from output HTML
           const formattedPara = para
                 .replace(/(\*\*|__)\s*([^*_]+?)\s*(\*\*|\*|_)/g, '<b>$2</b>') // Bold using <b>
-                .replace(/\*/g, '') // *Remove any asterisks* from the rendered output
-                .replace(/_/g, '');  // *Remove any underscores* from the rendered output
+                .replace(/\*/g, '') // *Remove ALL asterisks* from the rendered output
+                .replace(/_/g, '');  // *Remove ALL underscores* from the rendered output
+
 
           return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: formattedPara }} />;
         })}
@@ -286,7 +287,7 @@ const AnalysisPage = () => {
         </Button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground" style={{ color: 'black' }}>{TASK_TITLES[taskId] || 'Analysis'}</h1> {/* Added Title with Black Color */}
+      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground" style={{ color: 'black' }}>{TASK_TITLES[taskId] || 'Analysis'}</h1>
       <p className="text-muted-foreground mb-8 animate-fade-in">
         {user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}
       </p>
@@ -311,7 +312,7 @@ const AnalysisPage = () => {
                   onClick={openImageModal}
                   className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
                 >
-                  <Eye className="mr-2 h-4 w-4" />
+                  <Eye className="mr-2 h-4 w-4" style={{ color: 'black' }} /> {/* Image Modal Button Icon Black */}
                   View Image
                 </Button>
               )}
@@ -343,7 +344,7 @@ const AnalysisPage = () => {
                   className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
                   style={{ color: 'black' }} // Download button text color black
                 >
-                  <Download size={14} />
+                  <Download size={14} style={{ color: 'black' }} /> {/* Download Icon Black */}
                   Download
                 </Button>
               )}
@@ -401,11 +402,11 @@ const AnalysisPage = () => {
             >
               <Minimize size={16} />
             </Button>
-            <h3 className="text-lg font-semibold mb-4 text-primary-foreground dark:text-card-foreground-dark">Uploaded Image</h3>
+            <h3 className="text-lg font-semibold mb-4 text-primary-foreground dark:text-card-foreground-dark" style={{ color: 'black' }}>Uploaded Image</h3> {/* Image Modal Title Black */}
             <img src={imageUrl} alt="Uploaded Image" className="rounded-md max-w-full max-h-[70vh] object-contain" />
           </div>
         </div>
-      )}
+        )}
     </div>
   );
 };
