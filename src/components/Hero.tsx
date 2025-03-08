@@ -115,7 +115,7 @@ return (
         <h1 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4 animate-fade-in-up" style={{ // Reduced mt-4 and font size slightly
         animationDelay: '0.1s'
       }}>
-          Advanced Bone Analysis with Artificial Intelligence
+          Advanced Bone Analysis with <br className="sm:hidden" /> Artificial Intelligence {/* Line break here, hidden on small screens */}
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{ // Reduced mb-8
@@ -159,10 +159,10 @@ return (
                 <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-sm backdrop-blur-xs snap-center transition-all
                     ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border border-transparent'}
                   `} onClick={() => setActiveFeature(index)}>
-                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-2 mx-auto"> {/* Reduced mb-2 for icon */}
+                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-2 mx-auto">
                     {feature.icon}
                   </div>
-                  <h3 className="text-lg font-semibold mb-1 text-center">{feature.title}</h3> {/* Reduced mb-1 for title */}
+                  <h3 className="text-lg font-semibold mb-1 text-center">{feature.title}</h3>
                   <p className="text-muted-foreground text-center text-sm leading-relaxed"> {/* Feature Description is here - Reduced font-sm, Added leading-relaxed */}
                     {feature.description}
                   </p>
