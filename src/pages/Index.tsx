@@ -41,7 +41,7 @@ const Index = () => {
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">How It Works</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                BoneHealthAI simplifies the process of analyzing bone health through advanced AI technology
+                BoneHealthAISuite simplifies the process of analyzing bone health through advanced AI technology
               </p>
             </div>
             
@@ -96,7 +96,7 @@ const Index = () => {
               Ready to get insights about your bone health?
             </h2>
             <p className="text-white/80 mb-8 max-w-2xl mx-auto">
-              Join BoneHealthAI today and gain access to AI-powered bone health analysis 
+              Join BoneHealthAISuite today and gain access to AI-powered bone health analysis 
               that can help you understand more about your bone condition.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -170,7 +170,7 @@ const Index = () => {
           
           <div className="border-t border-gray-200 mt-12 pt-8 text-center">
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} BoneHealthAI. All rights reserved.
+              &copy; {new Date().getFullYear()} BoneHealthAISuite. All rights reserved.
             </p>
           </div>
         </div>
