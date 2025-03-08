@@ -121,7 +121,7 @@ const AnalysisPage = () => {
 
   const handleImageUpload = (file: File) => {
     setImage(file);
-    setImageUrl(URL.createObjectURL(file);
+    setImageUrl(URL.createObjectURL(file));
     setResults(null);
     setError(null);
     setAnalysisId(null);
@@ -312,7 +312,7 @@ const AnalysisPage = () => {
                   onClick={openImageModal}
                   className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
                 >
-                  <Eye className="mr-2 h-4 w-4" style={{ color: 'black' }} /> {/* Image Modal Button Icon Black */}
+                  <Eye className="mr-2 h-4 w-4" style={{ color: 'black' }} />
                   View Image
                 </Button>
               )}
@@ -342,9 +342,9 @@ const AnalysisPage = () => {
                   size="sm"
                   onClick={handleDownloadResults}
                   className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                  style={{ color: 'black' }} // Download button text color black
+                  style={{ color: 'black' }}
                 >
-                  <Download size={14} style={{ color: 'black' }} /> {/* Download Icon Black */}
+                  <Download size={14} style={{ color: 'black' }} />
                   Download
                 </Button>
               )}
@@ -402,11 +402,11 @@ const AnalysisPage = () => {
             >
               <Minimize size={16} />
             </Button>
-            <h3 className="text-lg font-semibold mb-4 text-primary-foreground dark:text-card-foreground-dark" style={{ color: 'black' }}>Uploaded Image</h3> {/* Image Modal Title Black */}
-            <img src={imageUrl} alt="Uploaded Image" className="rounded-md max-w-full max-h-[70vh] object-contain" />
+            <h3 className="text-lg font-semibold mb-4 text-primary-foreground dark:text-card-foreground-dark" style={{ color: 'black' }}>Uploaded Image</h3>
+            <img src={imageUrl} alt="Uploaded Image" className="rounded-md max-w-full max-h-[70vh] object-contain" style={{ color: 'black' }}/> {/* Image in Modal Black Font */}
           </div>
         </div>
-        )}
+      )}
     </div>
   );
 };
