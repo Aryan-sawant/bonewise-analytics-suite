@@ -189,13 +189,12 @@ const AnalysisPage = () => {
   const handleDownloadResults = () => {
     if (!results) return;
 
-    // More robust removal of bold markers for download - handles stray asterisks
+    // More robust removal of bold markers for download
     let textForDownload = results
-        .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markers, keep content
-        .replace(/__([^_]+)__/g, '$1')     // Remove __ markers, keep content
-        .replace(/\*\*([^*]+)\*/g, '$1')    // Remove cases like **word* (aggressive cleanup)
-        .replace(/__([^_]+)_/g, '$1');      // Remove cases like __word_ (aggressive cleanup)
-
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/\*\*([^*]+)\*/g, '$1') // Aggressive cleanup for stray asterisks
+        .replace(/__([^_]+)_/g, '$1');  // Aggressive cleanup for stray underscores
 
     const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
     const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.txt`;
@@ -234,6 +233,8 @@ const AnalysisPage = () => {
     return (
       <div className="space-y-4 leading-relaxed">
         {paragraphs.map((para, index) => {
+          // console.log("Raw Paragraph:", para); // Debugging Log - Raw Paragraph
+
           if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
             const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
             return <h3 key={index} className="text-xl font-bold mt-6 first:mt-0 text-primary/90 border-b pb-1">{headingText}</h3>;
@@ -250,13 +251,10 @@ const AnalysisPage = () => {
             );
           }
 
-          // More robust bold regex to handle cases like **word* and ensure bolding
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para
-                .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>') // Standard **bold**
-                .replace(/__([^_]+)__/g, '<b>$1</b>')     // Standard __bold__
-                .replace(/\*\*([^*]+)\*/g, '<b>$1</b>')    // Handle **bold* (more forgiving - aggressive approach)
-                .replace(/__([^_]+)_/g, '<b>$1</b>')      // Handle __bold_ (more forgiving - aggressive approach)
-             }} />;
+          // Simplified Bold Regex for debugging - using only standard **bold**
+          const formattedPara = para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+          // console.log("Formatted Paragraph:", formattedPara); // Debugging Log - Formatted Paragraph
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: formattedPara }} />;
         })}
       </div>
     );
@@ -269,7 +267,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/tasks')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105"
+          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary" // Blue Background, White Text
         >
           ← Back to Tasks
         </Button>
@@ -277,7 +275,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105"
+          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary" // Blue Background, White Text
         >
           <Home className="mr-2 h-4 w-4" />
           Home
@@ -291,7 +289,7 @@ const AnalysisPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark">
-          <CardHeader>
+          <CardHeader className="bg-primary-foreground text-primary"> {/* Blue Card Header */}
             <CardTitle className="text-lg font-semibold text-card-foreground dark:text-card-foreground-dark">Upload Medical Image</CardTitle>
           </CardHeader>
           <CardContent>
@@ -316,7 +314,7 @@ const AnalysisPage = () => {
               <Button
                 onClick={handleAnalyze}
                 disabled={!image || analyzing}
-                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105"
+                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-primary" // White Analyze Button, Blue Background
               >
                 {analyzing ? (
                   <>
@@ -330,7 +328,7 @@ const AnalysisPage = () => {
         </Card>
 
         <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark'}`}>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between bg-primary-foreground text-primary"> {/* Blue Card Header */}
             <CardTitle className="text-lg font-semibold text-card-foreground dark:text-card-foreground-dark">Analysis Results</CardTitle>
             <div className="flex items-center space-x-2">
               {results && (
