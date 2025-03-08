@@ -35,7 +35,7 @@ icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 
 title: "Osteoarthritis Analysis",
 description: "Predict osteoarthritis stages and calculate bone mineral density"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
 </svg>,
 title: "Osteoporosis Analysis",
@@ -112,8 +112,7 @@ return (
           </span>
         </div>
 
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{
-        // Adjusted text-4xl to text-3xl for mobile
+        <h1 className="mt-8 text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{ // Adjusted mt-8 and font size
         animationDelay: '0.1s'
       }}>
           Advanced Bone Analysis with Artificial Intelligence
@@ -127,13 +126,13 @@ return (
         animationDelay: '0.3s'
       }}>
           <Link to="/auth?tab=signup">
-            <Button size="lg" className="gap-2 px-6 transition-all duration-300">
+            <Button size="lg" className="gap-2 px-6 transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105"> {/* 3D Hover Effect */}
               Get Started
               <ArrowRight size={16} />
             </Button>
           </Link>
           <Link to="/auth">
-            <Button variant="outline" size="lg" className="transition-all duration-300">
+            <Button variant="outline" size="lg" className="transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105"> {/* 3D Hover Effect */}
               Log in
             </Button>
           </Link>
