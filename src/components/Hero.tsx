@@ -2,7 +2,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from '@/react';
 import { AuroraBackground } from "@/components/ui/component"; // Import AuroraBackground
 
 const Hero = () => {
@@ -51,7 +51,7 @@ icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 
 title: "Bone Age Detection",
 description: "Accurately determine bone age from hand X-rays"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="m9 9-2 2 2 2"></path>
 <path d="m15 9 2 2-2 2"></path>
 <circle cx="12" cy="12" r="10"></circle>
@@ -59,7 +59,7 @@ icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 
 title: "Spine Fracture Detection",
 description: "Identify fractures in the cervical spine"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <circle cx="12" cy="12" r="10"></circle>
 <path d="m15 9-6 6"></path>
 <path d="m9 9 6 6"></path>
@@ -67,7 +67,7 @@ icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 
 title: "Bone Tumor Detection",
 description: "Identify potential bone tumors and classify their characteristics"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="M8 2v4"></path>
 <path d="M16 2v4"></path>
 <rect width="16" height="16" x="4" y="4" rx="2"></rect>
@@ -99,7 +99,7 @@ behavior: 'smooth'
 }, [activeFeature]);
 return (
   <AuroraBackground> {/* Wrap the Hero content with AuroraBackground */}
-    <section className="relative min-h-[90vh] flex items-center justify-center px-6 overflow-hidden">
+    <section className="relative min-h-[90vh] flex items-center justify-center px-4 md:px-6 overflow-hidden"> {/* Adjusted px-4 md:px-6 for container padding */}
       {/* Background Elements - These are now inside AuroraBackground and might be redundant */}
       {/* <div className="absolute inset-0 -z-10 bg-gradient-radial from-blue-50 to-background opacity-70"></div>
       <div className="absolute inset-0 -z-10 bg-bone-pattern opacity-5"></div> */}
@@ -112,13 +112,13 @@ return (
           </span>
         </div>
 
-        <h1 className="mt-8 text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up" style={{ // Adjusted mt-8 and font size
+        <h1 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4 animate-fade-in-up" style={{ // Reduced mt-4 and font size slightly
         animationDelay: '0.1s'
       }}>
           Advanced Bone Analysis with Artificial Intelligence
         </h1>
 
-        <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up" style={{
+        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{ // Reduced mb-8
         animationDelay: '0.2s'
       }}>BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.</p>
 
@@ -139,15 +139,15 @@ return (
         </div>
 
                     {/* New Heading and Description */}
-                    <div className="mt-20 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+                    <div className="mt-16 animate-fade-in-up" style={{ animationDelay: '0.35s' }}> {/* Reduced mt-16 */}
                         <h2 className="text-2xl font-bold text-black mb-2">The Analyses We Provide</h2>
-                        <p className="text-muted-foreground text-center max-w-xl mx-auto mb-8">
+                        <p className="text-muted-foreground text-center max-w-xl mx-auto mb-6"> {/* Reduced mb-6 */}
                             Explore our wide range of AI-powered analysis options, each designed to provide detailed insights into different aspects of bone health.
                         </p>
                     </div>
 
         {/* Features - Now with horizontal scrolling */}
-        <div className="mt-20 animate-fade-in-up" style={{
+        <div className="mt-8 animate-fade-in-up" style={{ // Reduced mt-8
         animationDelay: '0.4s'
       }}>
           <div ref={featuresRef} className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth" style={{
@@ -163,7 +163,7 @@ return (
                     {feature.icon}
                   </div>
                   <h3 className="text-lg font-semibold mb-2 text-center">{feature.title}</h3>
-                  <p className="text-muted-foreground text-center"> {/* Feature Description is here */}
+                  <p className="text-muted-foreground text-center text-sm"> {/* Feature Description is here - Reduced font-sm */}
                     {feature.description}
                   </p>
                 </div>))}
