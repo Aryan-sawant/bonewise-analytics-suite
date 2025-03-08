@@ -89,7 +89,7 @@ const TaskSelector = () => {
         onClick={() => navigate('/tasks')}
         className="mb-6 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg bg-primary-foreground text-primary" // Back to Tasks Button Blue
       >
-        ← Back to Tasks
+        ← Back to Dashboard
       </Button>
 
       <h1 className="text-3xl font-bold mb-2 text-primary-foreground animate-slide-in" style={{ color: 'black' }}>Select Analysis Type</h1> {/* Title Animation and Black Color */}
