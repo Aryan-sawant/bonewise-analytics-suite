@@ -2,7 +2,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from 'react'; // Corrected import here!
+import { useEffect, useRef, useState } from 'react';
 import { AuroraBackground } from "@/components/ui/component"; // Import AuroraBackground
 
 const Hero = () => {
@@ -35,13 +35,13 @@ icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 
 title: "Osteoarthritis Analysis",
 description: "Predict osteoarthritis stages and calculate bone mineral density"
 }, {
-icon: <svg xmlns="http://www.w3.org/24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
 </svg>,
 title: "Osteoporosis Analysis",
 description: "Evaluate bone density and osteoporosis staging"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="M16 18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h8"></path>
 <path d="m12 8 4-4 4 4"></path>
 <path d="M8 9h4"></path>
@@ -51,7 +51,7 @@ icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 
 title: "Bone Age Detection",
 description: "Accurately determine bone age from hand X-rays"
 }, {
-icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
 <path d="m9 9-2 2 2 2"></path>
 <path d="m15 9 2 2-2 2"></path>
 <circle cx="12" cy="12" r="10"></circle>
@@ -139,15 +139,15 @@ return (
         </div>
 
                     {/* New Heading and Description */}
-                    <div className="mt-16 animate-fade-in-up" style={{ animationDelay: '0.35s' }}> {/* Reduced mt-16 */}
+                    <div className="mt-12 animate-fade-in-up" style={{ animationDelay: '0.35s' }}> {/* Reduced mt-12 */}
                         <h2 className="text-2xl font-bold text-black mb-2">The Analyses We Provide</h2>
-                        <p className="text-muted-foreground text-center max-w-xl mx-auto mb-6"> {/* Reduced mb-6 */}
+                        <p className="text-muted-foreground text-center max-w-xl mx-auto mb-4"> {/* Reduced mb-4 */}
                             Explore our wide range of AI-powered analysis options, each designed to provide detailed insights into different aspects of bone health.
                         </p>
                     </div>
 
         {/* Features - Now with horizontal scrolling */}
-        <div className="mt-8 animate-fade-in-up" style={{ // Reduced mt-8
+        <div className="mt-4 animate-fade-in-up" style={{ // Reduced mt-4
         animationDelay: '0.4s'
       }}>
           <div ref={featuresRef} className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth" style={{
@@ -159,11 +159,11 @@ return (
                 <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-sm backdrop-blur-xs snap-center transition-all
                     ${activeFeature === index ? 'border-primary/30 bg-primary/5' : 'border border-transparent'}
                   `} onClick={() => setActiveFeature(index)}>
-                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4 mx-auto">
+                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-2 mx-auto"> {/* Reduced mb-2 for icon */}
                     {feature.icon}
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-center">{feature.title}</h3>
-                  <p className="text-muted-foreground text-center text-sm"> {/* Feature Description is here - Reduced font-sm */}
+                  <h3 className="text-lg font-semibold mb-1 text-center">{feature.title}</h3> {/* Reduced mb-1 for title */}
+                  <p className="text-muted-foreground text-center text-sm leading-relaxed"> {/* Feature Description is here - Reduced font-sm, Added leading-relaxed */}
                     {feature.description}
                   </p>
                 </div>))}
