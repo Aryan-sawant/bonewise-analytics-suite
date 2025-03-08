@@ -189,12 +189,15 @@ const AnalysisPage = () => {
   const handleDownloadResults = () => {
     if (!results) return;
 
-    // More robust removal of bold markers for download
+    // More robust removal of bold markers for download - remove stray asterisks more aggressively
     let textForDownload = results
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/__([^_]+)__/g, '$1')
         .replace(/\*\*([^*]+)\*/g, '$1') // Aggressive cleanup for stray asterisks
-        .replace(/__([^_]+)_/g, '$1');  // Aggressive cleanup for stray underscores
+        .replace(/__([^_]+)_/g, '$1')  // Aggressive cleanup for stray underscores
+        .replace(/\*/g, '') // Remove any remaining single asterisks
+        .replace(/_/g, '');  // Remove any remaining single underscores
+
 
     const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
     const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.txt`;
@@ -249,10 +252,13 @@ const AnalysisPage = () => {
             );
           }
 
-          // More lenient bold regex to handle cases like **word*, *word**, *word*, **word**
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para
-                .replace(/(\*\*|__)\s*([^*_]+?)\s*(\*\*|\*|_)/g, '<b>$2</b>') // Matches **, __, *, _ for bold
-             }} />;
+          // More robust bold regex and *remove asterisks from output HTML*
+          const formattedPara = para
+                .replace(/(\*\*|__)\s*([^*_]+?)\s*(\*\*|\*|_)/g, '<b>$2</b>') // Bold using <b>
+                .replace(/\*/g, '') // *Remove any asterisks* from the rendered output
+                .replace(/_/g, '');  // *Remove any underscores* from the rendered output
+
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: formattedPara }} />;
         })}
       </div>
     );
@@ -335,6 +341,7 @@ const AnalysisPage = () => {
                   size="sm"
                   onClick={handleDownloadResults}
                   className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                  style={{ color: 'black' }} // Download button text color black
                 >
                   <Download size={14} />
                   Download
