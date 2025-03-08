@@ -189,10 +189,13 @@ const AnalysisPage = () => {
   const handleDownloadResults = () => {
     if (!results) return;
 
+    // Remove ** and __ markers for bold in the downloaded text
+    let textForDownload = results.replace(/(\*\*|__)(.*?)\1/g, '$2'); // Remove markers, keep content
+
     const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
     const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.txt`;
 
-    const blob = new Blob([results], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([textForDownload], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -242,7 +245,8 @@ const AnalysisPage = () => {
             );
           }
 
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/(\*\*|__)(.*?)\1/g, '<b>$2</b>') }} />;
+          // Correct bold regex and ensure no extra whitespace is captured
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/__([^_]+)__/g, '<b>$1</b>') }} />;
         })}
       </div>
     );
