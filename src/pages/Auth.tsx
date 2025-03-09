@@ -26,7 +26,7 @@ const Auth = () => {
           <div className="absolute inset-0 opacity-5 pattern-grid-lg"></div>
           <div className="absolute inset-0 flex items-center justify-center p-8">
             <div className="text-white max-w-md text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 animate-slide-in">BoneHealthAI</h2>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 animate-slide-in">BoneHealthAISuite</h2>
               <p className="text-white/80 text-sm md:text-base animate-slide-in delay-100">
                 Advanced bone health analysis powered by artificial intelligence. Sign in to access your personalized bone health insights.
               </p>
