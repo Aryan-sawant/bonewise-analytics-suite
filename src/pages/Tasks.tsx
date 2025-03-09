@@ -169,7 +169,7 @@ const Tasks = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="bg-primary text-primary-foreground transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in"> {/* Added animate-fade-in */}
           <CardHeader>
-            <CardTitle className="text-xl font-semibold">Bone Health</CardTitle>
+            <CardTitle className="text-xl font-semibold">Bone Health Analysis</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-primary-foreground/90 mb-4 text-base font-bold">
