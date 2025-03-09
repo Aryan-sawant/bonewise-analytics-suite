@@ -197,16 +197,16 @@ const AnalysisHistory = () => {
             <CardHeader>
               <CardTitle>Past Analyses</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="!bg-blue-500"> {/* Ensure content area is also blue */}
               <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
                 {analyses.map((analysis) => (
                   <div
                     key={analysis.id}
-                    className={`p-3 rounded-md cursor-pointer transition-colors hover:bg-blue-700 transition-all duration-200 hover:shadow-md transform hover:translate-z-0 hover:scale-101 text-white`}
+                    className={`p-3 rounded-md cursor-pointer transition-colors hover:bg-blue-700 transition-all duration-200 hover:shadow-md transform hover:translate-z-0 hover:scale-101 text-black bg-white`} {/* White BG, Black text */}
                     onClick={() => handleSelectAnalysis(analysis.id)}
                   >
                     <div className="font-medium">{analysis.task_name}</div>
-                    <div className="text-xs mt-1 text-white/80">
+                    <div className="text-xs mt-1 text-gray-700"> {/* Dark gray for date */}
                       {new Date(analysis.created_at).toLocaleString()}
                     </div>
                   </div>
