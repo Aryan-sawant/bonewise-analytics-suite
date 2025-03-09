@@ -193,7 +193,7 @@ const AnalysisHistory = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
-          <Card className="col-span-1 border shadow-sm transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg bg-blue-500 text-white"> {/* Added blue background and white text classes */}
+          <Card className="col-span-1 border shadow-sm transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg bg-blue-500 text-white">
             <CardHeader>
               <CardTitle>Past Analyses</CardTitle>
             </CardHeader>
@@ -202,11 +202,11 @@ const AnalysisHistory = () => {
                 {analyses.map((analysis) => (
                   <div
                     key={analysis.id}
-                    className={`p-3 rounded-md cursor-pointer transition-colors hover:bg-blue-700 transition-all duration-200 hover:shadow-md transform hover:translate-z-0 hover:scale-101 text-white`} {/* Adjusted hover bg and text color */}
+                    className={`p-3 rounded-md cursor-pointer transition-colors hover:bg-blue-700 transition-all duration-200 hover:shadow-md transform hover:translate-z-0 hover:scale-101 text-white`}
                     onClick={() => handleSelectAnalysis(analysis.id)}
                   >
                     <div className="font-medium">{analysis.task_name}</div>
-                    <div className="text-xs mt-1 text-white/80"> {/* Adjusted text color */}
+                    <div className="text-xs mt-1 text-white/80">
                       {new Date(analysis.created_at).toLocaleString()}
                     </div>
                   </div>
