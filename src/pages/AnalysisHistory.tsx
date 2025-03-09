@@ -150,7 +150,7 @@ const AnalysisHistory = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/tasks')}
-          className="hover-scale"
+          className="hover-scale transition-transform active:scale-95 text-blue-500 border-blue-500 hover:bg-blue-500/10"
         >
           ← Back to Dashboard
         </Button>
@@ -158,7 +158,7 @@ const AnalysisHistory = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/')}
-          className="hover-scale"
+          className="hover-scale transition-transform active:scale-95 text-blue-500 border-blue-500 hover:bg-blue-500/10"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
@@ -175,7 +175,7 @@ const AnalysisHistory = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       ) : analyses.length === 0 ? (
-        <Card className="border shadow-sm">
+        <Card className="border shadow-sm hover-card transition-transform">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Clock className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-medium mb-2">No Analysis History</h3>
@@ -183,7 +183,7 @@ const AnalysisHistory = () => {
               You haven't performed any bone health analyses yet.
               Start by analyzing an image to build your history.
             </p>
-            <Button onClick={() => navigate('/bone-analysis')}>
+            <Button onClick={() => navigate('/bone-analysis')} className="hover-scale transition-transform active:scale-95">
               <Bone className="mr-2 h-4 w-4" />
               Start Bone Analysis
             </Button>
@@ -191,7 +191,7 @@ const AnalysisHistory = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="col-span-1 border shadow-sm">
+          <Card className="col-span-1 border shadow-sm hover-card transition-transform">
             <CardHeader>
               <CardTitle>Past Analyses</CardTitle>
             </CardHeader>
@@ -200,7 +200,7 @@ const AnalysisHistory = () => {
                 {analyses.map((analysis) => (
                   <div
                     key={analysis.id}
-                    className={`p-3 rounded-md cursor-pointer transition-colors ${
+                    className={`p-3 rounded-md cursor-pointer transition-colors hover-list-item ${
                       selectedAnalysis === analysis.id
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted hover:bg-muted/80'
@@ -217,7 +217,7 @@ const AnalysisHistory = () => {
             </CardContent>
           </Card>
 
-          <Card className="col-span-1 lg:col-span-2 border shadow-sm">
+          <Card className="col-span-1 lg:col-span-2 border shadow-sm hover-card transition-transform">
             <CardHeader>
               <CardTitle>
                 {selectedAnalysisData ? selectedAnalysisData.task_name : 'Analysis Details'}
@@ -227,8 +227,8 @@ const AnalysisHistory = () => {
               {selectedAnalysisData ? (
                 <Tabs defaultValue="results">
                   <TabsList className="mb-4">
-                    <TabsTrigger value="results">Analysis Results</TabsTrigger>
-                    <TabsTrigger value="chat">Chat History</TabsTrigger>
+                    <TabsTrigger value="results" className="hover-tab-trigger transition-colors">Analysis Results</TabsTrigger>
+                    <TabsTrigger value="chat" className="hover-tab-trigger transition-colors">Chat History</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="results" className="space-y-4">
@@ -241,7 +241,7 @@ const AnalysisHistory = () => {
                     )}
 
                     {selectedAnalysisData.image_url && (
-                      <div className="mt-6 border rounded p-4">
+                      <div className="mt-6 border rounded p-4 hover-image-card transition-transform">
                         <h3 className="font-medium mb-2">Analyzed Image</h3>
                         <div className="flex justify-center">
                           <img
@@ -260,12 +260,12 @@ const AnalysisHistory = () => {
                         {chatInteractions[selectedAnalysisData.id].map((chat, index) => (
                           <div key={chat.id} className="space-y-2">
                             <div className="flex justify-end">
-                              <div className="bg-primary text-primary-foreground p-3 rounded-lg rounded-tr-none max-w-[80%]">
+                              <div className="bg-primary text-primary-foreground p-3 rounded-lg rounded-tr-none max-w-[80%] hover-message transition-transform">
                                 {chat.user_message}
                               </div>
                             </div>
                             <div className="flex justify-start">
-                              <div className="bg-muted p-3 rounded-lg rounded-tl-none max-w-[80%]">
+                              <div className="bg-muted p-3 rounded-lg rounded-tl-none max-w-[80%] hover-ai-message transition-transform">
                                 {chat.ai_response}
                               </div>
                             </div>
