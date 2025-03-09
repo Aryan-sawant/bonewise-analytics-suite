@@ -146,6 +146,73 @@ const AnalysisHistory = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <style jsx>{`
+        .hover-scale {
+          transition: transform 0.2s ease-out;
+        }
+
+        .hover-scale:hover {
+          transform: scale(1.05);
+        }
+
+        .hover-card {
+          transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+        }
+
+        .hover-card:hover {
+          transform: translateZ(5px) translateY(-3px);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+
+        .hover-list-item {
+          transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+
+        .hover-list-item:hover {
+          transform: translateX(5px);
+          box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .hover-tab-trigger {
+            transition: background-color 0.2s ease-out, color 0.2s ease-out;
+        }
+
+        .hover-tab-trigger:hover {
+            background-color: rgba(var(--primary-rgb), 0.1); /* Light primary color background on hover */
+            color: var(--primary); /* Primary color text on hover */
+        }
+
+
+        .hover-image-card {
+          transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+        }
+
+        .hover-image-card:hover {
+          transform: scale(1.02) translateZ(3px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+
+        .hover-message, .hover-ai-message {
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+
+        .hover-message:hover, .hover-ai-message:hover {
+            transform: translateY(-2px) translateZ(2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .hover-title {
+          transition: color 0.2s ease-out, text-decoration 0.2s ease-out;
+        }
+
+        .hover-title:hover {
+          color: var(--primary); /* Use primary color on hover */
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+      `}</style>
       <div className="flex justify-between items-center mb-6">
         <Button
           variant="outline"
@@ -193,7 +260,7 @@ const AnalysisHistory = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <Card className="col-span-1 border shadow-sm hover-card transition-transform">
             <CardHeader>
-              <CardTitle>Past Analyses</CardTitle>
+              <CardTitle className="hover-title">Past Analyses</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
@@ -219,7 +286,7 @@ const AnalysisHistory = () => {
 
           <Card className="col-span-1 lg:col-span-2 border shadow-sm hover-card transition-transform">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="hover-title">
                 {selectedAnalysisData ? selectedAnalysisData.task_name : 'Analysis Details'}
               </CardTitle>
             </CardHeader>
