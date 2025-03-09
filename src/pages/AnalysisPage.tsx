@@ -272,7 +272,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/bone-analysis')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary rounded-lg"
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
         >
           ← Back to Tasks
         </Button>
@@ -280,7 +280,7 @@ const AnalysisPage = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/')}
-          className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-primary rounded-lg"
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
