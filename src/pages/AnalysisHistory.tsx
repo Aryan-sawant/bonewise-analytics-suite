@@ -32,6 +32,8 @@ const AnalysisHistory = () => {
   const [chatInteractions, setChatInteractions] = useState<Record<string, ChatInteraction[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
+  const [titleFadeIn, setTitleFadeIn] = useState(false);
+  const [contentFadeIn, setContentFadeIn] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -40,7 +42,20 @@ const AnalysisHistory = () => {
     }
 
     fetchAnalyses();
+
+    // Fade in title after a short delay on page load
+    setTimeout(() => {
+      setTitleFadeIn(true);
+    }, 100); // Delay to allow page to render slightly before fade-in
   }, [user, navigate]);
+
+  useEffect(() => {
+    // Trigger content fade-in when selectedAnalysis changes
+    setContentFadeIn(false); // Reset fade-in on analysis change
+    setTimeout(() => {
+      setContentFadeIn(true); // Fade in content after short delay
+    }, 100);
+  }, [selectedAnalysis]);
 
   const fetchAnalyses = async () => {
     if (!user) return;
@@ -212,6 +227,26 @@ const AnalysisHistory = () => {
           text-decoration: underline;
           text-underline-offset: 3px;
         }
+
+        .fade-in-title {
+          opacity: 0;
+          transform: translateY(-10px);
+          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .fade-in-title.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .fade-in-content {
+          opacity: 0;
+          transition: opacity 0.4s ease-out;
+        }
+
+        .fade-in-content.visible {
+          opacity: 1;
+        }
       `}</style>
       <div className="flex justify-between items-center mb-6">
         <Button
@@ -232,7 +267,7 @@ const AnalysisHistory = () => {
         </Button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-2">Analysis History</h1>
+      <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>Analysis History</h1>
       <p className="text-muted-foreground mb-8">
         View your past bone health analyses and chatbot interactions
       </p>
@@ -290,7 +325,7 @@ const AnalysisHistory = () => {
                 {selectedAnalysisData ? selectedAnalysisData.task_name : 'Analysis Details'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className={`${contentFadeIn ? 'fade-in-content visible' : 'fade-in-content'}`}>
               {selectedAnalysisData ? (
                 <Tabs defaultValue="results">
                   <TabsList className="mb-4">
