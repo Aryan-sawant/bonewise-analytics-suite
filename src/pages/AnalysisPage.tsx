@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, Home, Download, Maximize, Minimize, Eye } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 
-const TASK_TITLES: Record<string, string> = { // Keeping TASK_TITLES for UI
+const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
   'bone-marrow': 'Bone Marrow Cell Classification',
   'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
@@ -20,7 +20,7 @@ const TASK_TITLES: Record<string, string> = { // Keeping TASK_TITLES for UI
   'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
 };
 
-const TASK_GUIDANCE: Record<string, string> = { // Keeping TASK_GUIDANCE for UI
+const TASK_GUIDANCE: Record<string, string> = {
   'fracture-detection': 'Upload an X-ray image of the bone area. The image should clearly show the suspected fracture area.',
   'bone-marrow': 'Upload a microscope image of the bone marrow sample.',
   'osteoarthritis': 'Upload an X-ray or MRI image of the knee joint.',
@@ -167,10 +167,10 @@ const AnalysisPage = () => {
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
 
-  const formatResults = (resultsText: string) => { // Simplified formatResults (Option 1)
+  const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
 
-    // Remove code blocks (keep if needed)
+    // Remove code blocks
     const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
 
     const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
@@ -203,17 +203,145 @@ const AnalysisPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-12 animate-fade-in">
-      {/* ... rest of your AnalysisPage JSX, using TASK_TITLES and TASK_GUIDANCE if you kept them ... */}
+      <div className="flex justify-between items-center mb-6">
+        <Button
+          variant="outline"
+          onClick={() => navigate('/bone-analysis')}
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+        >
+          ← Back to Tasks
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+        >
+          <Home className="mr-2 h-4 w-4" />
+          Home
+        </Button>
+      </div>
+
+      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground" style={{ color: 'black' }}>{TASK_TITLES[taskId] || 'Analysis'}</h1>
+      <p className="text-muted-foreground mb-8 animate-fade-in">
+        {user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark rounded-lg">
+          <CardHeader className="bg-primary text-primary-foreground rounded-t-lg">
+            <CardTitle className="text-lg font-semibold text-primary-foreground">Upload Medical Image</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">{taskGuidance}</p>
+            <ImageUpload
+              onImageSelected={handleImageUpload}
+              imageUrl={imageUrl}
+              isLoading={analyzing}
+            />
+
+            <div className="mt-4 flex justify-between">
+              {imageUrl && (
+                <Button
+                  variant="secondary"
+                  onClick={openImageModal}
+                  className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                >
+                  <Eye className="mr-2 h-4 w-4" style={{ color: 'black' }} />
+                  View Image
+                </Button>
+              )}
+              <Button
+                onClick={handleAnalyze}
+                disabled={!image || analyzing}
+                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-primary rounded-lg"
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : 'Analyze Image'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark rounded-lg'}`}>
+          <CardHeader className="flex flex-row items-center justify-between bg-primary text-primary-foreground rounded-t-lg">
+            <CardTitle className="text-lg font-semibold text-primary-foreground">Analysis Results</CardTitle>
+            <div className="flex items-center space-x-2">
+              {results && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadResults}
+                  className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                  style={{ color: 'black' }}
+                >
+                  <Download size={14} style={{ color: 'black' }} />
+                  Download
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsResultsMaximized(!isResultsMaximized)}
+                className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+              >
+                {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
+            {/* Added conditional rendering for results here */}
             {results ? (
               <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" style={{ color: 'black' }}>
                 {formatResults(results)}
               </div>
             ) : error ? (
-              // ... error state ...
+              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in">
+                <p className="text-destructive">
+                  {error}
+                </p>
+              </div>
             ) : (
-              // ... loading/upload prompt state ...
+              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse">
+                <p className="text-muted-foreground">
+                  {analyzing ? (
+                    <>Processing your image with Gemini AI...</>
+                  ) : 'Upload an image and click "Analyze Image" to see results'}
+                </p>
+              </div>
             )}
-      {/* ... rest of your AnalysisPage JSX ... */}
+          </CardContent>
+        </Card>
+      </div>
+
+      {results && (
+        <ChatbotButton
+          analysisContext={results}
+          taskTitle={taskTitle}
+          analysisId={analysisId}
+        />
+      )}
+
+      {/* Image Modal */}
+      {isImageModalOpen && imageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative bg-card dark:bg-card-dark rounded-lg p-6 max-w-3xl max-h-full overflow-auto">
+            <Button
+              variant="ghost"
+              onClick={closeImageModal}
+              className="absolute top-2 right-2 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+            >
+              <Minimize size={16} />
+            </Button>
+            <h3 className="text-lg font-semibold mb-4 text-primary-foreground dark:text-card-foreground-dark" style={{ color: 'black' }}>Uploaded Image</h3>
+            <img src={imageUrl} alt="Uploaded Image" className="rounded-md max-w-full max-h-[70vh] object-contain" style={{ color: 'black' }}/> {/* Image in Modal Black Font */}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
