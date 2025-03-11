@@ -9,65 +9,6 @@ import { toast } from 'sonner';
 import { Loader2, Home, Download, Maximize, Minimize, Eye } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 
-const task_prompts = {
-    "fracture-detection": (
-        "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. \n" +
-        "**For common users:** The image will be analyzed to check for fractures, identifying the affected bone and the type of break. \n" +
-        "You will receive an easy-to-understand explanation of the fracture, including its severity and possible effects on movement, provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
-        "**For doctors:** Suggest medical treatment options, possible surgeries, immobilization techniques, and follow-up care strategies,provide nutrition plan,steps to recover like remedies and exercises if required."
-    ),
-
-    "bone-marrow": (
-        "Analyze the biopsy or MRI image and classify bone marrow cells into relevant categories, identifying concerning cells. \n" +
-        "**For common users:** The image will be analyzed to check for abnormalities in bone marrow cells. \n" +
-        "You will receive a simple explanation of the findings, including whether there are unusual cell changes and what they might indicate,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
-        "**For doctors:** Provide detailed insights into abnormal cell structures, possible diagnoses, and recommended medical interventions,provide nutrition plan,steps to recover like remedies and exercises if required."
-    ),
-
-    "osteoarthritis": (
-        "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading. \n" +
-        "**For common users:** The image will be assessed for signs of knee osteoarthritis, including joint space narrowing and bone changes. \n" +
-        "You will get an easy-to-understand report on whether osteoarthritis is present and its severity level, along with its impact on knee function,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
-        "**For doctors:** Suggest advanced treatments, medications, physiotherapy plans, and surgical options such as knee replacement,provide nutrition plan,steps to recover like remedies and exercises if required."
-
-    ),
-
-    "osteoporosis": (
-        "Analyze the bone X-ray and determine osteoporosis stage with estimated Bone Mineral Density (BMD) score. \n" +
-        "**For common users:** The scan will be analyzed to determine how strong or weak the bones are and whether osteoporosis is present. \n" +
-        "You will receive a simple explanation of the results, including whether bone density is lower than normal and what it means for bone health,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
-        "**For doctors:** Recommend specific medications, hormone therapy, and advanced treatments to manage and prevent complications,provide nutrition plan,steps to recover like remedies and exercises if required."
-    ),
-
-    "bone-age": (
-        "Analyze the X-ray of a child's hand and predict bone age with insights into growth patterns. \n" +
-        "**For common users:** The scan will be assessed to check how well the bones are developing compared to the expected growth pattern for the child’s age. \n" +
-        "You will receive an easy-to-understand result explaining whether the bone growth is normal, advanced, or delayed,provide nutrition plan,steps to recover like remedies and exercises if required. \n" +
-        "**For doctors:** Offer insights into growth abnormalities, hormonal imbalances, and necessary medical interventions if delayed growth is detected,provide nutrition plan,steps to recover like remedies and exercises if required."
-    ),
-
-    "spine-fracture": (
-        "Analyze the X-ray, MRI, or CT scan of the cervical spine for fractures and provide a severity assessment. \n" +
-        "**For common users:** The scan will be analyzed for fractures in the neck bones, and you will receive an explanation of the findings. \n" +
-        "The report will describe whether a fracture is present, its severity, and how it may affect movement or pain levels,provide nutrition plan,steps to recover like remedies and exercises if required\n" +
-        "**For doctors:** Suggest medical treatment plans, possible surgical options, and rehabilitation strategies for full recovery,provide nutrition plan,steps to recover like remedies and exercises if required"
-    ),
-
-    "bone-tumor": (
-        "Analyze the X-ray, MRI, CT scan, or biopsy image for possible bone tumors or cancerous growths. \n" +
-        "**For common users:** The image will be checked for any unusual growths or masses in the bone, and you will receive a simple explanation of the findings. \n" +
-        "If any suspicious areas are detected, the report will describe their size, location, and whether they appear concerning,provide nutrition plan,steps to recover like remedies and exercises if required.\n" +
-        "**For doctors:** Provide detailed insights into tumor classification, possible malignancy assessment, and treatment options,provide nutrition plan,steps to recover like remedies and exercises if required. "
-    ),
-
-    "bone-infection": (
-        "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). \n" +
-        "**For common users:** The image will be checked for any signs of infection in the bone, such as swelling, bone damage, or abscess formation. \n" +
-        "You will receive an easy-to-understand explanation of whether an infection is present and how it may be affecting the bone,provide nutrition plan,steps to recover like remedies and exercises if required.\n" +
-        "**For doctors:** Provide insights on infection severity, possible antibiotic treatments, and surgical recommendations if needed,provide nutrition plan,steps to recover like remedies and exercises if required."
-    )
-}
-
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
   'bone-marrow': 'Bone Marrow Cell Classification',
@@ -252,14 +193,8 @@ const AnalysisPage = () => {
             );
           }
 
-          // Even MORE robust bold regex and remove ALL asterisks and underscores from output HTML
-          const formattedPara = para
-                .replace(/(\*\*|__)\s*([^*_]+?)\s*(\*\*|\*|_)/g, '<b>$2</b>') // Bold using <b>
-                .replace(/\*/g, '') // *Remove ALL asterisks* from the rendered output
-                .replace(/_/g, '');  // *Remove ALL underscores* from the rendered output
-
-
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: formattedPara }} />;
+          // Simplified bold handling - just use dangerouslySetInnerHTML for backend-formatted HTML
+          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para }} />;
         })}
       </div>
     );
