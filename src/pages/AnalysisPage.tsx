@@ -341,6 +341,7 @@ const AnalysisPage = () => {
           analysisContext={results}
           taskTitle={taskTitle}
           analysisId={analysisId}
+          className="rounded-lg" // Added rounded-lg class here
         />
       )}
 
