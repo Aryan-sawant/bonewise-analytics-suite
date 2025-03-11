@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize, Eye } from 'lucide-react';
+import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 
 const TASK_TITLES: Record<string, string> = {
@@ -45,6 +45,8 @@ const AnalysisPage = () => {
   const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null);
   const [isResultsMaximized, setIsResultsMaximized] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isImageModalMaximized, setIsImageModalMaximized] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   useEffect(() => {
     if (!user) {
@@ -68,6 +70,8 @@ const AnalysisPage = () => {
     setAnalysisId(null);
     setStoredImageUrl(null);
     setIsImageModalOpen(false);
+    setIsImageModalMaximized(false); // Reset maximization on new image
+    setZoomLevel(1); // Reset zoom on new image
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -159,6 +163,20 @@ const AnalysisPage = () => {
 
   const closeImageModal = () => {
     setIsImageModalOpen(false);
+    setIsImageModalMaximized(false); // Close maximization when modal closes
+    setZoomLevel(1); // Reset zoom when modal closes
+  };
+
+  const toggleImageModalMaximize = () => {
+    setIsImageModalMaximized(!isImageModalMaximized);
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel((prevZoom) => Math.min(prevZoom + 0.25, 3)); // Zoom in, max 3x
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prevZoom) => Math.max(prevZoom - 0.25, 0.5)); // Zoom out, min 0.5x
   };
 
 
@@ -328,17 +346,51 @@ const AnalysisPage = () => {
 
       {/* Image Modal */}
       {isImageModalOpen && imageUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="relative bg-card dark:bg-card-dark rounded-lg p-6 max-w-3xl max-h-full overflow-auto">
-            <Button
-              variant="ghost"
-              onClick={closeImageModal}
-              className="absolute top-2 right-2 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-            >
-              <Minimize size={16} />
-            </Button>
-            <h3 className="text-lg font-semibold mb-4 text-primary-foreground dark:text-card-foreground-dark" style={{ color: 'black' }}>Uploaded Image</h3>
-            <img src={imageUrl} alt="Uploaded Image" className="rounded-md max-w-full max-h-[70vh] object-contain" style={{ color: 'black' }}/> {/* Image in Modal Black Font */}
+        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ${isImageModalMaximized ? 'fixed top-0 left-0 w-full h-full' : ''}`}>
+          <div className={`relative bg-card dark:bg-card-dark rounded-lg p-6 max-w-3xl max-h-full overflow-auto ${isImageModalMaximized ? 'w-full h-full rounded-none' : ''}`}>
+            <CardHeader className="flex flex-row items-center justify-between bg-primary text-primary-foreground rounded-t-lg mb-4">
+              <CardTitle className="text-lg font-semibold text-primary-foreground">Uploaded Image</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleZoomIn}
+                  className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                >
+                  <ZoomIn size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleZoomOut}
+                  className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                >
+                  <ZoomOut size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={toggleImageModalMaximize}
+                  className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                >
+                  {isImageModalMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={closeImageModal}
+                  className=" hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                >
+                  <Minimize size={16} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ overflow: 'auto', maxHeight: '70vh' }}> {/* Added scroll for zoomed image */}
+                <img
+                  src={imageUrl}
+                  alt="Uploaded Image"
+                  className="rounded-md max-w-full object-contain"
+                  style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }} // Apply zoom and origin
+                />
+              </div>
+            </CardContent>
           </div>
         </div>
       )}
