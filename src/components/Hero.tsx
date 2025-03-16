@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from 'react';
 import { AuroraBackground } from "@/components/ui/component"; // Import AuroraBackground
-import Image from 'next/image'; // Import Image component for optimized images
+// REMOVE this line: import Image from 'next/image'; // Import Image component for optimized images
+import React from 'react'; // Make sure React is imported
 
 const Hero = () => {
   const [activeFeature, setActiveFeature] = useState(0);
@@ -18,14 +19,14 @@ const Hero = () => {
     title: "Fracture Detection",
     description: "Identify bone fractures from X-ray images with high accuracy"
   }, {
-    icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
       <circle cx="12" cy="12" r="10"></circle>
       <path d="m4.9 4.9 14.2 14.2"></path>
     </svg>,
     title: "Bone Marrow Analysis",
     description: "Analyze bone marrow cell classifications and distributions"
   }, {
-    icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
       <path d="M17 18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12Z"></path>
       <path d="M12 6v10"></path>
       <path d="M10 6v1"></path>
@@ -36,13 +37,13 @@ const Hero = () => {
     title: "Osteoarthritis Analysis",
     description: "Predict osteoarthritis stages and calculate bone mineral density"
   }, {
-    icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
       <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
     </svg>,
     title: "Osteoporosis Analysis",
     description: "Evaluate bone density and osteoporosis staging"
   }, {
-    icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
       <path d="M16 18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h8"></path>
       <path d="m12 8 4-4 4 4"></path>
       <path d="M8 9h4"></path>
@@ -52,7 +53,7 @@ const Hero = () => {
     title: "Bone Age Detection",
     description: "Accurately determine bone age from hand X-rays"
   }, {
-    icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
       <path d="m9 9-2 2 2 2"></path>
       <path d="m15 9 2 2-2 2"></path>
       <circle cx="12" cy="12" r="10"></circle>
@@ -60,7 +61,7 @@ const Hero = () => {
     title: "Spine Fracture Detection",
     description: "Identify fractures in the cervical spine"
   }, {
-    icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
       <circle cx="12" cy="12" r="10"></circle>
       <path d="m15 9-6 6"></path>
       <path d="m9 9 6 6"></path>
@@ -68,7 +69,7 @@ const Hero = () => {
     title: "Bone Tumor Detection",
     description: "Identify potential bone tumors and classify their characteristics"
   }, {
-    icon: <svg xmlns="http://www.w3.org/24000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
       <path d="M8 2v4"></path>
       <path d="M16 2v4"></path>
       <rect width="16" height="16" x="4" y="4" rx="2"></rect>
@@ -206,12 +207,11 @@ const Hero = () => {
               {certificates.map((certificate, index) => (
                 <div key={index} className="p-4 rounded-xl shadow-md bg-card dark:bg-card-dark border"> {/* Card for each certificate */}
                   <div className="relative h-64 w-full mb-4 overflow-hidden rounded-md"> {/* Container for Image, adjust h-64 as needed */}
-                    <Image
+                    {/* Replace Image component with standard <img> tag */}
+                    <img
                       src={certificate.imageUrl}
                       alt={`Certificate for ${certificate.name}`}
-                      fill
-                      style={{ objectFit: 'contain' }} // or 'cover' depending on your certificate image aspect ratio
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Responsive sizes
+                      style={{ objectFit: 'contain', width: '100%', height: '100%', position: 'absolute' }} //  Style attributes for <img>
                       className="rounded-md"
                     />
                   </div>
