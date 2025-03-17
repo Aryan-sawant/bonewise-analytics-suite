@@ -63,7 +63,7 @@ serve(async (req) => {
         }
       ],
       generationConfig: {
-        temperature: 0,
+        temperature: 0.4,
         maxOutputTokens: 1048576,
       }
     }
