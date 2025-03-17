@@ -8,38 +8,62 @@ const Analysis = () => {
   const navigate = useNavigate();
 
   const task_prompts = {
-    'fracture-detection': {
-        common: "Analyze the X-ray, MRI, or CT scan image to assess for fractures. Identify the affected bone and classify the fracture exclusively according to the AO/OTA Fracture and Dislocation Classification system. Provide a simplified explanation of the AO/OTA classification assigned. Determine the severity of the fracture based on the AO/OTA classification and imaging findings. Provide an easy-to-understand explanation of the fracture, including its potential effects on movement and expected recovery timeline, considering the AO/OTA classification. Please also suggest a basic nutrition plan and recovery steps, including remedies and exercises if appropriate, in the context of the AO/OTA classified fracture.",
-        doctor: "Analyze the X-ray, MRI, or CT scan image to assess for fractures. Identify the affected bone and classify the fracture exclusively according to the AO/OTA Fracture and Dislocation Classification system. Provide a detailed and comprehensive explanation of the specific AO/OTA classification assigned, including the relevant alphanumeric codes and their precise meaning in terms of fracture morphology, anatomical location, and severity. Based solely on the AO/OTA classification and imaging findings, suggest appropriate medical treatment options, including potential surgical interventions, immobilization techniques, and follow-up care strategies. Also, provide a relevant nutrition plan and recommend specific rehabilitation exercises and remedies as needed, directly informed by the AO/OTA fracture classification and its severity."
-      },
-      'bone-marrow': {
-        common: "Analyze the microscopic biopsy or MRI image of bone marrow cells. Classify the bone marrow cells into relevant categories like Abnormal eosinophil, Artefact, Basophil, Blast, Erythroblast, Eosinophil, Faggott cell, Hairy cell, Smudge cell, Immature lymphocyte, Lymphocyte, Metamyelocyte, Monocyte, Myelocyte, Band neutrophil, Segmented neutrophil, Not identifiable, Other cell, Proerythroblast, Plasma cell, Promyelocyte and identify any concerning or abnormal cells. Explain your findings in simple terms, indicating any unusual cell changes and their potential implications. Provide a nutrition plan and steps to recover, including remedies and exercises if required.",
-        doctor: "Analyze the microscopic biopsy or MRI image of bone marrow cells. Classify bone marrow cells into detailed categories like Abnormal eosinophil, Artefact, Basophil, Blast, Erythroblast, Eosinophil, Faggott cell, Hairy cell, Smudge cell, Immature lymphocyte, Lymphocyte, Metamyelocyte, Monocyte, Myelocyte, Band neutrophil, Segmented neutrophil, Not identifiable, Other cell, Proerythroblast, Plasma cell, Promyelocyte, identifying and describing any abnormal cell structures. Provide insights into possible diagnoses and recommend medical interventions, nutrition plans, and recovery steps, including remedies and exercises if required."
-      },
-      'osteoarthritis': {
-        common: "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading like Grade 0: Healthy knee image, Grade 1 (Doubtful): Doubtful joint narrowing with possible osteophytic lipping, Grade 2 (Minimal): Definite presence of osteophytes and possible joint space narrowing, Grade 3 (Moderate): Multiple osteophytes, definite joint space narrowing, with mild sclerosis, Grade 4 (Severe): Large osteophytes, significant joint narrowing, and severe sclerosis. The image will be assessed for signs of knee osteoarthritis, including joint space narrowing and bone changes. You will get an easy-to-understand report on whether osteoarthritis is present and its severity level, along with its impact on knee function, provide nutrition plan, steps to recover like remedies and exercises if required.",
-        doctor: "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading like Grade 0: Healthy knee image, Grade 1 (Doubtful): Doubtful joint narrowing with possible osteophytic lipping, Grade 2 (Minimal): Definite presence of osteophytes and possible joint space narrowing, Grade 3 (Moderate): Multiple osteophytes, definite joint space narrowing, with mild sclerosis, Grade 4 (Severe): Large osteophytes, significant joint narrowing, and severe sclerosis. Suggest advanced treatments, medications, physiotherapy plans, and surgical options such as knee replacement, provide nutrition plan, steps to recover like remedies and exercises if required."
-      },
-      'osteoporosis': {
-        common: "Analyze the bone X-ray and determine osteoporosis stage categorized into normal, osteopenia and osteoporosis with estimated Bone Mineral Density (BMD) score. The scan will be analyzed to determine how strong or weak the bones are and whether osteoporosis is present. You will receive a simple explanation of the results, including whether bone density is lower than normal and what it means for bone health, provide nutrition plan, steps to recover like remedies and exercises if required.",
-        doctor: "Analyze the bone X-ray and determine osteoporosis stage categorized into normal, osteopenia and osteoporosis with estimated Bone Mineral Density (BMD) score. Recommend specific medications, hormone therapy, and advanced treatments to manage and prevent complications, provide nutrition plan, steps to recover like remedies and exercises if required."
-      },
-      'bone-age': {
-        common: "Analyze the X-ray of a child's hand and predict bone age with insights into growth patterns and offering exact age number or range. The scan will be assessed to check how well the bones are developing compared to the expected growth pattern for the child's age. You will receive an easy-to-understand result with exact age number or range explaining whether the bone growth is normal, advanced, or delayed, provide nutrition plan, steps to recover like remedies and exercises if required.",
-        doctor: "Analyze the X-ray of a child's hand and predict bone age with insights into growth patterns and offering exact age number or range. Offer insights into growth abnormalities, hormonal imbalances, and necessary medical interventions if delayed growth is detected, provide nutrition plan, steps to recover like remedies and exercises if required."
-      },
-      'spine-fracture': {
-        common: "Analyze the X-ray, MRI, or CT scan of the cervical spine for fractures based on the AO/OTA Fracture and Dislocation Classification system. The scan will be analyzed for fractures in the neck bones, and you will receive an explanation of the findings. The report will describe whether a fracture is present, its severity, and how it may affect movement or pain levels, provide nutrition plan, steps to recover like remedies and exercises if required.",
-        doctor: "Analyze the X-ray, MRI, or CT scan of the cervical spine for fractures based on the AO/OTA Fracture and Dislocation Classification system. Suggest medical treatment plans, possible surgical options, and rehabilitation strategies for full recovery, provide nutrition plan, steps to recover like remedies and exercises if required."
-      },
-      'bone-tumor': {
-        common: "Analyze the X-ray, MRI, CT scan, or biopsy image for possible bone tumors or cancerous growths. The image will be checked for any unusual growths or masses in the bone, and you will receive a simple explanation of the findings. If any suspicious areas are detected, the report will describe their size, location, and whether they appear concerning, provide nutrition plan, steps to recover like remedies and exercises if required.",
-        doctor: "Analyze the X-ray, MRI, CT scan, or biopsy image for possible bone tumors or cancerous growths. Provide detailed insights into tumor classification, possible malignancy assessment, and treatment options, provide nutrition plan, steps to recover like remedies and exercises if required."
-      },
-      'bone-infection': {
-        common: "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). The image will be checked for any signs of infection in the bone, such as swelling, bone damage, or abscess formation. You will receive an easy-to-understand explanation of whether an infection is present and how it may be affecting the bone, provide nutrition plan, steps to recover like remedies and exercises if required.",
-        doctor: "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). Provide insights on infection severity, possible antibiotic treatments, and surgical recommendations if needed, provide nutrition plan, steps to recover like remedies and exercises if required."
-      }
+    "Bone Fracture Detection": (
+        "Analyze the X-ray, MRI, or CT scan image for fractures and classify into different fracture types with detailed severity assessment. "
+        "For common users: The image will be analyzed to check for fractures, identifying the affected bone and the type of break. "
+        "You will receive an easy-to-understand explanation of the fracture, including its severity and possible effects on movement, provide nutrition plan,steps to recover like remedies and exercises if required. "
+        "For doctors: Suggest medical treatment options, possible surgeries, immobilization techniques, and follow-up care strategies,provide nutrition plan,steps to recover like remedies and exercises if required. "
+    ),
+
+    "Bone Marrow Cell Classification": (
+        "Analyze the biopsy or MRI image and classify bone marrow cells into relevant categories, identifying concerning cells. "
+        "For common users: The image will be analyzed to check for abnormalities in bone marrow cells. "
+        "You will receive a simple explanation of the findings, including whether there are unusual cell changes and what they might indicate,provide nutrition plan,steps to recover like remedies and exercises if required. "
+        "For doctors: Provide detailed insights into abnormal cell structures, possible diagnoses, and recommended medical interventions,provide nutrition plan,steps to recover like remedies and exercises if required. "
+    ),
+
+    "Knee Joint Osteoarthritis Detection": (
+        "Analyze the knee X-ray or MRI and classify osteoarthritis severity based on clinical grading. "
+        "For common users: The image will be assessed for signs of knee osteoarthritis, including joint space narrowing and bone changes. "
+        "You will get an easy-to-understand report on whether osteoarthritis is present and its severity level, along with its impact on knee function,provide nutrition plan,steps to recover like remedies and exercises if required. "
+        "For doctors: Suggest advanced treatments, medications, physiotherapy plans, and surgical options such as knee replacement,provide nutrition plan,steps to recover like remedies and exercises if required."
+
+    ),
+
+    "Osteoporosis Stage Prediction & BMD Score": (
+        "Analyze the bone X-ray and determine osteoporosis stage with estimated Bone Mineral Density (BMD) score. "
+        "For common users: The scan will be analyzed to determine how strong or weak the bones are and whether osteoporosis is present. "
+        "You will receive a simple explanation of the results, including whether bone density is lower than normal and what it means for bone health,provide nutrition plan,steps to recover like remedies and exercises if required. "
+        "For doctors: Recommend specific medications, hormone therapy, and advanced treatments to manage and prevent complications,provide nutrition plan,steps to recover like remedies and exercises if required."
+    ),
+
+    "Bone Age Detection": (
+        "Analyze the X-ray of a child's hand and predict bone age with insights into growth patterns. "
+        "For common users: The scan will be assessed to check how well the bones are developing compared to the expected growth pattern for the child’s age. "
+        "You will receive an easy-to-understand result explaining whether the bone growth is normal, advanced, or delayed,provide nutrition plan,steps to recover like remedies and exercises if required. "
+        "For doctors: Offer insights into growth abnormalities, hormonal imbalances, and necessary medical interventions if delayed growth is detected,provide nutrition plan,steps to recover like remedies and exercises if required."
+    ),
+
+    "Cervical Spine Fracture Detection": (
+        "Analyze the X-ray, MRI, or CT scan of the cervical spine for fractures and provide a severity assessment. "
+        "For common users: The scan will be analyzed for fractures in the neck bones, and you will receive an explanation of the findings. "
+        "The report will describe whether a fracture is present, its severity, and how it may affect movement or pain levels,provide nutrition plan,steps to recover like remedies and exercises if required"
+        "For doctors: Suggest medical treatment plans, possible surgical options, and rehabilitation strategies for full recovery,provide nutrition plan,steps to recover like remedies and exercises if required"
+    ),
+
+    "Bone Tumor/Cancer Detection": (
+        "Analyze the X-ray, MRI, CT scan, or biopsy image for possible bone tumors or cancerous growths. "
+        "For common users: The image will be checked for any unusual growths or masses in the bone, and you will receive a simple explanation of the findings. "
+        "If any suspicious areas are detected, the report will describe their size, location, and whether they appear concerning,provide nutrition plan,steps to recover like remedies and exercises if required."
+        "For doctors: Provide detailed insights into tumor classification, possible malignancy assessment, and treatment options,provide nutrition plan,steps to recover like remedies and exercises if required. "
+    ),
+
+    "Bone Infection (Osteomyelitis) Detection": (
+        "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). "
+        "For common users: The image will be checked for any signs of infection in the bone, such as swelling, bone damage, or abscess formation. "
+        "You will receive an easy-to-understand explanation of whether an infection is present and how it may be affecting the bone,provide nutrition plan,steps to recover like remedies and exercises if required."
+        "For doctors: Provide insights on infection severity, possible antibiotic treatments, and surgical recommendations if needed,provide nutrition plan,steps to recover like remedies and exercises if required."
+    )
 }
 
 
@@ -54,7 +78,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=fracture',
       color: 'bg-red-100 text-red-600',
       disabled: false,
-      prompt: task_prompts['fracture-detection'] // Corrected to use the 'fracture-detection' key
+      prompt: task_prompts["Bone Fracture Detection"]
     },
     {
       id: 'osteoporosis',
@@ -66,7 +90,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=osteoporosis',
       color: 'bg-amber-100 text-amber-600',
       disabled: false,
-      prompt: task_prompts['osteoporosis'] // Corrected to use the 'osteoporosis' key
+      prompt: task_prompts["Osteoporosis Stage Prediction & BMD Score"]
     },
     {
       id: 'knee',
@@ -78,7 +102,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=knee',
       color: 'bg-blue-100 text-blue-600',
       disabled: true,
-      prompt: task_prompts['osteoarthritis'] // Corrected to use the 'osteoarthritis' key
+      prompt: task_prompts["Knee Joint Osteoarthritis Detection"]
     },
     {
       id: 'marrow',
@@ -90,7 +114,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=marrow',
       color: 'bg-purple-100 text-purple-600',
       disabled: true,
-      prompt: task_prompts['bone-marrow'] // Corrected to use the 'bone-marrow' key
+      prompt: task_prompts["Bone Marrow Cell Classification"]
     },
     {
       id: 'age',
@@ -102,7 +126,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=age',
       color: 'bg-green-100 text-green-600',
       disabled: true,
-      prompt: task_prompts['bone-age'] // Corrected to use the 'bone-age' key
+      prompt: task_prompts["Bone Age Detection"]
     },
     {
       id: 'spine',
@@ -114,7 +138,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=spine',
       color: 'bg-indigo-100 text-indigo-600',
       disabled: true,
-      prompt: task_prompts['spine-fracture'] // Corrected to use the 'spine-fracture' key
+      prompt: task_prompts["Cervical Spine Fracture Detection"]
     },
     {
       id: 'tumor',
@@ -126,7 +150,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=tumor',
       color: 'bg-rose-100 text-rose-600',
       disabled: true,
-      prompt: task_prompts['bone-tumor'] // Corrected to use the 'bone-tumor' key
+      prompt: task_prompts["Bone Tumor/Cancer Detection"]
     },
     {
       id: 'infection',
@@ -138,7 +162,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=infection',
       color: 'bg-teal-100 text-teal-600',
       disabled: true,
-      prompt: task_prompts['bone-infection'] // Corrected to use the 'bone-infection' key
+      prompt: task_prompts["Bone Infection (Osteomyelitis) Detection"]
     }
   ]);
 
