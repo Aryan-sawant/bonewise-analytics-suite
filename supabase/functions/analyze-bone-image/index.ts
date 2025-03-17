@@ -131,7 +131,7 @@ serve(async (req) => {
         }
       ],
       generationConfig: {
-        temperature: 0, // Lower temperature for more deterministic and focused responses
+        temperature: 0.4, // Lower temperature for more deterministic and focused responses
         maxOutputTokens: 1048576, // Increased maxOutputTokens for potentially longer analysis results
       }
     }
