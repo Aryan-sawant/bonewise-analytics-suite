@@ -96,7 +96,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Log task processing - for debugging and monitoring
-    console.log(`Processing ${taskId} task with Gemini AI...`)
+    console.log(`Processing ${taskId} task with AI...`)
 
     // Gemini  API Endpoint - Model is explicitly set to 'gemini-2.5-pro-exp-03-25'
     const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent"
