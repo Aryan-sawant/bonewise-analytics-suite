@@ -327,7 +327,7 @@ const AnalysisPage = () => {
               <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse">
                 <p className="text-muted-foreground">
                   {analyzing ? (
-                    <>Processing your image with Gemini AI...</>
+                    <>Processing your image with AI...</>
                   ) : 'Upload an image and click "Analyze Image" to see results'}
                 </p>
               </div>
