@@ -1,9 +1,10 @@
+
 // Hero.tsx
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { AuroraBackground } from "@/components/ui/component"; 
+import { AuroraBackground } from "@/components/ui/aurora-background"; 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
 
