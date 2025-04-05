@@ -1,3 +1,4 @@
+
 // component.tsx
 "use client";
 
@@ -7,6 +8,7 @@ import { AuroraBackground } from "@/components/ui/aurora-background";
 
 // Add the Hero component from animated-hero
 export { Hero as AnimatedHero } from "@/components/ui/animated-hero";
+export { AuroraBackground } from "@/components/ui/aurora-background";
 
 export function AuroraBackgroundDemo() {
   return (

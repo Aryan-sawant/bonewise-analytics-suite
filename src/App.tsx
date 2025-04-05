@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route } from "react-router-dom";
+import AuroraWrapper from "./components/AuroraWrapper";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Tasks from "./pages/Tasks";
@@ -21,11 +22,31 @@ const App = () => (
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/tasks" element={<Tasks />} />
-      <Route path="/task-details/:id" element={<TaskDetails />} />
-      <Route path="/bone-analysis" element={<TaskSelector />} />
-      <Route path="/analysis/:taskId" element={<AnalysisPage />} />
-      <Route path="/analysis-history" element={<AnalysisHistory />} />
-      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/task-details/:id" element={
+        <AuroraWrapper>
+          <TaskDetails />
+        </AuroraWrapper>
+      } />
+      <Route path="/bone-analysis" element={
+        <AuroraWrapper>
+          <TaskSelector />
+        </AuroraWrapper>
+      } />
+      <Route path="/analysis/:taskId" element={
+        <AuroraWrapper>
+          <AnalysisPage />
+        </AuroraWrapper>
+      } />
+      <Route path="/analysis-history" element={
+        <AuroraWrapper>
+          <AnalysisHistory />
+        </AuroraWrapper>
+      } />
+      <Route path="/profile" element={
+        <AuroraWrapper>
+          <ProfilePage />
+        </AuroraWrapper>
+      } />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
