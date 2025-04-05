@@ -17,14 +17,46 @@ export const useAuthContext = (): AuthContextType => {
   return context;
 };
 
+// Extend User type with isDoctor getter
+class ExtendedUser implements User {
+  id: string;
+  email: string;
+  name?: string;
+  userType: 'common' | 'doctor';
+  created_at?: string;
+
+  constructor(userData: Omit<User, 'isDoctor'>) {
+    this.id = userData.id;
+    this.email = userData.email;
+    this.name = userData.name;
+    this.userType = userData.userType;
+    this.created_at = userData.created_at;
+  }
+
+  get isDoctor(): boolean {
+    return this.userType === 'doctor';
+  }
+}
+
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
+
+  // Helper function to create User with isDoctor property
+  const createUserWithDoctor = (userData: Omit<User, 'isDoctor'> | null): User | null => {
+    if (!userData) return null;
+    return new ExtendedUser(userData);
+  };
+
+  // Setter for user that handles the Extended User conversion
+  const setUser = (userData: Omit<User, 'isDoctor'> | null) => {
+    setUserState(createUserWithDoctor(userData));
+  };
 
   // Check for existing session on mount
   useEffect(() => {
@@ -46,7 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               .eq('id', userData.user.id)
               .single();
             
-            const userWithProfile: User = {
+            const userWithProfile = {
               id: userData.user.id,
               email: userData.user.email || '',
               name: profileData?.name || undefined,
@@ -96,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error('Error fetching profile:', profileError);
         }
         
-        const userWithProfile: User = {
+        const userWithProfile = {
           id: data.user.id,
           email: data.user.email || '',
           name: profileData?.name || undefined,
@@ -296,7 +328,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Continue anyway as the user was created successfully
         }
 
-        const userProfile: User = {
+        const userProfile = {
           id: data.user.id,
           email: data.user.email || '',
           name,

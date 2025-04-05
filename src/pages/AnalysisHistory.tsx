@@ -151,7 +151,6 @@ const AnalysisHistory = () => {
     );
   };
 
-
   const getAnalysisById = (id: string | null) => {
     if (!id) return null;
     return analyses.find(analysis => analysis.id === id) || null;
@@ -160,8 +159,9 @@ const AnalysisHistory = () => {
   const selectedAnalysisData = getAnalysisById(selectedAnalysis);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <style jsx>{`
+    <div>
+      <style>
+        {`
         .hover-scale {
           transition: transform 0.2s ease-out;
         }
@@ -177,45 +177,6 @@ const AnalysisHistory = () => {
         .hover-card:hover {
           transform: translateZ(5px) translateY(-3px);
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-
-        .hover-list-item {
-          transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-        }
-
-        .hover-list-item:hover {
-          transform: translateX(5px);
-          box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .hover-tab-trigger {
-            transition: background-color 0.2s ease-out, color 0.2s ease-out;
-        }
-
-        .hover-tab-trigger:hover {
-            background-color: rgba(var(--primary-rgb), 0.1); /* Light primary color background on hover */
-            color: var(--primary); /* Primary color text on hover */
-        }
-
-
-        .hover-image-card {
-          transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
-        }
-
-        .hover-image-card:hover {
-          transform: scale(1.02) translateZ(3px);
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        }
-
-
-        .hover-message, .hover-ai-message {
-            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-        }
-
-        .hover-message:hover, .hover-ai-message:hover {
-            transform: translateY(-2px) translateZ(2px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .hover-title {
@@ -238,16 +199,8 @@ const AnalysisHistory = () => {
           opacity: 1;
           transform: translateY(0);
         }
-
-        .fade-in-content {
-          opacity: 0;
-          transition: opacity 0.4s ease-out;
-        }
-
-        .fade-in-content.visible {
-          opacity: 1;
-        }
-      `}</style>
+        `}
+      </style>
       <div className="flex justify-between items-center mb-6">
         <Button
           variant="outline"
