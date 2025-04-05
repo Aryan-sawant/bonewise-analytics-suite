@@ -19,6 +19,7 @@ const TaskSelector = () => {
   const { user } = useAuthContext();
   const [titleFadeIn, setTitleFadeIn] = React.useState(false);
 
+  // Redirect if not logged in
   React.useEffect(() => {
     if (!user) {
       navigate('/auth');
@@ -89,8 +90,7 @@ const TaskSelector = () => {
 
   return (
     <div className="container mx-auto px-4 py-12 animate-fade-in">
-      <style>
-        {`
+      <style jsx>{`
         .hover-scale {
           transition: transform 0.2s ease-out;
         }
@@ -128,13 +128,11 @@ const TaskSelector = () => {
           opacity: 1;
           transform: translateY(0);
         }
-        `}
-      </style>
-      
+      `}</style>
       <Button
         variant="outline"
         onClick={() => navigate('/tasks')}
-        className="mb-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10"
+        className="mb-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10" // Back to Tasks Button Blue with hover-scale
       >
         ← Back to Dashboard
       </Button>

@@ -13,7 +13,6 @@ interface AnalysisCardProps {
   color?: string;
   disabled?: boolean;
   className?: string;
-  prompt?: string; // Add the prompt prop
 }
 
 const AnalysisCard = ({
@@ -24,7 +23,6 @@ const AnalysisCard = ({
   color = "bg-primary/10 text-primary",
   disabled = false,
   className,
-  prompt, // Include the prompt prop
 }: AnalysisCardProps) => {
   return (
     <Card className={cn("overflow-hidden transition-all duration-300 hover:shadow-md border", disabled && "opacity-60", className)}>

@@ -144,8 +144,7 @@ const Tasks = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <style>
-        {`
+      <style jsx>{`
         .hover-scale {
           transition: transform 0.2s ease-out;
         }
@@ -183,8 +182,7 @@ const Tasks = () => {
           opacity: 1;
           transform: translateY(0);
         }
-        `}
-      </style>
+      `}</style>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className={`text-3xl font-bold text-primary-foreground ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Dashboard</h1>

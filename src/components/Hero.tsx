@@ -1,9 +1,9 @@
-
 // Hero.tsx
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from 'react';
+import { AuroraBackground } from "@/components/ui/component"; // Import AuroraBackground
 
 const Hero = () => {
 const [activeFeature, setActiveFeature] = useState(0);
@@ -98,7 +98,12 @@ behavior: 'smooth'
 }
 }, [activeFeature]);
 return (
-    <section className="relative min-h-[90vh] flex items-center justify-center px-4 md:px-6 overflow-hidden">
+  <AuroraBackground> {/* Wrap the Hero content with AuroraBackground */}
+    <section className="relative min-h-[90vh] flex items-center justify-center px-4 md:px-6 overflow-hidden"> {/* Adjusted px-4 md:px-6 for container padding */}
+      {/* Background Elements - These are now inside AuroraBackground and might be redundant */}
+      {/* <div className="absolute inset-0 -z-10 bg-gradient-radial from-blue-50 to-background opacity-70"></div>
+      <div className="absolute inset-0 -z-10 bg-bone-pattern opacity-5"></div> */}
+
       {/* Content */}
       <div className="max-w-4xl mx-auto text-center">
         <div className="mb-6 inline-block">
@@ -107,49 +112,49 @@ return (
           </span>
         </div>
 
-        <h1 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4 animate-fade-in-up" style={{
-          animationDelay: '0.1s',
-          whiteSpace: 'pre-line'
-        }}>
-          Advanced Bone Analysis with{`\n`}Artificial Intelligence
+        <h1 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4 animate-fade-in-up" style={{ // Reduced mt-4 and font size slightly
+        animationDelay: '0.1s',
+        whiteSpace: 'pre-line' // Added whiteSpace: 'pre-line'
+      }}>
+          Advanced Bone Analysis with{`\n`}Artificial Intelligence {/* Line break using newline character */}
         </h1>
 
-        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{
-          animationDelay: '0.2s'
-        }}>BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.</p>
+        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{ // Reduced mb-8
+        animationDelay: '0.2s'
+      }}>BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.</p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{
-          animationDelay: '0.3s'
-        }}>
+        animationDelay: '0.3s'
+      }}>
           <Link to="/auth?tab=signup">
-            <Button size="lg" className="gap-2 px-6 transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105">
+            <Button size="lg" className="gap-2 px-6 transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105"> {/* 3D Hover Effect */}
               Get Started
               <ArrowRight size={16} />
             </Button>
           </Link>
           <Link to="/auth">
-            <Button variant="outline" size="lg" className="transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105">
+            <Button variant="outline" size="lg" className="transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105"> {/* 3D Hover Effect */}
               Log in
             </Button>
           </Link>
         </div>
 
-        {/* New Heading and Description */}
-        <div className="mt-12 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
-          <h2 className="text-2xl font-bold text-black mb-2">The Analyses We Provide</h2>
-          <p className="text-muted-foreground text-center max-w-xl mx-auto mb-4">
-            Explore our wide range of AI-powered analysis options, each designed to provide detailed insights into different aspects of bone health.
-          </p>
-        </div>
+                    {/* New Heading and Description */}
+                    <div className="mt-12 animate-fade-in-up" style={{ animationDelay: '0.35s' }}> {/* Reduced mt-12 */}
+                        <h2 className="text-2xl font-bold text-black mb-2">The Analyses We Provide</h2>
+                        <p className="text-muted-foreground text-center max-w-xl mx-auto mb-4"> {/* Reduced mb-4 */}
+                            Explore our wide range of AI-powered analysis options, each designed to provide detailed insights into different aspects of bone health.
+                        </p>
+                    </div>
 
         {/* Features - Now with horizontal scrolling */}
-        <div className="mt-4 animate-fade-in-up" style={{
-          animationDelay: '0.4s'
-        }}>
+        <div className="mt-4 animate-fade-in-up" style={{ // Reduced mt-4
+        animationDelay: '0.4s'
+      }}>
           <div ref={featuresRef} className="flex overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory scroll-smooth" style={{
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
-          }}>
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
             <div className="flex space-x-6 px-4">
               {features.map((feature, index) => (
                 <div key={index} className={`p-6 min-w-[280px] rounded-xl shadow-sm backdrop-blur-xs snap-center transition-all
@@ -159,7 +164,7 @@ return (
                     {feature.icon}
                   </div>
                   <h3 className="text-lg font-semibold mb-1 text-center">{feature.title}</h3>
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-center text-sm leading-relaxed"> {/* Feature Description is here - Reduced font-sm, Added leading-relaxed */}
                     {feature.description}
                   </p>
                 </div>))}
@@ -174,6 +179,7 @@ return (
         </div>
       </div>
     </section>
+  </AuroraBackground>
 );
 };
 export default Hero;
