@@ -12,6 +12,7 @@ interface AnalysisCardProps {
   path: string;
   color?: string;
   disabled?: boolean;
+  prompt?: string; // Add prompt prop
   className?: string;
 }
 
@@ -22,6 +23,7 @@ const AnalysisCard = ({
   path,
   color = "bg-primary/10 text-primary",
   disabled = false,
+  prompt, // Include prompt in prop destructuring
   className,
 }: AnalysisCardProps) => {
   return (

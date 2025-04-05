@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 
 interface ChatbotButtonProps {
-  analysisContext?: string;
-  taskTitle?: string;
-  analysisId?: string;
+  analysisContext: string;
+  taskTitle: string;
+  analysisId: string;
+  className?: string;
 }
 
 interface ChatMessage {
@@ -19,7 +19,7 @@ interface ChatMessage {
   isLoading?: boolean;
 }
 
-const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitle, analysisId }) => {
+const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitle, analysisId, className }) => {
   const { user } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -38,7 +38,6 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
     setIsMaximized(!isMaximized);
   };
 
-  // Auto-scroll to the bottom of the chat
   useEffect(() => {
     if (isOpen && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -48,19 +47,15 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
   const handleSendMessage = async () => {
     if (!message.trim() || isLoading) return;
     
-    // Add user message to chat
     const userMessage = { text: message, isUser: true };
     setMessages([...messages, userMessage]);
     
-    // Add loading indicator
     setMessages(prev => [...prev, { text: '', isUser: false, isLoading: true }]);
     
-    // Clear input field
     setMessage('');
     setIsLoading(true);
     
     try {
-      // Prepare the context for Gemini
       const contextPrompt = `
         You are a professional bone health assistant helping with medical image analysis results.
         The user is asking about this analysis result: "${taskTitle || 'bone analysis'}"
@@ -73,7 +68,6 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
         Make sure to format important information using HTML <b> tags for bold (not markdown asterisks).
       `;
       
-      // Call Gemini via the edge function
       const { data, error } = await supabase.functions.invoke('chat-with-gemini', {
         body: {
           message: message,
@@ -88,10 +82,8 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
         throw new Error(error.message);
       }
       
-      // Remove loading message
       setMessages(prev => prev.filter(msg => !msg.isLoading));
       
-      // Add AI response
       const botResponse: ChatMessage = { 
         text: data.response || "I'm sorry, I couldn't generate a response. Please try again.", 
         isUser: false 
@@ -101,9 +93,7 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
       
     } catch (error) {
       console.error('Error sending message:', error);
-      // Remove loading message
       setMessages(prev => prev.filter(msg => !msg.isLoading));
-      // Add error message
       setMessages(prev => [...prev, { 
         text: "I'm sorry, I encountered an error processing your request. Please try again.", 
         isUser: false 
@@ -126,7 +116,7 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
 
       {isOpen && (
         <Card 
-          className={`fixed ${isMaximized ? 'inset-4 max-h-none' : 'bottom-24 right-6 w-96 max-h-[70vh]'} shadow-lg animate-fade-in z-50 transition-all duration-300`}
+          className={`fixed ${isMaximized ? 'inset-4 max-h-none' : 'bottom-24 right-6 w-96 max-h-[70vh]'} shadow-lg animate-fade-in z-50 transition-all duration-300 ${className}`}
         >
           <CardHeader className="bg-primary text-primary-foreground">
             <CardTitle className="text-lg flex justify-between items-center">

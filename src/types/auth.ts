@@ -4,7 +4,7 @@ export interface User {
   email: string;
   name?: string;
   userType: 'common' | 'doctor';
-  created_at?: string; // Add this field to fix the error
+  created_at?: string;
   // Additional user properties can be added here
 }
 
@@ -15,5 +15,10 @@ export interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string, userType: 'common' | 'doctor', name?: string) => Promise<void>;
   logout: () => void;
-  setUser?: (user: User) => void; // Add this optional method to fix the error
+  setUser?: (user: User) => void;
 }
+
+// Add a type guard to check if a user is a doctor
+export const isDoctor = (user: User | null): boolean => {
+  return user?.userType === 'doctor';
+};

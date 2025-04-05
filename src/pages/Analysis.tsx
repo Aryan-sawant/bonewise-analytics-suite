@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnalysisCard from '@/components/AnalysisCard';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { isDoctor } from '@/types/auth';
 
 const Analysis = () => {
   const { user } = useAuthContext();
@@ -54,7 +56,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=fracture',
       color: 'bg-red-100 text-red-600',
       disabled: false,
-      prompt: user?.isDoctor ? task_prompts['fracture'].doctor : task_prompts['fracture'].common
+      prompt: isDoctor(user) ? task_prompts['fracture'].doctor : task_prompts['fracture'].common
     },
     {
       id: 'osteoporosis',
@@ -66,7 +68,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=osteoporosis',
       color: 'bg-amber-100 text-amber-600',
       disabled: false,
-      prompt: user?.isDoctor ? task_prompts['osteoporosis'].doctor : task_prompts['osteoporosis'].common
+      prompt: isDoctor(user) ? task_prompts['osteoporosis'].doctor : task_prompts['osteoporosis'].common
     },
     {
       id: 'knee',
@@ -78,7 +80,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=knee',
       color: 'bg-blue-100 text-blue-600',
       disabled: true,
-      prompt: user?.isDoctor ? task_prompts['knee'].doctor : task_prompts['knee'].common
+      prompt: isDoctor(user) ? task_prompts['knee'].doctor : task_prompts['knee'].common
     },
     {
       id: 'marrow',
@@ -90,7 +92,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=marrow',
       color: 'bg-purple-100 text-purple-600',
       disabled: true,
-      prompt: user?.isDoctor ? task_prompts['marrow'].doctor : task_prompts['marrow'].common
+      prompt: isDoctor(user) ? task_prompts['marrow'].doctor : task_prompts['marrow'].common
     },
     {
       id: 'age',
@@ -102,7 +104,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=age',
       color: 'bg-green-100 text-green-600',
       disabled: true,
-      prompt: user?.isDoctor ? task_prompts['age'].doctor : task_prompts['age'].common
+      prompt: isDoctor(user) ? task_prompts['age'].doctor : task_prompts['age'].common
     },
     {
       id: 'spine',
@@ -114,7 +116,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=spine',
       color: 'bg-indigo-100 text-indigo-600',
       disabled: true,
-      prompt: user?.isDoctor ? task_prompts['spine'].doctor : task_prompts['spine'].common
+      prompt: isDoctor(user) ? task_prompts['spine'].doctor : task_prompts['spine'].common
     },
     {
       id: 'tumor',
@@ -126,7 +128,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=tumor',
       color: 'bg-rose-100 text-rose-600',
       disabled: true,
-      prompt: user?.isDoctor ? task_prompts['tumor'].doctor : task_prompts['tumor'].common
+      prompt: isDoctor(user) ? task_prompts['tumor'].doctor : task_prompts['tumor'].common
     },
     {
       id: 'infection',
@@ -138,7 +140,7 @@ const Analysis = () => {
       path: '/analysis/upload?type=infection',
       color: 'bg-teal-100 text-teal-600',
       disabled: true,
-      prompt: user?.isDoctor ? task_prompts['infection'].doctor : task_prompts['infection'].common
+      prompt: isDoctor(user) ? task_prompts['infection'].doctor : task_prompts['infection'].common
     }
   ]);
 
@@ -161,7 +163,7 @@ const Analysis = () => {
             path={type.path}
             color={type.color}
             disabled={type.disabled}
-            prompt={user?.isDoctor ? task_prompts[type.id].doctor : task_prompts[type.id].common}
+            prompt={isDoctor(user) ? task_prompts[type.id].doctor : task_prompts[type.id].common}
           />
         ))}
       </div>

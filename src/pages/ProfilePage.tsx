@@ -64,7 +64,8 @@ const ProfilePage = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <style jsx>{`
+      <style>
+        {`
         .hover-scale {
           transition: transform 0.2s ease-out;
         }
@@ -102,7 +103,8 @@ const ProfilePage = () => {
           opacity: 1;
           transform: translateY(0);
         }
-      `}</style>
+        `}
+      </style>
       <div className="flex justify-between items-center mb-6">
         <Button
           variant="outline"

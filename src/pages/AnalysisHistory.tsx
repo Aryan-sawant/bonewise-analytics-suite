@@ -151,7 +151,6 @@ const AnalysisHistory = () => {
     );
   };
 
-
   const getAnalysisById = (id: string | null) => {
     if (!id) return null;
     return analyses.find(analysis => analysis.id === id) || null;
@@ -161,7 +160,8 @@ const AnalysisHistory = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <style jsx>{`
+      <style>
+        {`
         .hover-scale {
           transition: transform 0.2s ease-out;
         }
@@ -178,7 +178,6 @@ const AnalysisHistory = () => {
           transform: translateZ(5px) translateY(-3px);
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-
 
         .hover-list-item {
           transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
@@ -198,7 +197,6 @@ const AnalysisHistory = () => {
             color: var(--primary); /* Primary color text on hover */
         }
 
-
         .hover-image-card {
           transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
         }
@@ -207,7 +205,6 @@ const AnalysisHistory = () => {
           transform: scale(1.02) translateZ(3px);
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
-
 
         .hover-message, .hover-ai-message {
             transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
@@ -247,7 +244,8 @@ const AnalysisHistory = () => {
         .fade-in-content.visible {
           opacity: 1;
         }
-      `}</style>
+        `}
+      </style>
       <div className="flex justify-between items-center mb-6">
         <Button
           variant="outline"
