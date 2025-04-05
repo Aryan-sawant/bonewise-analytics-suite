@@ -1,14 +1,17 @@
 
 import Hero from "@/components/Hero";
 import NavBar from "@/components/NavBar";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <main>
-        <Hero />
-      </main>
+      <AuroraBackground>
+        <main>
+          <Hero />
+        </main>
+      </AuroraBackground>
     </div>
   );
 };
