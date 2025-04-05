@@ -1,16 +1,31 @@
-
 // Hero.tsx
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from 'react';
-import { AuroraBackground } from "@/components/ui/component"; // Import AuroraBackground
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { AuroraBackground } from "@/components/ui/component"; 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { motion } from "framer-motion";
 
 const Hero = () => {
   const [activeFeature, setActiveFeature] = useState(0);
   const featuresRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  
+  // Add state for title animation
+  const [titleNumber, setTitleNumber] = useState(0);
+  const titles = useMemo(
+    () => ["Artificial Intelligence", "Assistance Intelligence"],
+    []
+  );
+
+  // Animation timer effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setTitleNumber(titleNumber === 0 ? 1 : 0);
+    }, 3000);
+    return () => clearTimeout(timeoutId);
+  }, [titleNumber]);
   
   const features = [{
     icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
@@ -119,7 +134,30 @@ const Hero = () => {
           }}>
             Advanced Bone Analysis with
             <br className="hidden sm:block" /> 
-            Artificial Intelligence
+            <span className="relative flex w-full justify-center overflow-hidden text-center">
+              {titles.map((title, index) => (
+                <motion.span
+                  key={index}
+                  className="absolute font-bold"
+                  initial={{ opacity: 0, y: "-50px" }}
+                  transition={{ type: "spring", stiffness: 50 }}
+                  animate={
+                    titleNumber === index
+                      ? {
+                          y: 0,
+                          opacity: 1,
+                        }
+                      : {
+                          y: titleNumber > index ? -50 : 50,
+                          opacity: 0,
+                        }
+                  }
+                >
+                  {title}
+                </motion.span>
+              ))}
+              <span className="opacity-0">{titles[0]}</span> {/* Invisible placeholder for layout */}
+            </span>
           </h1>
 
           <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{

@@ -1,9 +1,19 @@
+
 // demo.tsx
 "use client";
 
 import { motion } from "framer-motion";
 import React from "react";
 import { AuroraBackground } from "@/components/ui/aurora-background";
+import { Hero } from "@/components/ui/animated-hero";
+
+export function HeroDemo() {
+  return (
+    <div className="block">
+      <Hero />
+    </div>
+  );
+}
 
 export function AuroraBackgroundDemo() {
   return (
