@@ -126,6 +126,20 @@ export default {
 				'float': {
 					'0%, 100%': { transform: 'translateY(0)' },
 					'50%': { transform: 'translateY(-5px)' }
+				},
+				'aurora': {
+					'0%': { 
+						backgroundPosition: '0% 50%, 50% 50%',
+						backgroundSize: '200%, 100%'
+					},
+					'50%': { 
+						backgroundPosition: '100% 50%, 50% 50%',
+						backgroundSize: '200%, 120%'
+					},
+					'100%': { 
+						backgroundPosition: '0% 50%, 50% 50%',
+						backgroundSize: '200%, 100%'
+					},
 				}
 			},
 			animation: {
@@ -134,7 +148,8 @@ export default {
 				'fade-in': 'fade-in 0.5s ease-out',
 				'fade-in-up': 'fade-in-up 0.7s ease-out',
 				'pulse-subtle': 'pulse-subtle 3s infinite ease-in-out',
-				'float': 'float 3s infinite ease-in-out'
+				'float': 'float 3s infinite ease-in-out',
+				'aurora': 'aurora 10s infinite alternate'
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
