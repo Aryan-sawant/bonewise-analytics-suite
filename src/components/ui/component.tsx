@@ -9,6 +9,8 @@ import { AuroraBackground } from "@/components/ui/aurora-background";
 // Add the Hero component from animated-hero
 export { Hero as AnimatedHero } from "@/components/ui/animated-hero";
 export { AuroraBackground } from "@/components/ui/aurora-background";
+export { NavBar } from "@/components/ui/tubelight-navbar";
+export { NavBarDemo } from "@/components/ui/navbar-demo";
 
 export function AuroraBackgroundDemo() {
   return (

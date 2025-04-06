@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -9,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Home, User, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { NavBarDemo } from '@/components/ui/navbar-demo';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -60,6 +62,14 @@ const ProfilePage = () => {
     }
   };
 
+  const handleGoToDashboard = () => {
+    navigate('/tasks');
+  };
+
+  const handleGoToHome = () => {
+    navigate('/');
+  };
+
   if (!user) return null;
 
   return (
@@ -108,7 +118,7 @@ const ProfilePage = () => {
       <div className="flex justify-between items-center mb-6">
         <Button
           variant="outline"
-          onClick={() => navigate('/tasks')}
+          onClick={handleGoToDashboard}
           className="hover-scale transition-transform active:scale-95 text-blue-500 border-blue-500 hover:bg-blue-500/10"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -117,7 +127,7 @@ const ProfilePage = () => {
 
         <Button
           variant="outline"
-          onClick={() => navigate('/')}
+          onClick={handleGoToHome}
           className="hover-scale transition-transform active:scale-95 text-blue-500 border-blue-500 hover:bg-blue-500/10"
         >
           <Home className="mr-2 h-4 w-4" />
@@ -227,6 +237,7 @@ const ProfilePage = () => {
           </Card>
         </div>
       </div>
+      <NavBarDemo />
     </div>
   );
 };

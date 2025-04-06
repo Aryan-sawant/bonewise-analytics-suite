@@ -19,9 +19,17 @@ const App = () => (
     <Toaster />
     <Sonner />
     <Routes>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={
+        <AuroraWrapper>
+          <Index />
+        </AuroraWrapper>
+      } />
       <Route path="/auth" element={<Auth />} />
-      <Route path="/tasks" element={<Tasks />} />
+      <Route path="/tasks" element={
+        <AuroraWrapper>
+          <Tasks />
+        </AuroraWrapper>
+      } />
       <Route path="/task-details/:id" element={
         <AuroraWrapper>
           <TaskDetails />
@@ -48,7 +56,11 @@ const App = () => (
         </AuroraWrapper>
       } />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={
+        <AuroraWrapper>
+          <NotFound />
+        </AuroraWrapper>
+      } />
     </Routes>
   </TooltipProvider>
 );
