@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -64,7 +63,7 @@ const ProfilePage = () => {
   if (!user) return null;
 
   return (
-    <div className="container mx-auto px-4 py-12 min-h-screen overflow-auto">
+    <div className="container mx-auto px-4 py-12">
       <style>
         {`
         .hover-scale {

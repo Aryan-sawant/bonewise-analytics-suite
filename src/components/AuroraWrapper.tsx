@@ -10,9 +10,7 @@ interface AuroraWrapperProps {
 const AuroraWrapper: FC<AuroraWrapperProps> = ({ children }) => {
   return (
     <AuroraBackground>
-      <div className="min-h-screen w-full overflow-auto">
-        {children}
-      </div>
+      {children}
     </AuroraBackground>
   );
 };
