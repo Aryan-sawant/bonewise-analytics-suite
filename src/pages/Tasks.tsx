@@ -1,152 +1,24 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bone, PlusCircle, ArrowRight, Home, User, History, LogOut } from 'lucide-react';
+import { ArrowRight, Clock, CalendarCheck, PlusCircle } from "lucide-react";
 import { useAuthContext } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { AuroraBackground } from "@/components/ui/aurora-background";
-
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  completed: boolean | null;
-  deadline: string | null;
-  created_at: string | null;
-}
-
-interface RecentActivity {
-  id: string;
-  title: string;
-  created_at: string;
-}
 
 const Tasks = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuthContext();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>('all');
-  const [titleFadeIn, setTitleFadeIn] = useState(false);
+  const { user } = useAuthContext();
+  const [recentAnalyses, setRecentAnalyses] = useState([]);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (!user) return;
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-        setTasks(data || []);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        toast.error('Failed to load tasks');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchRecentActivities = async () => {
-      if (!user) return;
-      try {
-        const { data: analysesData, error: analysesError } = await supabase
-          .from('analyses')
-          .select('id, task_name, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (!analysesError && analysesData && analysesData.length > 0) {
-          const activities: RecentActivity[] = analysesData.map(analysis => ({
-            id: analysis.id,
-            title: analysis.task_name,
-            created_at: analysis.created_at,
-          }));
-
-          setRecentActivities(activities);
-          return;
-        }
-
-        const { data: tasksData, error: tasksError } = await supabase
-          .from('tasks')
-          .select('id, title, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (tasksError) {
-          throw tasksError;
-        }
-
-        const taskActivities: RecentActivity[] = (tasksData || []).map(task => ({
-          id: task.id,
-          title: task.title,
-          created_at: task.created_at || new Date().toISOString(),
-        }));
-
-        setRecentActivities(taskActivities);
-      } catch (error) {
-        console.error('Error fetching recent activities:', error);
-      }
-    };
-
-    fetchTasks();
-    fetchRecentActivities();
-
-    setTimeout(() => {
-      setTitleFadeIn(true);
-    }, 100);
-  }, [user]);
-
-  const handleCreateTask = () => {
-    navigate('/tasks');
-  };
-
-  const handleViewTask = (taskId: string) => {
-    navigate(`/task-details/${taskId}`);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/auth');
-      toast.success('Logged out successfully');
-    } catch (error) {
-      toast.error('Failed to log out');
-    }
-  };
-
-  const filteredTasks = activeTab === 'completed'
-    ? tasks.filter(task => task.completed)
-    : activeTab === 'pending'
-      ? tasks.filter(task => !task.completed)
-      : tasks;
-
-  if (!user) {
-    return null;
-  }
+    // In a real app, this would fetch user's recent analyses from the backend
+    // For now, just using empty state
+  }, []);
 
   return (
-    <AuroraBackground>
-      <div className="container mx-auto px-4 py-12">
-        <style jsx>{`
+    <div className="container page-transition max-w-6xl py-16 px-4 md:px-6 animate-fade-in">
+      <style>
+        {`
         .hover-scale {
           transition: transform 0.2s ease-out;
         }
@@ -163,131 +35,125 @@ const Tasks = () => {
           transform: translateZ(5px) translateY(-3px);
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-
-        .hover-title {
-          transition: color 0.2s ease-out, text-decoration 0.2s ease-out;
-        }
-
-        .hover-title:hover {
-          color: var(--primary); /* Use primary color on hover */
-          text-decoration: underline;
-          text-underline-offset: 3px;
-        }
-
-        .fade-in-title {
-          opacity: 0;
-          transform: translateY(-10px);
-          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-
-        .fade-in-title.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        `}</style>
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        `}
+      </style>
+      
+      <header className="mb-12">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
-            <h1 className={`text-3xl font-bold text-primary-foreground ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Dashboard</h1>
-            <p className="text-muted-foreground animate-fade-in">Manage your tasks and bone health analyses</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-primary-foreground animate-slide-in mb-2" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>
+              ✨ Welcome to <span className="text-primary">BoneHealthAI</span> ✨
+            </h1>
+            <p className="text-muted-foreground mt-1 animate-fade-in">
+              Your intelligent bone health analysis dashboard
+            </p>
           </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/')}
-              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
-            >
-              <Home className="mr-2 h-4 w-4" />
-              Home
+          <Link to="/analysis">
+            <Button className="gap-2 transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105">
+              <PlusCircle size={16} />
+              New Analysis
             </Button>
-
-            <Button onClick={() => navigate('/bone-analysis')} variant="outline"  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg">
-              <Bone className="mr-2 h-4 w-4" />
-              Bone Analysis
-            </Button>
-
-            <Button variant="outline" onClick={handleLogout}  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg">
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
-          </div>
+          </Link>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-primary text-primary-foreground transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold hover-title">Bone Health Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-primary-foreground/90 mb-4 text-base font-bold">
-                Access AI-powered bone health analysis tools
-              </p>
-            </CardContent>
-            <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" onClick={() => navigate('/bone-analysis')}>
-                Start Analysis <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <Card className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Total Analyses</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">Your medical scans analyzed</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary-foreground">0</div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-primary text-primary-foreground transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold hover-title">Recent Activities</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-primary-foreground/90 mb-4">
-                {recentActivities.length > 0
-                  ? `You have ${recentActivities.length} recent activities`
-                  : 'View your most recent activities'}
-              </p>
-              {recentActivities.length > 0 && (
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="text-sm bg-primary-foreground/10 p-2 rounded-lg transition-all duration-200 hover:bg-primary-foreground/20">
-                      <p className="font-medium text-primary-foreground">{activity.title}</p>
-                      <p className="text-xs text-primary-foreground/80">
-                        {new Date(activity.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" onClick={() => navigate('/analysis-history')}>
-                <History className="mr-2 h-4 w-4" />
-                View History
-              </Button>
-            </CardFooter>
-          </Card>
+        <Card className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Last Analysis</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">Most recent scan</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-muted-foreground italic">No analyses yet</div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-primary text-primary-foreground transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold hover-title">My Account</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-primary-foreground/90 mb-4">
-                {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}: {user.email}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 bg-primary-foreground/10 p-2 rounded-lg transition-all duration-200 hover:bg-primary-foreground/20">
-                  <User className="h-4 w-4" />
-                  <span className="text-sm">Profile: {user.name || 'Not set'}</span>
-                </div>
-                <div className="flex items-center gap-2 bg-primary-foreground/10 p-2 rounded-lg transition-all duration-200 hover:bg-primary-foreground/20">
-                  <span className="text-sm">Account type: {user.userType}</span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                Account Settings
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+        <Card className="transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Account Status</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">Current user level</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm font-medium flex items-center gap-2 text-primary-foreground">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                {user?.userType === 'doctor' ? 'Medical Professional' : 'Standard User'}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </AuroraBackground>
+
+      <Tabs defaultValue="recent" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="recent" className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-103">Recent Analyses</TabsTrigger>
+          <TabsTrigger value="saved" className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-103">Saved Reports</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="recent">
+          {recentAnalyses.length === 0 ? (
+            <Card className="bg-muted/30 transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103">
+              <CardHeader>
+                <CardTitle className="font-semibold">No analyses yet</CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">
+                  You haven't performed any bone health analyses yet
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-muted p-4 mb-4 transition-all duration-300 hover:scale-110">
+                  <Clock size={32} className="text-muted-foreground" />
+                </div>
+                <p className="text-center text-muted-foreground max-w-md">
+                  Get started by creating your first bone health analysis. Upload
+                  a medical image and let our AI analyze it for you.
+                </p>
+              </CardContent>
+              <CardFooter className="justify-center pb-8">
+                <Link to="/analysis">
+                  <Button className="gap-2 transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105">
+                    Start Your First Analysis
+                    <ArrowRight size={16} />
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Recent analyses would be mapped here */}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="saved">
+          <Card className="bg-muted/30 transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103">
+            <CardHeader>
+              <CardTitle className="font-semibold">No saved reports</CardTitle>
+              <CardDescription className="text-muted-foreground text-sm">
+                You haven't saved any analysis reports yet
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="rounded-full bg-muted p-4 mb-4 transition-all duration-300 hover:scale-110">
+                <CalendarCheck size={32} className="text-muted-foreground" />
+              </div>
+              <p className="text-center text-muted-foreground max-w-md">
+                After completing an analysis, you can save the report for future reference.
+                Saved reports will appear here.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
