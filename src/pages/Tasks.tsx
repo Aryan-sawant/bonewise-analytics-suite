@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -147,7 +146,6 @@ const Tasks = () => {
   return (
     <AuroraBackground>
       <div className="container mx-auto px-4 py-12">
-        {/* Fix: Remove 'jsx' attribute from style tag */}
         <style>
         {`
         .hover-scale {
@@ -198,18 +196,18 @@ const Tasks = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/')}
-              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl"
             >
               <Home className="mr-2 h-4 w-4" />
               Home
             </Button>
 
-            <Button onClick={() => navigate('/bone-analysis')} variant="outline"  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg">
+            <Button onClick={() => navigate('/bone-analysis')} variant="outline"  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl">
               <Bone className="mr-2 h-4 w-4" />
               Bone Analysis
             </Button>
 
-            <Button variant="outline" onClick={handleLogout}  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg">
+            <Button variant="outline" onClick={handleLogout}  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl">
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>
@@ -217,28 +215,28 @@ const Tasks = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-primary text-primary-foreground transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in">
+          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
             <CardHeader>
               <CardTitle className="text-xl font-semibold hover-title">Bone Health Analysis</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-primary-foreground/90 mb-4 text-base font-bold">
+              <p className="text-white/90 mb-4 text-base font-bold">
                 Access AI-powered bone health analysis tools
               </p>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" onClick={() => navigate('/bone-analysis')}>
+              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/bone-analysis')}>
                 Start Analysis <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardFooter>
           </Card>
 
-          <Card className="bg-primary text-primary-foreground transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in">
+          <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
             <CardHeader>
               <CardTitle className="text-xl font-semibold hover-title">Recent Activities</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-primary-foreground/90 mb-4">
+              <p className="text-white/90 mb-4">
                 {recentActivities.length > 0
                   ? `You have ${recentActivities.length} recent activities`
                   : 'View your most recent activities'}
@@ -246,9 +244,9 @@ const Tasks = () => {
               {recentActivities.length > 0 && (
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {recentActivities.map((activity) => (
-                    <div key={activity.id} className="text-sm bg-primary-foreground/10 p-2 rounded-lg transition-all duration-200 hover:bg-primary-foreground/20">
-                      <p className="font-medium text-primary-foreground">{activity.title}</p>
-                      <p className="text-xs text-primary-foreground/80">
+                    <div key={activity.id} className="text-sm bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
+                      <p className="font-medium text-white">{activity.title}</p>
+                      <p className="text-xs text-white/80">
                         {new Date(activity.created_at).toLocaleString()}
                       </p>
                     </div>
@@ -257,33 +255,33 @@ const Tasks = () => {
               )}
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" onClick={() => navigate('/analysis-history')}>
+              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/analysis-history')}>
                 <History className="mr-2 h-4 w-4" />
                 View History
               </Button>
             </CardFooter>
           </Card>
 
-          <Card className="bg-primary text-primary-foreground transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-lg animate-fade-in">
+          <Card className="bg-gradient-to-br from-purple-600 to-pink-600 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
             <CardHeader>
               <CardTitle className="text-xl font-semibold hover-title">My Account</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-primary-foreground/90 mb-4">
+              <p className="text-white/90 mb-4">
                 {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}: {user.email}
               </p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 bg-primary-foreground/10 p-2 rounded-lg transition-all duration-200 hover:bg-primary-foreground/20">
+                <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
                   <User className="h-4 w-4" />
                   <span className="text-sm">Profile: {user.name || 'Not set'}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-primary-foreground/10 p-2 rounded-lg transition-all duration-200 hover:bg-primary-foreground/20">
+                <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
                   <span className="text-sm">Account type: {user.userType}</span>
                 </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg" onClick={() => navigate('/profile')}>
+              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 Account Settings
               </Button>

@@ -20,7 +20,7 @@ export function NavBarDemo() {
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-      <div className="flex items-center gap-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md py-2 px-4 rounded-full shadow-lg">
+      <div className="flex items-center gap-2 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md py-3 px-6 rounded-full shadow-xl border border-white/20">
         {navItems.map((item) => {
           const Icon = item.icon
           
@@ -29,10 +29,10 @@ export function NavBarDemo() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex items-center gap-2 rounded-full"
+                className="flex items-center gap-2 rounded-full hover:bg-white/20 transition-all duration-300"
               >
                 <Icon size={18} />
-                <span className="hidden md:inline">{item.name}</span>
+                <span className="hidden md:inline font-medium">{item.name}</span>
               </Button>
             </Link>
           )

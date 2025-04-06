@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -10,7 +9,6 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Home, User, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
-import { NavBarDemo } from '@/components/ui/navbar-demo';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -119,7 +117,7 @@ const ProfilePage = () => {
         <Button
           variant="outline"
           onClick={handleGoToDashboard}
-          className="hover-scale transition-transform active:scale-95 text-blue-500 border-blue-500 hover:bg-blue-500/10"
+          className="hover-scale transition-transform active:scale-95 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
@@ -128,7 +126,7 @@ const ProfilePage = () => {
         <Button
           variant="outline"
           onClick={handleGoToHome}
-          className="hover-scale transition-transform active:scale-95 text-blue-500 border-blue-500 hover:bg-blue-500/10"
+          className="hover-scale transition-transform active:scale-95 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
@@ -142,21 +140,21 @@ const ProfilePage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
-          <Card className="border shadow-sm sticky top-20 hover-card transition-transform">
+          <Card className="border shadow-md sticky top-20 hover-card transition-transform rounded-xl bg-white/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center hover-title">
-                <User className="mr-2 h-5 w-5" />
+                <User className="mr-2 h-5 w-5 text-blue-500" />
                 Profile
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col items-center justify-center p-4">
-                <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold mb-4">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
                   {user.name ? user.name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
                 </div>
                 <h3 className="font-medium text-lg">{user.name || 'User'}</h3>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
-                <div className="mt-2 px-3 py-1 text-xs rounded-full bg-muted">
+                <div className="mt-2 px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
                   {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}
                 </div>
               </div>
@@ -184,7 +182,7 @@ const ProfilePage = () => {
         </div>
 
         <div className="md:col-span-2">
-          <Card className="border shadow-sm hover-card transition-transform">
+          <Card className="border shadow-md hover-card transition-transform rounded-xl bg-white/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="hover-title">Personal Information</CardTitle>
             </CardHeader>
@@ -198,6 +196,7 @@ const ProfilePage = () => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your name"
+                      className="rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
 
@@ -207,7 +206,7 @@ const ProfilePage = () => {
                       id="email"
                       value={user.email}
                       disabled
-                      className="bg-muted"
+                      className="bg-gray-50 rounded-lg border-gray-200"
                     />
                   </div>
                 </div>
@@ -218,7 +217,7 @@ const ProfilePage = () => {
                     id="accountType"
                     value={user.userType === 'doctor' ? 'Doctor' : 'User'}
                     disabled
-                    className="bg-muted"
+                    className="bg-gray-50 rounded-lg border-gray-200"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Account type cannot be changed. Contact support if you need to change your account type.
@@ -228,7 +227,7 @@ const ProfilePage = () => {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={loading || !name.trim()}
-                  className="w-full md:w-auto hover-scale transition-transform active:scale-95"
+                  className="w-full md:w-auto hover-scale transition-transform active:scale-95 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl"
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
                 </Button>
@@ -237,7 +236,6 @@ const ProfilePage = () => {
           </Card>
         </div>
       </div>
-      <NavBarDemo />
     </div>
   );
 };
