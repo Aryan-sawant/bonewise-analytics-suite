@@ -1,7 +1,7 @@
 
 import { FC, ReactNode } from 'react';
 import { AuroraBackground } from '@/components/ui/aurora-background';
-import { NavBarDemo } from '@/components/ui/navbar-demo';
+import NavBar from '@/components/NavBar';
 
 interface AuroraWrapperProps {
   children: ReactNode;
@@ -12,8 +12,8 @@ const AuroraWrapper: FC<AuroraWrapperProps> = ({ children }) => {
   return (
     <AuroraBackground>
       <div className="min-h-screen w-full overflow-y-auto">
+        <NavBar />
         {children}
-        <NavBarDemo />
       </div>
     </AuroraBackground>
   );
