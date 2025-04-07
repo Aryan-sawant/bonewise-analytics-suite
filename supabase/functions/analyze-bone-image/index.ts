@@ -98,8 +98,8 @@ serve(async (req) => {
     // Log task processing - for debugging and monitoring
     console.log(`Processing ${taskId} task with AI...`)
 
-    // Gemini  API Endpoint - Model is explicitly set to 'gemini-2.0-flash-thinking-exp-01-21'
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent"
+    // Gemini  API Endpoint - Model is explicitly set to 'gemini-2.5-pro-preview-03-25'
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Data URI to Base64 Conversion - Extracts base64 image data from Data URI format
@@ -137,7 +137,7 @@ serve(async (req) => {
     }
 
     // Log API Request Model -  For transparency, logging which model is being called
-    console.log(`Sending request to Gemini with model: gemini-2.0-flash-thinking-exp-01-21`);
+    console.log(`Sending request to Gemini with model: gemini-2.5-pro-preview-03-25`);
 
     // Gemini API Call -  Fetch request to the Gemini API
     const response = await fetch(url, {
