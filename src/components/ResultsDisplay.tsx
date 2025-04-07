@@ -76,19 +76,48 @@ const ResultsDisplay = ({
     try {
       toast.info('Generating PDF report...');
       
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
       
       // Add title
       pdf.setFontSize(18);
+      pdf.setTextColor(0, 0, 128); // Dark blue title
       pdf.text(analysisType, 20, 20);
       
       // Add date
       pdf.setFontSize(12);
+      pdf.setTextColor(80, 80, 80); // Dark gray text
       pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
       
-      // Add image to the report
+      // Add a divider line
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(20, 35, 190, 35);
+      
+      // Create a temporary container to style the results
+      const tempContainer = document.createElement('div');
+      tempContainer.style.width = '700px'; // Wider to ensure text isn't cut off
+      tempContainer.style.padding = '20px';
+      tempContainer.style.backgroundColor = '#ffffff';
+      tempContainer.style.fontFamily = 'Arial, sans-serif';
+      
+      // Clone the results div to the temp container
+      const resultsClone = resultsRef.current.cloneNode(true) as HTMLDivElement;
+      tempContainer.appendChild(resultsClone);
+      
+      // Append to body temporarily (hidden)
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      document.body.appendChild(tempContainer);
+      
+      // Add image to the report with proper positioning
       if (imageUrl) {
         pdf.addPage();
+        pdf.setFontSize(14);
+        pdf.setTextColor(0, 0, 128);
         pdf.text('Analyzed Image', 20, 20);
         
         // Create a temporary img element to get the image dimensions
@@ -98,28 +127,116 @@ const ResultsDisplay = ({
           img.onload = () => resolve();
         });
         
-        // Calculate image dimensions to fit on page
-        const imgWidth = 170;
-        const imgHeight = (img.height * imgWidth) / img.width;
+        // Calculate image dimensions to fit on page while maintaining aspect ratio
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(imageUrl, 'JPEG', 20, 30, imgWidth, imgHeight);
+        const maxImgWidth = pageWidth - 40; // 20mm margins on each side
+        const maxImgHeight = pageHeight - 50; // Allow space for header and bottom margin
+        
+        let imgWidth = img.width;
+        let imgHeight = img.height;
+        
+        if (imgWidth > maxImgWidth) {
+          const ratio = maxImgWidth / imgWidth;
+          imgWidth = maxImgWidth;
+          imgHeight = imgHeight * ratio;
+        }
+        
+        if (imgHeight > maxImgHeight) {
+          const ratio = maxImgHeight / imgHeight;
+          imgHeight = maxImgHeight;
+          imgWidth = imgWidth * ratio;
+        }
+        
+        // Center the image
+        const xOffset = (pageWidth - imgWidth) / 2;
+        
+        pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
       }
       
-      // Generate results content as an image
-      const canvas = await html2canvas(resultsRef.current, { 
+      // Generate results content in multiple pages if needed
+      pdf.addPage();
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 0, 128);
+      pdf.text('Analysis Results', 20, 20);
+      
+      // Generate canvas from the temp container with results
+      const canvas = await html2canvas(tempContainer, { 
         scale: 2,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        allowTaint: true
       });
+      
+      // Clean up the temp element
+      document.body.removeChild(tempContainer);
       
       const imgData = canvas.toDataURL('image/png');
       
-      // Add results to PDF
-      pdf.addPage();
-      pdf.text('Analysis Results', 20, 20);
+      // Calculate image dimensions to fit within the page width
+      const contentWidth = pdf.internal.pageSize.getWidth() - 40; // 20mm margin on each side
       
-      const imgWidth = 170;
-      const imgHeight = canvas.height * imgWidth / canvas.width;
-      pdf.addImage(imgData, 'PNG', 20, 30, imgWidth, imgHeight);
+      // Calculate the height proportionally
+      const contentHeight = canvas.height * contentWidth / canvas.width;
+      
+      // Split content across multiple pages if needed
+      const pageHeight = pdf.internal.pageSize.getHeight() - 40; // 20mm margin top and bottom
+      
+      // If content fits on one page
+      if (contentHeight < pageHeight - 30) { // 30mm for the header
+        pdf.addImage(imgData, 'PNG', 20, 30, contentWidth, contentHeight);
+      } else {
+        // Content needs multiple pages - calculate the number of pages needed
+        const pageCount = Math.ceil(contentHeight / pageHeight);
+        
+        // Scale factors for positioning
+        const imgPageHeight = canvas.height / pageCount;
+        const pdfPageHeight = contentHeight / pageCount;
+        
+        // For each page
+        for (let i = 0; i < pageCount; i++) {
+          if (i > 0) pdf.addPage();
+          
+          // Calculate the source rectangle to crop from the canvas
+          const sy = imgPageHeight * i;
+          const sHeight = Math.min(imgPageHeight, canvas.height - sy);
+          
+          // Calculate the height to use in the PDF
+          const pdfImgHeight = Math.min(pdfPageHeight, contentHeight - (pdfPageHeight * i));
+          
+          // Create a temporary canvas for the current page segment
+          const tmpCanvas = document.createElement('canvas');
+          tmpCanvas.width = canvas.width;
+          tmpCanvas.height = sHeight;
+          const ctx = tmpCanvas.getContext('2d');
+          
+          if (ctx) {
+            ctx.drawImage(
+              canvas, 
+              0, sy, canvas.width, sHeight, 
+              0, 0, tmpCanvas.width, tmpCanvas.height
+            );
+            
+            const pageImgData = tmpCanvas.toDataURL('image/png');
+            
+            // Add the image segment to the current page
+            const yPosition = i === 0 ? 30 : 20; // Account for header on first page
+            pdf.addImage(pageImgData, 'PNG', 20, yPosition, contentWidth, pdfImgHeight);
+          }
+        }
+      }
+      
+      // Add footer
+      const pageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(10);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
+        pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
+      }
       
       // Save the PDF
       pdf.save(`${analysisType.replace(/\s+/g, '_')}_Report.pdf`);

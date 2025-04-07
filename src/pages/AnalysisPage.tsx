@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -143,54 +142,143 @@ const AnalysisPage = () => {
     try {
       toast.info('Generating PDF...');
       
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Generate canvas from the results container
-      const canvas = await html2canvas(resultsRef.current, { 
-        scale: 2,
-        backgroundColor: '#ffffff'
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const tempContainer = document.createElement('div');
+      tempContainer.style.width = '700px';
+      tempContainer.style.padding = '20px';
+      tempContainer.style.backgroundColor = '#ffffff';
+      tempContainer.style.fontFamily = 'Arial, sans-serif';
       
-      // Add title
+      const resultsClone = resultsRef.current.cloneNode(true) as HTMLDivElement;
+      tempContainer.appendChild(resultsClone);
+      
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      document.body.appendChild(tempContainer);
+      
       pdf.setFontSize(18);
+      pdf.setTextColor(0, 0, 128);
       const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
       pdf.text(taskTitle, 20, 20);
       
-      // Add date
       pdf.setFontSize(12);
+      pdf.setTextColor(80, 80, 80);
       pdf.text(`Analysis Date: ${new Date().toLocaleString()}`, 20, 30);
       
-      // Add image to the report
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(20, 35, 190, 35);
+      
       if (imageUrl) {
         pdf.addPage();
+        pdf.setFontSize(14);
+        pdf.setTextColor(0, 0, 128);
         pdf.text('Analyzed Image', 20, 20);
         
-        // Create a temporary img element to get the image dimensions
         const img = new Image();
         img.src = imageUrl;
         await new Promise<void>((resolve) => {
           img.onload = () => resolve();
         });
         
-        // Calculate image dimensions to fit on page
-        const imgWidth = 170;
-        const imgHeight = (img.height * imgWidth) / img.width;
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(imageUrl, 'JPEG', 20, 30, imgWidth, imgHeight);
+        const maxImgWidth = pageWidth - 40;
+        const maxImgHeight = pageHeight - 50;
+        
+        let imgWidth = img.width;
+        let imgHeight = img.height;
+        
+        if (imgWidth > maxImgWidth) {
+          const ratio = maxImgWidth / imgWidth;
+          imgWidth = maxImgWidth;
+          imgHeight = imgHeight * ratio;
+        }
+        
+        if (imgHeight > maxImgHeight) {
+          const ratio = maxImgHeight / imgHeight;
+          imgHeight = maxImgHeight;
+          imgWidth = imgWidth * ratio;
+        }
+        
+        const xOffset = (pageWidth - imgWidth) / 2;
+        
+        pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
       }
       
-      // Add results section
       pdf.addPage();
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 0, 128);
       pdf.text('Analysis Results', 20, 20);
       
-      // Add the results content as an image
-      const imgWidth = 170;
-      const imgHeight = canvas.height * imgWidth / canvas.width;
-      pdf.addImage(imgData, 'PNG', 20, 30, imgWidth, imgHeight);
+      const canvas = await html2canvas(tempContainer, { 
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      });
       
-      // Save the PDF
+      document.body.removeChild(tempContainer);
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      const contentWidth = pdf.internal.pageSize.getWidth() - 40;
+      const contentHeight = canvas.height * contentWidth / canvas.width;
+      
+      const pageHeight = pdf.internal.pageSize.getHeight() - 40;
+      
+      if (contentHeight < pageHeight - 30) {
+        pdf.addImage(imgData, 'PNG', 20, 30, contentWidth, contentHeight);
+      } else {
+        const pageCount = Math.ceil(contentHeight / pageHeight);
+        
+        const imgPageHeight = canvas.height / pageCount;
+        const pdfPageHeight = contentHeight / pageCount;
+        
+        for (let i = 0; i < pageCount; i++) {
+          if (i > 0) pdf.addPage();
+          
+          const sy = imgPageHeight * i;
+          const sHeight = Math.min(imgPageHeight, canvas.height - sy);
+          
+          const pdfImgHeight = Math.min(pdfPageHeight, contentHeight - (pdfPageHeight * i));
+          
+          const tmpCanvas = document.createElement('canvas');
+          tmpCanvas.width = canvas.width;
+          tmpCanvas.height = sHeight;
+          const ctx = tmpCanvas.getContext('2d');
+          
+          if (ctx) {
+            ctx.drawImage(
+              canvas, 
+              0, sy, canvas.width, sHeight, 
+              0, 0, tmpCanvas.width, tmpCanvas.height
+            );
+            
+            const pageImgData = tmpCanvas.toDataURL('image/png');
+            
+            const yPosition = i === 0 ? 30 : 20;
+            pdf.addImage(pageImgData, 'PNG', 20, yPosition, contentWidth, pdfImgHeight);
+          }
+        }
+      }
+      
+      const pageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(10);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
+        pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
+      }
+      
       const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
       
@@ -223,7 +311,6 @@ const AnalysisPage = () => {
     setZoomLevel((prevZoom) => Math.max(prevZoom - 0.25, 0.5));
   };
 
-
   if (!taskId || !user) return null;
 
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
@@ -232,7 +319,6 @@ const AnalysisPage = () => {
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
 
-    // Remove code blocks
     const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
 
     const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
@@ -255,14 +341,12 @@ const AnalysisPage = () => {
             );
           }
 
-          // Simplified bold handling - just use dangerouslySetInnerHTML for backend-formatted HTML
           return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para }} />;
         })}
       </div>
     );
   };
 
-  // Animation variants
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
@@ -384,7 +468,6 @@ const AnalysisPage = () => {
                 </div>
               </CardHeader>
               <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
-                {/* Results content */}
                 {results ? (
                   <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" ref={resultsRef} style={{ color: 'black' }}>
                     {formatResults(results)}
@@ -424,7 +507,6 @@ const AnalysisPage = () => {
           </motion.div>
         )}
 
-        {/* Image Modal */}
         {isImageModalOpen && imageUrl && (
           <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 transition-all duration-300 ${isImageModalMaximized ? 'fixed top-0 left-0 w-full h-full' : ''}`}>
             <motion.div 
