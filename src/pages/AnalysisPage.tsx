@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -6,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut } from 'lucide-react';
+import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
+import { motion } from 'framer-motion';
+import { AuroraBackground } from '@/components/ui/aurora-background';
 
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
@@ -70,8 +73,8 @@ const AnalysisPage = () => {
     setAnalysisId(null);
     setStoredImageUrl(null);
     setIsImageModalOpen(false);
-    setIsImageModalMaximized(false); // Reset maximization on new image
-    setZoomLevel(1); // Reset zoom on new image
+    setIsImageModalMaximized(false);
+    setZoomLevel(1);
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -163,8 +166,8 @@ const AnalysisPage = () => {
 
   const closeImageModal = () => {
     setIsImageModalOpen(false);
-    setIsImageModalMaximized(false); // Close maximization when modal closes
-    setZoomLevel(1); // Reset zoom when modal closes
+    setIsImageModalMaximized(false);
+    setZoomLevel(1);
   };
 
   const toggleImageModalMaximize = () => {
@@ -172,11 +175,11 @@ const AnalysisPage = () => {
   };
 
   const handleZoomIn = () => {
-    setZoomLevel((prevZoom) => Math.min(prevZoom + 0.25, 3)); // Zoom in, max 3x
+    setZoomLevel((prevZoom) => Math.min(prevZoom + 0.25, 3));
   };
 
   const handleZoomOut = () => {
-    setZoomLevel((prevZoom) => Math.max(prevZoom - 0.25, 0.5)); // Zoom out, min 0.5x
+    setZoomLevel((prevZoom) => Math.max(prevZoom - 0.25, 0.5));
   };
 
 
@@ -218,184 +221,225 @@ const AnalysisPage = () => {
     );
   };
 
+  // Animation variants
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.5 } 
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-12 animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
-        <Button
-          variant="outline"
-          onClick={() => navigate('/bone-analysis')}
-          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+    <AuroraBackground showRadialGradient={false}>
+      <div className="container mx-auto px-4 py-12 animate-fade-in">
+        <motion.div 
+          className="flex justify-between items-center mb-6"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
         >
-          ← Back to Tasks
-        </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/bone-analysis')}
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Tasks
+          </Button>
 
-        <Button
-          variant="outline"
-          onClick={() => navigate('/')}
-          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+          <Button
+            variant="outline"
+            onClick={() => navigate('/')}
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Button>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          <Home className="mr-2 h-4 w-4" />
-          Home
-        </Button>
-      </div>
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            {TASK_TITLES[taskId] || 'Analysis'}
+          </h1>
+          <p className="text-muted-foreground mb-8 animate-fade-in">
+            {user.userType === 'doctor' ? 
+              'AI-assisted analysis for clinical evaluation' : 
+              'AI-powered analysis for informational purposes only'}
+          </p>
+        </motion.div>
 
-      <h1 className="text-3xl font-bold mb-2 animate-slide-in text-primary-foreground" style={{ color: 'black' }}>{TASK_TITLES[taskId] || 'Analysis'}</h1>
-      <p className="text-muted-foreground mb-8 animate-fade-in">
-        {user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}
-      </p>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark rounded-lg">
-          <CardHeader className="bg-primary text-primary-foreground rounded-t-lg">
-            <CardTitle className="text-lg font-semibold text-primary-foreground">Upload Medical Image</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">{taskGuidance}</p>
-            <ImageUpload
-              onImageSelected={handleImageUpload}
-              imageUrl={imageUrl}
-              isLoading={analyzing}
-            />
-
-            <div className="mt-4 flex justify-between">
-              {imageUrl && (
-                <Button
-                  variant="secondary"
-                  onClick={openImageModal}
-                  className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                >
-                  <Eye className="mr-2 h-4 w-4" style={{ color: 'black' }} />
-                  View Image
-                </Button>
-              )}
-              <Button
-                onClick={handleAnalyze}
-                disabled={!image || analyzing}
-                className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-primary rounded-lg"
-              >
-                {analyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : 'Analyze Image'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark rounded-lg'}`}>
-          <CardHeader className="flex flex-row items-center justify-between bg-primary text-primary-foreground rounded-t-lg">
-            <CardTitle className="text-lg font-semibold text-primary-foreground">Analysis Results</CardTitle>
-            <div className="flex items-center space-x-2">
-              {results && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadResults}
-                  className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                  style={{ color: 'black' }}
-                >
-                  <Download size={14} style={{ color: 'black' }} />
-                  Download
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsResultsMaximized(!isResultsMaximized)}
-                className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-              >
-                {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
-            {/* Added conditional rendering for results here */}
-            {results ? (
-              <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" style={{ color: 'black' }}>
-                {formatResults(results)}
-              </div>
-            ) : error ? (
-              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in">
-                <p className="text-destructive">
-                  {error}
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse">
-                <p className="text-muted-foreground">
-                  {analyzing ? (
-                    <>Processing your image with AI...</>
-                  ) : 'Upload an image and click "Analyze Image" to see results'}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {results && (
-        <ChatbotButton
-          analysisContext={results}
-          taskTitle={taskTitle}
-          analysisId={analysisId}
-          className="rounded-lg" // Added rounded-lg class here
-        />
-      )}
-
-      {/* Image Modal */}
-      {isImageModalOpen && imageUrl && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ${isImageModalMaximized ? 'fixed top-0 left-0 w-full h-full' : ''}`}>
-          <div className={`relative bg-card dark:bg-card-dark rounded-lg p-6 max-w-3xl max-h-full overflow-auto ${isImageModalMaximized ? 'w-full h-full rounded-none' : ''}`}>
-            <CardHeader className="flex flex-row items-center justify-between bg-primary text-primary-foreground rounded-t-lg mb-4">
-              <CardTitle className="text-lg font-semibold text-primary-foreground">Uploaded Image</CardTitle>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  onClick={handleZoomIn}
-                  className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                >
-                  <ZoomIn size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={handleZoomOut}
-                  className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                >
-                  <ZoomOut size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={toggleImageModalMaximize}
-                  className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                >
-                  {isImageModalMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={closeImageModal}
-                  className=" hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                >
-                  <Minimize size={16} />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div style={{ overflow: 'auto', maxHeight: '70vh' }}> {/* Added scroll for zoomed image */}
-                <img
-                  src={imageUrl}
-                  alt="Uploaded Image"
-                  className="rounded-md max-w-full object-contain"
-                  style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }} // Apply zoom and origin
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <motion.div variants={fadeIn} initial="hidden" animate="visible">
+            <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark rounded-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary to-blue-600 text-primary-foreground rounded-t-lg">
+                <CardTitle className="text-lg font-semibold text-primary-foreground">Upload Medical Image</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-sm text-muted-foreground mb-6">{taskGuidance}</p>
+                <ImageUpload
+                  onImageSelected={handleImageUpload}
+                  imageUrl={imageUrl}
+                  isLoading={analyzing}
                 />
-              </div>
-            </CardContent>
-          </div>
+
+                <div className="mt-6 flex justify-between">
+                  {imageUrl && (
+                    <Button
+                      variant="secondary"
+                      onClick={openImageModal}
+                      className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+                    >
+                      <Eye className="mr-2 h-4 w-4" style={{ color: 'black' }} />
+                      View Image
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={!image || analyzing}
+                    className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-gradient-to-r from-primary to-blue-600 rounded-lg border-0"
+                  >
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : 'Analyze Image'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
+            <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark rounded-lg overflow-hidden'}`}>
+              <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg">
+                <CardTitle className="text-lg font-semibold text-primary-foreground">Analysis Results</CardTitle>
+                <div className="flex items-center space-x-2">
+                  {results && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadResults}
+                      className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg bg-white/20 text-white border-white/30 hover:bg-white/30"
+                    >
+                      <Download size={14} />
+                      Download
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsResultsMaximized(!isResultsMaximized)}
+                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
+                  >
+                    {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
+                {/* Results content */}
+                {results ? (
+                  <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" style={{ color: 'black' }}>
+                    {formatResults(results)}
+                  </div>
+                ) : error ? (
+                  <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in">
+                    <p className="text-destructive">
+                      {error}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse">
+                    <p className="text-muted-foreground">
+                      {analyzing ? (
+                        <>Processing your image with AI...</>
+                      ) : 'Upload an image and click "Analyze Image" to see results'}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
-      )}
-    </div>
+
+        {results && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            <ChatbotButton
+              analysisContext={results}
+              taskTitle={taskTitle}
+              analysisId={analysisId}
+              className="rounded-lg mt-8"
+            />
+          </motion.div>
+        )}
+
+        {/* Image Modal */}
+        {isImageModalOpen && imageUrl && (
+          <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 transition-all duration-300 ${isImageModalMaximized ? 'fixed top-0 left-0 w-full h-full' : ''}`}>
+            <motion.div 
+              className={`relative bg-card dark:bg-card-dark rounded-lg overflow-hidden max-w-3xl max-h-full ${isImageModalMaximized ? 'w-full h-full rounded-none' : ''}`}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg mb-4">
+                <CardTitle className="text-lg font-semibold text-primary-foreground">Uploaded Image</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    onClick={handleZoomIn}
+                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
+                  >
+                    <ZoomIn size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={handleZoomOut}
+                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
+                  >
+                    <ZoomOut size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={toggleImageModalMaximize}
+                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
+                  >
+                    {isImageModalMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={closeImageModal}
+                    className="hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
+                  >
+                    <Minimize size={16} />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div style={{ overflow: 'auto', maxHeight: '70vh' }}> 
+                  <img
+                    src={imageUrl}
+                    alt="Uploaded Image"
+                    className="rounded-md max-w-full object-contain transition-all duration-300"
+                    style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }}
+                  />
+                </div>
+              </CardContent>
+            </motion.div>
+          </div>
+        )}
+      </div>
+    </AuroraBackground>
   );
 };
 

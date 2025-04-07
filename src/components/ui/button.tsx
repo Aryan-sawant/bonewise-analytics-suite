@@ -10,16 +10,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md transition-all duration-300",
+        default: "bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:brightness-105 shadow-sm hover:shadow-md transition-all duration-300",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md transition-all duration-300",
+          "bg-gradient-to-r from-red-500 to-rose-600 text-destructive-foreground hover:brightness-105 shadow-sm hover:shadow-md transition-all duration-300",
         outline:
           "border border-input bg-background hover:bg-accent hover:text-accent-foreground shadow-sm hover:shadow-md transition-all duration-300",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:shadow-md transition-all duration-300",
+          "bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:brightness-105 shadow-sm hover:shadow-md transition-all duration-300",
         ghost: "hover:bg-accent hover:text-accent-foreground transition-all duration-300",
         link: "text-primary underline-offset-4 hover:underline transition-all duration-300",
-        gradient: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-300",
+        gradient: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:brightness-105 shadow-sm hover:shadow-md transition-all duration-300",
       },
       size: {
         default: "h-10 px-4 py-2",

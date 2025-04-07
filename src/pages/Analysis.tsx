@@ -1,9 +1,10 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnalysisCard from '@/components/AnalysisCard';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { isDoctor } from '@/types/auth';
+import { AuroraBackground } from '@/components/ui/aurora-background';
+import { motion } from 'framer-motion';
 
 const Analysis = () => {
   const { user } = useAuthContext();
@@ -144,30 +145,69 @@ const Analysis = () => {
     }
   ]);
 
-  return (
-    <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
-      <header className="mb-12">
-        <h1 className="text-3xl font-bold tracking-tight">Select Analysis Type</h1>
-        <p className="text-muted-foreground mt-1">
-          Choose the type of bone health analysis you want to perform
-        </p>
-      </header>
+  // Animation variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {analysisTypes.map((type) => (
-          <AnalysisCard
-            key={type.id}
-            title={type.title}
-            description={type.description}
-            icon={type.icon}
-            path={type.path}
-            color={type.color}
-            disabled={type.disabled}
-            prompt={isDoctor(user) ? task_prompts[type.id].doctor : task_prompts[type.id].common}
-          />
-        ))}
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 260,
+        damping: 20
+      }
+    }
+  };
+
+  return (
+    <AuroraBackground>
+      <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
+        <motion.header 
+          className="mb-12"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            Select Analysis Type
+          </h1>
+          <p className="text-muted-foreground mt-2 text-lg">
+            Choose the type of bone health analysis you want to perform
+          </p>
+        </motion.header>
+
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {analysisTypes.map((type) => (
+            <motion.div key={type.id} variants={itemVariants}>
+              <AnalysisCard
+                title={type.title}
+                description={type.description}
+                icon={type.icon}
+                path={type.path}
+                color={type.color}
+                disabled={type.disabled}
+                prompt={isDoctor(user) ? task_prompts[type.id].doctor : task_prompts[type.id].common}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
-    </div>
+    </AuroraBackground>
   );
 };
 
