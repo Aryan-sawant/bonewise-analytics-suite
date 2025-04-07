@@ -13,7 +13,7 @@ const corsHeaders = {
 // Using the specific model name provided by the user
 const GEMINI_MODEL_NAME = "gemini-2.5-pro-preview-03-25"; // <<< USER SPECIFIED MODEL
 const GEMINI_API_ENDPOINT_VERSION = "v1beta"; // Keep as v1beta, usually correct for preview models
-const MAX_OUTPUT_TOKENS = 8192; // Realistic limit (adjust if this specific model has a different known limit)
+const MAX_OUTPUT_TOKENS = 1048576; // Realistic limit (adjust if this specific model has a different known limit)
 const STORAGE_BUCKET_NAME = 'bone-analysis-images';
 const SIGNED_URL_EXPIRY = 60 * 60; // Signed URL valid for 1 hour (in seconds)
 // --- End Configuration ---
