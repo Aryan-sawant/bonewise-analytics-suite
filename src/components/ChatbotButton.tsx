@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Send, X, Loader2, Maximize, Minimize } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2, Maximize, Minimize, BrainCircuit } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ChatbotButtonProps {
   analysisContext: string;
@@ -106,44 +108,56 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
 
   return (
     <>
-      <Button
-        onClick={toggleChat}
-        className="fixed bottom-6 right-6 rounded-full h-14 w-14 p-0 shadow-lg bg-primary hover:bg-primary/90 transition-all duration-300 transform hover:scale-105"
-        size="icon"
-      >
-        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
-      </Button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            onClick={toggleChat}
+            className="fixed bottom-6 right-6 rounded-full h-14 w-14 p-0 shadow-xl bg-gradient-to-r from-primary to-primary/80 hover:shadow-primary/20 transition-all duration-300 transform hover:scale-105 z-50"
+            size="icon"
+          >
+            {isOpen ? <X size={24} className="text-primary-foreground" /> : <MessageCircle size={24} className="text-primary-foreground" />}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[300px] border-none shadow-none bg-transparent">
+          <div className="text-center text-xs text-muted-foreground p-2 bg-background/80 backdrop-blur-sm rounded-lg shadow-sm">
+            Ask me anything about your bone health analysis
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {isOpen && (
         <Card 
-          className={`fixed ${isMaximized ? 'inset-4 max-h-none' : 'bottom-24 right-6 w-96 max-h-[70vh]'} shadow-lg animate-fade-in z-50 transition-all duration-300 ${className}`}
+          className={`fixed ${isMaximized ? 'inset-4 max-h-none' : 'bottom-24 right-6 w-96 max-h-[70vh]'} shadow-xl bg-background/95 backdrop-blur-md border border-primary/10 rounded-xl animate-fade-in z-50 transition-all duration-300 ${className}`}
         >
-          <CardHeader className="bg-primary text-primary-foreground">
-            <CardTitle className="text-lg flex justify-between items-center">
-              Bone Health Assistant
+          <CardHeader className="bg-gradient-to-r from-primary to-primary/80 rounded-t-xl p-4">
+            <CardTitle className="text-base flex justify-between items-center text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <BrainCircuit size={18} className="text-primary-foreground" />
+                <span>Bone Health AI Assistant</span>
+              </div>
               <div className="flex gap-2">
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={toggleMaximize}
-                  className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary/80 transition-all duration-300 transform hover:scale-110"
+                  className="h-8 w-8 text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary/80 transition-all duration-300 transform hover:scale-110"
                 >
-                  {isMaximized ? <Minimize size={18} /> : <Maximize size={18} />}
+                  {isMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={toggleChat}
-                  className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary/80 transition-all duration-300 transform hover:scale-110"
+                  className="h-8 w-8 text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary/80 transition-all duration-300 transform hover:scale-110"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </Button>
               </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div 
-              className={`${isMaximized ? 'h-[calc(100vh-14rem)]' : 'h-[40vh]'} overflow-y-auto p-4 space-y-3`} 
+              className={`${isMaximized ? 'h-[calc(100vh-14rem)]' : 'h-[40vh]'} overflow-y-auto p-4 space-y-3 scrollbar-none`} 
               id="chat-messages"
             >
               {messages.map((msg, index) => (
@@ -163,8 +177,8 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
                     <div 
                       className={`max-w-[80%] p-3 rounded-lg ${
                         msg.isUser 
-                          ? 'bg-primary text-primary-foreground rounded-tr-none transition-all duration-300 transform hover:scale-105' 
-                          : 'bg-muted rounded-tl-none transition-all duration-300 transform hover:scale-105'
+                          ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-tr-none shadow-md transition-all duration-300 transform hover:scale-105' 
+                          : 'bg-muted/80 backdrop-blur-sm rounded-tl-none shadow-sm transition-all duration-300 transform hover:scale-105'
                       }`}
                     >
                       <div dangerouslySetInnerHTML={{ __html: msg.text }} />
@@ -175,7 +189,7 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
               <div ref={messagesEndRef} />
             </div>
           </CardContent>
-          <CardFooter className="p-3 pt-0">
+          <CardFooter className="p-3 border-t border-border/20">
             <div className="flex w-full gap-2">
               <input
                 type="text"
@@ -183,14 +197,14 @@ const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitl
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask about your analysis..."
-                className="flex-1 border rounded-md p-2 text-sm transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-primary"
+                className="flex-1 border rounded-full px-4 py-2 text-sm transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-primary bg-background/50 backdrop-blur-sm"
                 disabled={isLoading}
               />
               <Button 
                 onClick={handleSendMessage} 
                 size="icon" 
                 disabled={isLoading || !message.trim()}
-                className="bg-primary hover:bg-primary/90 transition-all duration-300 transform hover:scale-110"
+                className="rounded-full bg-gradient-to-r from-primary to-primary/80 hover:bg-primary/90 transition-all duration-300 transform hover:scale-110"
               >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </Button>

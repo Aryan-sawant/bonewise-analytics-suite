@@ -6,6 +6,7 @@ import Hero from '@/components/Hero';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from '@/contexts/AuthContext';
+import { NavBarDemo } from '@/components/ui/navbar-demo';
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -30,6 +31,9 @@ const Index = () => {
       {/* Navbar */}
       <NavBar />
       
+      {/* Demo navbar (only shows on landing page) */}
+      <NavBarDemo />
+      
       {/* Main Content */}
       <main className="flex-1 pt-16">
         {/* Hero Section */}
@@ -40,7 +44,7 @@ const Index = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-8 md:mb-12">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">How It Works</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-base">
+              <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-base px-2 sm:px-0 leading-relaxed">
                 BoneHealthAISuite simplifies the process of analyzing bone health through advanced AI technology
               </p>
             </div>
@@ -95,7 +99,7 @@ const Index = () => {
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4">
               Ready to get insights about your bone health?
             </h2>
-            <p className="text-white/80 mb-6 md:mb-8 max-w-2xl mx-auto text-sm md:text-base">
+            <p className="text-white/80 mb-6 md:mb-8 max-w-2xl mx-auto text-sm md:text-base px-3 sm:px-0 leading-relaxed">
               Join BoneHealthAISuite today and gain access to AI-powered bone health analysis 
               that can help you understand more about your bone condition.
             </p>
@@ -178,7 +182,7 @@ const Index = () => {
       
       {/* Fixed CTA Button */}
       {isScrolled && !user && 
-        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 animate-fade-in">
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 animate-fade-in">
           <Button 
             size="lg" 
             className="shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300" 

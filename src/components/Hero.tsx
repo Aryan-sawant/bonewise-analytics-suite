@@ -161,9 +161,11 @@ const Hero = () => {
             </span>
           </h1>
 
-          <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8 max-w-3xl mx-auto animate-fade-in-up" style={{
+          <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8 max-w-3xl mx-auto animate-fade-in-up px-2 sm:px-0 leading-relaxed" style={{
             animationDelay: '0.2s'
-          }}>BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.</p>
+          }}>
+            BoneHealthAISuite provides cutting-edge analysis of bone health conditions through advanced AI, making medical insights accessible and understandable.
+          </p>
 
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center items-center animate-fade-in-up" style={{
             animationDelay: '0.3s'
@@ -182,9 +184,9 @@ const Hero = () => {
           </div>
 
           {/* New Heading and Description */}
-          <div className="mt-8 md:mt-12 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+          <div className="mt-8 md:mt-12 animate-fade-in-up px-3 sm:px-0" style={{ animationDelay: '0.35s' }}>
             <h2 className="text-xl md:text-2xl font-bold text-black mb-2">The Analyses We Provide</h2>
-            <p className="text-muted-foreground text-center max-w-xl mx-auto mb-4 text-sm md:text-base">
+            <p className="text-muted-foreground text-center max-w-xl mx-auto mb-4 text-sm md:text-base px-2 sm:px-0 leading-relaxed">
               Explore our wide range of AI-powered analysis options, each designed to provide detailed insights into different aspects of bone health.
             </p>
           </div>
