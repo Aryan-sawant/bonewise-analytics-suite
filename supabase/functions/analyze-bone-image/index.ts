@@ -1,51 +1,96 @@
 // analyze-bone-image function in Supabase Functions
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts"; // Updated Deno Standard Library version
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { decode } from "https://deno.land/std@0.224.0/encoding/base64.ts"; // For decoding base64
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// --- Configuration ---
+// Using the specific model name provided by the user
+const GEMINI_MODEL_NAME = "gemini-2.5-pro-preview-03-25"; // <<< USER SPECIFIED MODEL
+const GEMINI_API_ENDPOINT_VERSION = "v1beta"; // Keep as v1beta, usually correct for preview models
+const MAX_OUTPUT_TOKENS = 8192; // Realistic limit (adjust if this specific model has a different known limit)
+const STORAGE_BUCKET_NAME = 'bone-analysis-images';
+const SIGNED_URL_EXPIRY = 60 * 60; // Signed URL valid for 1 hour (in seconds)
+// --- End Configuration ---
+
+
+// Helper function to extract details from Data URI
+function parseDataUri(dataUri: string): { mimeType: string; base64Data: string; extension: string } | null {
+  const match = dataUri.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
+  if (!match) {
+    console.warn("Input image string is not a valid Data URI format.");
+    // Attempt fallback assuming JPEG if it looks like base64 and no comma - less robust
+    if (dataUri.length > 100 && !dataUri.includes(',')) {
+         console.log("Attempting fallback: Assuming raw base64 JPEG.");
+         return { mimeType: 'image/jpeg', base64Data: dataUri, extension: 'jpg' };
+    }
+    return null;
+  }
+  const mimeType = match[1];
+  const base64Data = match[2];
+  // Basic extension mapping
+  let extension = mimeType.split('/')[1]?.split('+')[0] || 'bin';
+  if (extension === 'jpeg') extension = 'jpg';
+
+  return { mimeType, base64Data, extension };
+}
+
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { image, taskId, userType, userId } = await req.json()
+    const { image: imageDataUri, taskId, userType, userId } = await req.json();
 
-    if (!image) {
+    // --- Input Validation ---
+    if (!imageDataUri) {
       return new Response(
-        JSON.stringify({ error: 'No image provided' }),
+        JSON.stringify({ error: 'No image provided (expected Data URI)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
     if (!taskId) {
       return new Response(
         JSON.stringify({ error: 'No task ID provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
+    // --- Parse Image Data ---
+    const imageDetails = parseDataUri(imageDataUri);
+    if (!imageDetails) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid image format. Expected Data URI (e.g., data:image/jpeg;base64,...)' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    }
+    const { mimeType, base64Data, extension } = imageDetails;
+
+    // --- Task Definitions ---
     // Task information lookup (Task Titles - for descriptions in DB and UI)
     const taskTitles: Record<string, string> = {
-      'fracture-detection': 'Bone Fracture Detection',
-      'bone-marrow': 'Bone Marrow Cell Classification',
-      'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
-      'osteoporosis': 'Osteoporosis Stage & BMD Score',
-      'bone-age': 'Bone Age Detection',
-      'spine-fracture': 'Cervical Spine Fracture Detection',
-      'bone-tumor': 'Bone Tumor/Cancer Detection',
-      'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
-    }
+        'fracture-detection': 'Bone Fracture Detection',
+        'bone-marrow': 'Bone Marrow Cell Classification',
+        'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
+        'osteoporosis': 'Osteoporosis Stage & BMD Score',
+        'bone-age': 'Bone Age Detection',
+        'spine-fracture': 'Cervical Spine Fracture Detection',
+        'bone-tumor': 'Bone Tumor/Cancer Detection',
+        'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
+    };
 
-    const taskTitle = taskTitles[taskId] || 'Unknown Analysis Type'
+    const taskTitle = taskTitles[taskId] || 'Unknown Analysis Type';
 
-    // Detailed task prompts - EXACTLY as provided by the user
+    // Detailed task prompts - EXACTLY as provided by the user (Keep these as they are)
     const taskPrompts: Record<string, Record<string, string>> = {
       'fracture-detection': {
         common: "Analyze the X-ray, MRI, or CT scan image to assess for fractures. Identify the affected bone and classify the fracture exclusively according to the AO/OTA Fracture and Dislocation Classification system. Provide a simplified explanation of the AO/OTA classification assigned. Determine the severity of the fracture based on the AO/OTA classification and imaging findings. Provide an easy-to-understand explanation of the fracture, including its potential effects on movement and expected recovery timeline, considering the AO/OTA classification. Please also suggest a basic nutrition plan and recovery steps, including remedies, exercises and when can the person drive or work if appropriate, in the context of the AO/OTA classified fracture. If a user uploads any irrelevant image which is not in context of bone just reply the user gracefully to upload the relevant image and don't mention or describe anything what is there in that irrelevant image just don't say anything about that image.",
@@ -79,43 +124,56 @@ serve(async (req) => {
         common: "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). The image will be checked for any signs of infection in the bone, such as swelling, bone damage, or abscess formation. You will receive an easy-to-understand explanation of whether an infection is present and how it may be affecting the bone, provide nutrition plan, steps to recover like remedies, exercises and when can the person drive or work if required. If a user uploads any irrelevant image which is not in context of bone just reply the user gracefully to upload the relevant image and don't mention or describe anything what is there in that irrelevant image just don't say anything about that image.",
         doctor: "Analyze the X-ray, MRI, CT scan, or biopsy image for signs of bone infection (osteomyelitis). Provide insights on infection severity, possible antibiotic treatments, and surgical recommendations if needed, provide medications nutrition plan, steps to recover like remedies, exercises and when can the person drive or work if required. If a user uploads any irrelevant image which is not in context of bone just reply the user gracefully to upload the relevant image and don't mention or describe anything what is there in that irrelevant image just don't say anything about that image."
       }
-    }
+    }; // <<< Kept your full prompts here
 
-    // Initialize Gemini API - API Key is read from Deno Environment Variables
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    // --- Initialize APIs ---
+    const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) {
+      console.error('GEMINI_API_KEY environment variable not set.');
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    // Initialize Supabase Client - for database interactions and storage
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // Log task processing - for debugging and monitoring
-    console.log(`Processing ${taskId} task with AI...`)
-
-    // Gemini  API Endpoint - Model is explicitly set to 'gemini-2.5-pro-preview-03-25'
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent"
-    const url = `${baseURL}?key=${apiKey}`
-
-    // Data URI to Base64 Conversion - Extracts base64 image data from Data URI format
-    let base64Data = image
-    if (image.includes('base64,')) {
-      base64Data = image.split('base64,')[1]
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !supabaseKey) {
+        console.error('Supabase environment variables (URL or Service Role Key) not set.');
+        return new Response(
+            JSON.stringify({ error: 'Supabase configuration missing' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
     }
+    // Use auth options for service role key in Edge Functions
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+        }
+    });
 
-    // Prompt Selection - Chooses prompt based on task ID and user type (common/doctor)
-    const userCategory = userType === 'doctor' ? 'doctor' : 'common'
-    const promptText = taskPrompts[taskId]?.[userCategory] || `Analyze this medical image for ${taskTitle}.`
+    // --- Prepare Gemini Request ---
+    console.log(`Processing ${taskId} task with AI model ${GEMINI_MODEL_NAME}...`);
 
-    // Formatting Instruction - Ensures Gemini uses HTML <b> tags in the response
-    const formattingInstruction = "Make sure to format important information using HTML <b> tags for bold (not markdown asterisks)."
+    // Construct the API URL using the specified model name
+    const baseURL = `https://generativelanguage.googleapis.com/${GEMINI_API_ENDPOINT_VERSION}/models/${GEMINI_MODEL_NAME}:generateContent`;
+    const url = `${baseURL}?key=${apiKey}`;
 
-    // Gemini API Request Payload - Structured request body for Gemini API
+    const userCategory = userType === 'doctor' ? 'doctor' : 'common';
+    const promptForTask = taskPrompts[taskId];
+    if (!promptForTask) {
+        console.error(`No prompts defined for taskId: ${taskId}`);
+        return new Response(
+            JSON.stringify({ error: `Invalid task ID: ${taskId}` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    }
+    const promptText = promptForTask[userCategory] || promptForTask['common'] || `Analyze this medical image for ${taskTitle}.`; // Add fallback
+
+    const formattingInstruction = "Make sure to format important information using HTML <b> tags for bold (not markdown asterisks). Do not use markdown.";
+
     const payload = {
       contents: [
         {
@@ -123,7 +181,7 @@ serve(async (req) => {
             { text: promptText + " " + formattingInstruction },
             {
               inline_data: {
-                mime_type: "image/jpeg", // Assuming JPEG images for now
+                mime_type: mimeType, // Use detected MIME type
                 data: base64Data
               }
             }
@@ -131,109 +189,115 @@ serve(async (req) => {
         }
       ],
       generationConfig: {
-        temperature: 0.0, // Lower temperature for more deterministic and focused responses
-        maxOutputTokens: 1048576, // Increased maxOutputTokens for potentially longer analysis results
+        temperature: 0.0,
+        maxOutputTokens: MAX_OUTPUT_TOKENS, // Use configured realistic limit
       }
-    }
+    };
 
-    // Log API Request Model -  For transparency, logging which model is being called
-    console.log(`Sending request to Gemini with model: gemini-2.5-pro-preview-03-25`);
-
-    // Gemini API Call -  Fetch request to the Gemini API
-    const response = await fetch(url, {
+    // --- Call Gemini API ---
+    console.log(`Sending request to Gemini model: ${GEMINI_MODEL_NAME}`);
+    const geminiResponse = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
-    })
+    });
 
-    // Gemini API Response Error Handling - Checks for HTTP errors from Gemini API
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Gemini API error:", errorText)
-      console.error("Gemini API full response:", response) // Log the full response for more details
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error(`Gemini API error (${geminiResponse.status}) using model ${GEMINI_MODEL_NAME}: ${errorText}`);
+      console.error("Gemini API full response status:", geminiResponse.status, geminiResponse.statusText);
+       try {
+           const errorJson = JSON.parse(errorText); // Attempt to parse if JSON error
+           console.error("Gemini API error JSON:", errorJson);
+       } catch (e) { /* Ignore if error text wasn't JSON */ }
+
+      let errorMessage = `Gemini API error: ${geminiResponse.status}`;
       try {
-        const errorJson = await response.json();
-        console.error("Gemini API error JSON:", errorJson); // Try to log JSON error if available
-      } catch (jsonError) {
-        console.error("Failed to parse Gemini error JSON:", jsonError);
+           const errorJson = JSON.parse(errorText);
+           errorMessage = errorJson?.error?.message || errorMessage;
+      } catch (e) {}
+
+      // If the error is 404 Not Found, it might specifically be the model name
+      if (geminiResponse.status === 404) {
+          errorMessage = `Gemini API error: Model ${GEMINI_MODEL_NAME} not found or incorrect API endpoint. Please verify the model name and access permissions.`;
       }
-      throw new Error(`Gemini API error: ${response.status} ${errorText}`)
+
+      return new Response(
+        JSON.stringify({ error: `AI analysis failed: ${errorMessage}` }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } } // 502 Bad Gateway
+      );
     }
 
-    // Parse Gemini API Response - Parses JSON response from Gemini API
-    const data = await response.json()
+    // --- Process Gemini Response ---
+    const data = await geminiResponse.json();
 
-    // Gemini API No Candidates Check - Checks if Gemini returned any valid candidates in the response
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new Error("No response generated by the model")
+    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+        console.error(`Gemini API (${GEMINI_MODEL_NAME}) returned no candidates. Response:`, JSON.stringify(data));
+        throw new Error("No response generated by the model (no candidates)");
+    }
+    const candidate = data.candidates[0];
+    if (!candidate.content || !candidate.content.parts || !Array.isArray(candidate.content.parts) || candidate.content.parts.length === 0) {
+        const finishReason = candidate.finishReason;
+        console.error(`Gemini API (${GEMINI_MODEL_NAME}) returned no content parts. Finish Reason: ${finishReason}. Response:`, JSON.stringify(data));
+        if (finishReason === 'SAFETY') { throw new Error("Analysis blocked due to safety settings."); }
+        else if (finishReason) { throw new Error(`Analysis stopped unexpectedly. Reason: ${finishReason}`); }
+        else { throw new Error("No response generated by the model (empty content)"); }
+    }
+    if (!candidate.content.parts[0].text) {
+         console.error(`Gemini API (${GEMINI_MODEL_NAME}) response part has no text. Response:`, JSON.stringify(data));
+         throw new Error("No text found in the model response part.");
     }
 
-    // Extract Analysis Text - Extracts the text analysis from Gemini's response
-    let analysisText = data.candidates[0].content.parts[0].text;
+    let analysisText = candidate.content.parts[0].text;
 
-    // Remove asterisks for bold if they are present, assuming Gemini might still use them sometimes.
-    // Replace markdown bold (**) with HTML bold tags. This is a fallback in case Gemini uses markdown.
+    // Post-processing for formatting (fallback/cleanup)
     analysisText = analysisText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-    // Remove any remaining single asterisks that might be around words.
-    analysisText = analysisText.replace(/\*(.*?)\*/g, '<b>$1</b>');
-    // Remove any standalone asterisks that are not part of bold formatting.
-    analysisText = analysisText.replace(/\*/g, '');
+    analysisText = analysisText.replace(/\*(.*?)\*/g, '$1'); // Remove single asterisks
+    analysisText = analysisText.trim();
 
+    console.log("Gemini analysisText length:", analysisText.length);
 
-    // **IMPORTANT LOGGING FOR DEBUGGING TRUNCATION - PLEASE PROVIDE THESE LOGS**
-    console.log("Full Gemini analysisText (before DB storage):", analysisText);
+    // --- Store Results in Supabase ---
+    let storedImageUrl: string | null = null;
+    let analysisId: number | null = null;
+    let dbImagePath: string | null = null; // Path in storage for DB record
 
-    // Initialize Storage Variables - Variables to store image URL and analysis ID
-    let imageUrl = null
-    let analysisId = null
-
-    // Database Storage - Stores analysis results, image (optionally) in Supabase
     if (userId && analysisText) {
       try {
-        // Image Storage in Supabase Storage (Conditional) - Stores image in Supabase Storage if image data is available
-        if (image) {
-          // Bucket Existence Check - Checks if the storage bucket exists, creates it if not
-          const { data: buckets } = await supabase.storage.listBuckets()
-          const bucketName = 'bone-analysis-images'
+        // 1. Store Image in Supabase Storage
+        const bucketName = STORAGE_BUCKET_NAME;
+        const fileName = `${userId}/${taskId}/${Date.now()}.${extension}`;
+        const imageBuffer = decode(base64Data);
 
-          if (!buckets?.find(b => b.name === bucketName)) {
-            await supabase.storage.createBucket(bucketName, {
-              public: false, // Bucket is private for security
-              fileSizeLimit: 5242880 // 5MB file size limit
-            })
-          }
+        console.log(`Uploading image to Supabase Storage: ${bucketName}/${fileName}`);
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(fileName, imageBuffer, {
+            contentType: mimeType,
+            upsert: false
+          });
 
-          // Unique File Name Generation - Creates a unique file name to avoid collisions
-          const fileName = `${userId}/${taskId}/${Date.now()}.jpg`
+        if (uploadError) {
+          console.error("Error uploading image to Supabase Storage:", uploadError);
+        } else if (uploadData) {
+          console.log("Image uploaded successfully:", uploadData.path);
+          dbImagePath = uploadData.path; // Store the path
 
-          // Image Upload to Supabase Storage - Uploads the image using Deno-compatible method
-          const base64ImageData = image.split('base64,')[1];
-          const imageBuffer = Uint8Array.from(atob(base64ImageData), c => c.charCodeAt(0));
-
-
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          // 2. Generate Signed URL for client access
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
             .from(bucketName)
-            .upload(fileName, imageBuffer, {  // Use imageBuffer (Uint8Array) here
-              contentType: 'image/jpeg',
-              upsert: true // Overwrites file if it already exists (for updates if needed)
-            })
+            .createSignedUrl(fileName, SIGNED_URL_EXPIRY);
 
-          // Image Upload Error Handling - Handles errors during image upload to Supabase Storage
-          if (uploadError) {
-            console.error("Error uploading image:", uploadError)
-          } else if (uploadData) {
-            // Public URL Retrieval - Gets the public URL of the uploaded image from Supabase Storage
-            const { data: publicUrlData } = supabase.storage
-              .from(bucketName)
-              .getPublicUrl(fileName)
-
-            imageUrl = publicUrlData?.publicUrl || null // Assigns public URL if available
+          if (signedUrlError) {
+            console.error("Error creating signed URL:", signedUrlError);
+          } else {
+            storedImageUrl = signedUrlData.signedUrl;
+            console.log("Generated signed URL successfully.");
           }
         }
 
-        // Analysis Data Insertion to Supabase DB - Stores analysis metadata and results in 'analyses' table
+        // 3. Insert Analysis Data into Supabase DB
+        console.log("Storing analysis in database...");
         const { data: analysisData, error: insertError } = await supabase
           .from('analyses')
           .insert({
@@ -241,37 +305,50 @@ serve(async (req) => {
             task_id: taskId,
             task_name: taskTitle,
             result_text: analysisText,
-            image_url: imageUrl
+            image_path: dbImagePath, // Store the storage path
+            model_used: GEMINI_MODEL_NAME // Store the model used
           })
-          .select() // Select data after insert to get the new analysis ID
+          .select('id')
+          .single();
 
-        // Analysis Data Insertion Error Handling - Handles errors during analysis data insertion
         if (insertError) {
-          console.error("Error storing analysis:", insertError)
-        } else if (analysisData && analysisData.length > 0) {
-          analysisId = analysisData[0].id // Extracts the newly created analysis ID
-          console.log("Analysis stored successfully with ID:", analysisId)
+          console.error("Error storing analysis in database:", insertError);
+          if (dbImagePath) { // Attempt cleanup on DB error
+              console.warn(`Attempting to remove orphaned image due to DB error: ${dbImagePath}`);
+              await supabase.storage.from(bucketName).remove([dbImagePath]).catch(e => console.error("Image cleanup failed:", e));
+          }
+          throw insertError; // Propagate DB error
+        } else if (analysisData) {
+          analysisId = analysisData.id;
+          console.log("Analysis stored successfully with ID:", analysisId);
+        } else {
+           console.warn("Analysis data insertion returned no data or ID.");
         }
-      } catch (storageError) {
-        console.error("Error in storage process:", storageError) // Catches any errors during storage operations
+
+      } catch (storageDbError) {
+        console.error("Error during storage/database operations:", storageDbError);
+        // Don't necessarily halt everything, but log it. The analysis text might still be useful.
       }
+    } else {
+        console.log("Skipping storage: No userId provided or analysis text is empty.");
     }
 
-    // Return Analysis Result - Returns the analysis text, analysis ID, and image URL in the HTTP response
+    // --- Return Analysis Result ---
+    // Return analysis even if storage failed, but include nulls for IDs/URLs
     return new Response(
       JSON.stringify({
         analysis: analysisText,
-        analysisId,
-        imageUrl
+        analysisId: analysisId, // Send the DB id back (null if storage failed/skipped)
+        imageUrl: storedImageUrl // Send the temporary signed URL (null if storage failed/skipped)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
 
   } catch (error) {
-    console.error("Error processing image:", error) // General error handler for the entire function
+    console.error("Unhandled error processing image analysis request:", error);
     return new Response(
-      JSON.stringify({ error: `Failed to process the image: ${error.message}` }),
+      JSON.stringify({ error: `Failed to process the image: ${error.message || 'Unknown error'}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
-})
+});
