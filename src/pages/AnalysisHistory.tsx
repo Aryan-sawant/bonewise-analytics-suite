@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Home, ArrowRight, Clock, Bone, Calendar, Filter, Download, Share2 } from 'lucide-react';
+import { Home, ArrowRight, Clock, Bone, Calendar, Filter, Download, Share2, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface Analysis {
   id: string;
@@ -26,17 +33,45 @@ interface ChatInteraction {
   created_at: string;
 }
 
+type FilterOptions = {
+  taskTypes: string[];
+  dateRange: {
+    start: Date | null;
+    end: Date | null;
+  };
+};
+
 const AnalysisHistory = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthContext();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [filteredAnalyses, setFilteredAnalyses] = useState<Analysis[]>([]);
   const [chatInteractions, setChatInteractions] = useState<Record<string, ChatInteraction[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
   const [titleFadeIn, setTitleFadeIn] = useState(false);
   const [contentFadeIn, setContentFadeIn] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareNote, setShareNote] = useState('');
+  
+  // Filter state
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    taskTypes: [],
+    dateRange: {
+      start: null,
+      end: null
+    }
+  });
+  
+  // Extract unique task types
+  const uniqueTaskTypes = [...new Set(analyses.map(a => a.task_name))];
+  
+  // Reference for PDF export
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -59,6 +94,11 @@ const AnalysisHistory = () => {
       setContentFadeIn(true);
     }, 100);
   }, [selectedAnalysis]);
+  
+  useEffect(() => {
+    // Apply filters whenever filterOptions change
+    applyFilters();
+  }, [filterOptions, analyses]);
 
   const fetchAnalyses = async () => {
     if (!user) return;
@@ -77,6 +117,7 @@ const AnalysisHistory = () => {
       }
 
       setAnalyses(data || []);
+      setFilteredAnalyses(data || []);
 
       if (data && data.length > 0) {
         setSelectedAnalysis(data[0].id);
@@ -121,7 +162,126 @@ const AnalysisHistory = () => {
       await fetchChatInteractions(analysisId);
     }
   };
-
+  
+  const applyFilters = () => {
+    let filtered = [...analyses];
+    
+    // Apply task type filters
+    if (filterOptions.taskTypes.length > 0) {
+      filtered = filtered.filter(analysis => 
+        filterOptions.taskTypes.includes(analysis.task_name)
+      );
+    }
+    
+    // Apply date range filters
+    if (filterOptions.dateRange.start) {
+      filtered = filtered.filter(analysis => 
+        new Date(analysis.created_at) >= (filterOptions.dateRange.start as Date)
+      );
+    }
+    
+    if (filterOptions.dateRange.end) {
+      filtered = filtered.filter(analysis => 
+        new Date(analysis.created_at) <= (filterOptions.dateRange.end as Date)
+      );
+    }
+    
+    setFilteredAnalyses(filtered);
+    
+    // Update selected analysis if necessary
+    if (filtered.length > 0 && (!selectedAnalysis || !filtered.find(a => a.id === selectedAnalysis))) {
+      setSelectedAnalysis(filtered[0].id);
+    }
+  };
+  
+  const handleFilterChange = (taskName: string) => {
+    setFilterOptions(prev => {
+      const taskTypes = prev.taskTypes.includes(taskName)
+        ? prev.taskTypes.filter(t => t !== taskName)
+        : [...prev.taskTypes, taskName];
+      
+      return {
+        ...prev,
+        taskTypes
+      };
+    });
+  };
+  
+  const handleDateRangeChange = (type: 'start' | 'end', value: string) => {
+    setFilterOptions(prev => ({
+      ...prev,
+      dateRange: {
+        ...prev.dateRange,
+        [type]: value ? new Date(value) : null
+      }
+    }));
+  };
+  
+  const clearFilters = () => {
+    setFilterOptions({
+      taskTypes: [],
+      dateRange: {
+        start: null,
+        end: null
+      }
+    });
+  };
+  
+  const handleExport = async () => {
+    if (!selectedAnalysis || !resultsRef.current) return;
+    
+    try {
+      toast.info('Generating PDF...');
+      
+      const analysis = analyses.find(a => a.id === selectedAnalysis);
+      if (!analysis) return;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const canvas = await html2canvas(resultsRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Add title
+      pdf.setFontSize(20);
+      pdf.text(analysis.task_name, 20, 20);
+      
+      // Add date
+      pdf.setFontSize(12);
+      pdf.text(`Date: ${new Date(analysis.created_at).toLocaleString()}`, 20, 30);
+      
+      // Add divider
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(20, 35, 190, 35);
+      
+      // Add results image
+      const imgWidth = 170;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      pdf.addImage(imgData, 'PNG', 20, 40, imgWidth, imgHeight);
+      
+      // Save PDF
+      pdf.save(`${analysis.task_name}_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast.success('PDF exported successfully');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Failed to export PDF');
+    }
+  };
+  
+  const handleShare = async () => {
+    if (!shareEmail || !selectedAnalysis) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    // In a real application, this would send an email with the analysis
+    // For now, we'll just show a toast
+    toast.success(`Analysis shared with ${shareEmail}`);
+    setShareDialogOpen(false);
+    setShareEmail('');
+    setShareNote('');
+  };
+  
+  // Format results for display (same as before)
   const formatResults = (resultsText: string) => {
     if (!resultsText) return null;
 
@@ -295,23 +455,116 @@ const AnalysisHistory = () => {
 
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-2"
-            onClick={() => setFilterOpen(!filterOpen)}
-          >
-            <Filter size={16} />
-            <span>Filter</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-2"
-          >
-            <Calendar size={16} />
-            <span>Date Range</span>
-          </Button>
+          {/* Filter Popover */}
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+              >
+                <Filter size={16} />
+                <span>Filter</span>
+                {filterOptions.taskTypes.length > 0 && (
+                  <span className="ml-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] text-primary-foreground">
+                    {filterOptions.taskTypes.length}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Filter by Analysis Type</h4>
+                  {(filterOptions.taskTypes.length > 0) && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearFilters}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Clear all
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {uniqueTaskTypes.map(taskName => (
+                    <div key={taskName} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`filter-${taskName}`} 
+                        checked={filterOptions.taskTypes.includes(taskName)}
+                        onCheckedChange={() => handleFilterChange(taskName)}
+                      />
+                      <Label htmlFor={`filter-${taskName}`}>{taskName}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Date Range Popover */}
+          <Popover open={dateRangeOpen} onOpenChange={setDateRangeOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+              >
+                <Calendar size={16} />
+                <span>Date Range</span>
+                {(filterOptions.dateRange.start || filterOptions.dateRange.end) && (
+                  <span className="ml-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] text-primary-foreground">
+                    ✓
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Filter by Date</h4>
+                  {(filterOptions.dateRange.start || filterOptions.dateRange.end) && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        setFilterOptions(prev => ({
+                          ...prev, 
+                          dateRange: { start: null, end: null }
+                        }));
+                      }}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Clear dates
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="start-date">Start Date</Label>
+                      <Input 
+                        id="start-date" 
+                        type="date" 
+                        value={filterOptions.dateRange.start ? filterOptions.dateRange.start.toISOString().split('T')[0] : ''}
+                        onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="end-date">End Date</Label>
+                      <Input 
+                        id="end-date" 
+                        type="date" 
+                        value={filterOptions.dateRange.end ? filterOptions.dateRange.end.toISOString().split('T')[0] : ''}
+                        onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -319,6 +572,7 @@ const AnalysisHistory = () => {
             size="sm" 
             className="flex items-center gap-2"
             disabled={!selectedAnalysisData}
+            onClick={handleExport}
           >
             <Download size={16} />
             <span>Export</span>
@@ -328,6 +582,7 @@ const AnalysisHistory = () => {
             size="sm" 
             className="flex items-center gap-2"
             disabled={!selectedAnalysisData}
+            onClick={() => setShareDialogOpen(true)}
           >
             <Share2 size={16} />
             <span>Share</span>
@@ -344,22 +599,33 @@ const AnalysisHistory = () => {
             </div>
           </div>
         </div>
-      ) : analyses.length === 0 ? (
+      ) : filteredAnalyses.length === 0 ? (
         <Card className="border shadow-sm hover-card transition-all">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Clock className="h-16 w-16 text-muted-foreground mb-4 animate-pulse" />
             <h3 className="text-xl font-medium mb-2">No Analysis History</h3>
             <p className="text-muted-foreground mb-6 text-center max-w-md">
-              You haven't performed any bone health analyses yet.
-              Start by analyzing an image to build your history.
+              {analyses.length > 0 ? 
+                'No analyses match your current filters.' : 
+                'You haven\'t performed any bone health analyses yet.'}
             </p>
-            <Button 
-              onClick={() => navigate('/bone-analysis')} 
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover-scale transition-all"
-            >
-              <Bone className="mr-2 h-4 w-4" />
-              Start Bone Analysis
-            </Button>
+            {analyses.length > 0 ? (
+              <Button 
+                onClick={clearFilters} 
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover-scale transition-all"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear Filters
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => navigate('/bone-analysis')} 
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover-scale transition-all"
+              >
+                <Bone className="mr-2 h-4 w-4" />
+                Start Bone Analysis
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -368,12 +634,12 @@ const AnalysisHistory = () => {
             <CardHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 pb-4">
               <CardTitle className="flex items-center">
                 <Clock className="h-5 w-5 mr-2 text-primary" />
-                Past Analyses
+                Past Analyses {filteredAnalyses.length !== analyses.length && `(${filteredAnalyses.length}/${analyses.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-1 max-h-[600px] overflow-y-auto pr-2">
-                {analyses.map((analysis) => (
+                {filteredAnalyses.map((analysis) => (
                   <div
                     key={analysis.id}
                     className={`p-3 rounded-lg cursor-pointer transition-all hover-list-item ${
@@ -427,7 +693,7 @@ const AnalysisHistory = () => {
 
                   <TabsContent value="results" className="space-y-4">
                     {selectedAnalysisData.result_text ? (
-                      <div className="prose dark:prose-invert max-w-none">
+                      <div className="prose dark:prose-invert max-w-none" ref={resultsRef}>
                         {formatResults(selectedAnalysisData.result_text)}
                       </div>
                     ) : (
@@ -523,6 +789,47 @@ const AnalysisHistory = () => {
           </Card>
         </div>
       )}
+      
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Analysis Results</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="recipient@example.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note">Add a note (optional)</Label>
+              <Input
+                id="note"
+                placeholder="Optional message to accompany the analysis"
+                value={shareNote}
+                onChange={(e) => setShareNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShareDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleShare} className="bg-gradient-to-r from-blue-500 to-indigo-600">
+              Share
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

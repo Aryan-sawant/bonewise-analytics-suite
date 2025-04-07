@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,8 @@ import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, Arro
 import ChatbotButton from '@/components/ChatbotButton';
 import { motion } from 'framer-motion';
 import { AuroraBackground } from '@/components/ui/aurora-background';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
@@ -50,6 +52,7 @@ const AnalysisPage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isImageModalMaximized, setIsImageModalMaximized] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -134,30 +137,68 @@ const AnalysisPage = () => {
     }
   };
 
-  const handleDownloadResults = () => {
-    if (!results) return;
-
-    // Even MORE aggressive removal of bold markers for download - remove absolutely all asterisks and underscores
-    let textForDownload = results
-        .replace(/\*\*([^*]+)\*\*/g, '$1')
-        .replace(/__([^_]+)__/g, '$1')
-        .replace(/\*\*([^*]+)\*/g, '$1')
-        .replace(/__([^_]+)_/g, '$1')
-        .replace(/\*/g, '') // Remove absolutely all asterisks
-        .replace(/_/g, '');  // Remove absolutely all underscores
-
-
-    const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
-    const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.txt`;
-
-    const blob = new Blob([textForDownload], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadResults = async () => {
+    if (!results || !resultsRef.current) return;
+    
+    try {
+      toast.info('Generating PDF...');
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Generate canvas from the results container
+      const canvas = await html2canvas(resultsRef.current, { 
+        scale: 2,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Add title
+      pdf.setFontSize(18);
+      const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
+      pdf.text(taskTitle, 20, 20);
+      
+      // Add date
+      pdf.setFontSize(12);
+      pdf.text(`Analysis Date: ${new Date().toLocaleString()}`, 20, 30);
+      
+      // Add image to the report
+      if (imageUrl) {
+        pdf.addPage();
+        pdf.text('Analyzed Image', 20, 20);
+        
+        // Create a temporary img element to get the image dimensions
+        const img = new Image();
+        img.src = imageUrl;
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+        });
+        
+        // Calculate image dimensions to fit on page
+        const imgWidth = 170;
+        const imgHeight = (img.height * imgWidth) / img.width;
+        
+        pdf.addImage(imageUrl, 'JPEG', 20, 30, imgWidth, imgHeight);
+      }
+      
+      // Add results section
+      pdf.addPage();
+      pdf.text('Analysis Results', 20, 20);
+      
+      // Add the results content as an image
+      const imgWidth = 170;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      pdf.addImage(imgData, 'PNG', 20, 30, imgWidth, imgHeight);
+      
+      // Save the PDF
+      const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
   };
 
   const openImageModal = () => {
@@ -329,7 +370,7 @@ const AnalysisPage = () => {
                       className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg bg-white/20 text-white border-white/30 hover:bg-white/30"
                     >
                       <Download size={14} />
-                      Download
+                      Download PDF
                     </Button>
                   )}
                   <Button
@@ -345,7 +386,7 @@ const AnalysisPage = () => {
               <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
                 {/* Results content */}
                 {results ? (
-                  <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" style={{ color: 'black' }}>
+                  <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" ref={resultsRef} style={{ color: 'black' }}>
                     {formatResults(results)}
                   </div>
                 ) : error ? (

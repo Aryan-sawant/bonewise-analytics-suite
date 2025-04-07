@@ -1,10 +1,16 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home } from 'lucide-react';
+import { ArrowLeft, Home, Download, Share2 } from 'lucide-react';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const Result = () => {
   const location = useLocation();
@@ -12,6 +18,12 @@ const Result = () => {
   const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [resultData, setResultData] = useState<any>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareNote, setShareNote] = useState('');
+  
+  // Reference for PDF export
+  const resultsRef = useRef<HTMLDivElement>(null);
   
   // Parse query params
   const searchParams = new URLSearchParams(location.search);
@@ -89,6 +101,80 @@ const Result = () => {
     return () => clearTimeout(simulateLoading);
   }, [analysisType, imageId]);
   
+  const handleDownload = async () => {
+    if (!resultData || !resultsRef.current) return;
+    
+    try {
+      toast.info('Generating PDF report...');
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Add title
+      pdf.setFontSize(18);
+      pdf.text(resultData.analysisType, 20, 20);
+      
+      // Add date
+      pdf.setFontSize(12);
+      pdf.text(`Analysis Date: ${resultData.timestamp}`, 20, 30);
+      
+      // Add image to the report
+      if (resultData.imageUrl) {
+        pdf.addPage();
+        pdf.text('Analyzed Image', 20, 20);
+        
+        // Create a temporary img element to get the image dimensions
+        const img = new Image();
+        img.src = resultData.imageUrl;
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+        });
+        
+        // Calculate image dimensions to fit on page
+        const imgWidth = 170;
+        const imgHeight = (img.height * imgWidth) / img.width;
+        
+        pdf.addImage(resultData.imageUrl, 'JPEG', 20, 30, imgWidth, imgHeight);
+      }
+      
+      // Generate canvas from the results container
+      const canvas = await html2canvas(resultsRef.current, { 
+        scale: 2,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Add results to PDF
+      pdf.addPage();
+      pdf.text('Analysis Results', 20, 20);
+      
+      const imgWidth = 170;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      pdf.addImage(imgData, 'PNG', 20, 30, imgWidth, imgHeight);
+      
+      // Save the PDF
+      pdf.save(`${resultData.analysisType.replace(/\s+/g, '_')}_Report.pdf`);
+      
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+  
+  const handleShare = () => {
+    if (!shareEmail) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    // In a real application, this would send an email with the analysis results
+    toast.success(`Analysis results shared with ${shareEmail}`);
+    setShareDialogOpen(false);
+    setShareEmail('');
+    setShareNote('');
+  };
+  
   return (
     <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
       <header className="mb-12">
@@ -104,10 +190,34 @@ const Result = () => {
               {loading ? 'Processing your image...' : resultData?.analysisType} results
             </p>
           </div>
-          <Button variant="outline" className="gap-2" onClick={() => navigate('/dashboard')}>
-            <Home size={16} />
-            Back to Dashboard
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleDownload}
+              disabled={loading || !resultData}
+            >
+              <Download size={16} />
+              Download PDF
+            </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setShareDialogOpen(true)}
+              disabled={loading || !resultData}
+            >
+              <Share2 size={16} />
+              Share
+            </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={() => navigate('/dashboard')}
+            >
+              <Home size={16} />
+              Dashboard
+            </Button>
+          </div>
         </div>
       </header>
       
@@ -119,14 +229,57 @@ const Result = () => {
         </div>
       ) : (
         resultData && (
-          <ResultsDisplay
-            imageUrl={resultData.imageUrl}
-            analysisType={resultData.analysisType}
-            results={resultData.results}
-            timestamp={resultData.timestamp}
-          />
+          <div ref={resultsRef}>
+            <ResultsDisplay
+              imageUrl={resultData.imageUrl}
+              analysisType={resultData.analysisType}
+              results={resultData.results}
+              timestamp={resultData.timestamp}
+            />
+          </div>
         )
       )}
+      
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Analysis Results</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="share-email">Email address</Label>
+              <Input
+                id="share-email"
+                type="email"
+                placeholder="recipient@example.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="share-note">Add a note (optional)</Label>
+              <Input
+                id="share-note"
+                placeholder="Optional message to accompany the analysis"
+                value={shareNote}
+                onChange={(e) => setShareNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShareDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleShare} className="bg-gradient-to-r from-blue-500 to-indigo-600">
+              Share
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

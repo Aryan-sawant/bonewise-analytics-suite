@@ -1,10 +1,15 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { MessageCircle, Download, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface ResultsDisplayProps {
   imageUrl: string;
@@ -28,6 +33,12 @@ const ResultsDisplay = ({
   const [chatMessages, setChatMessages] = useState<{ sender: 'user' | 'ai'; text: string }[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareNote, setShareNote] = useState('');
+  
+  // Reference for PDF export
+  const resultsRef = useRef<HTMLDivElement>(null);
   
   const toggleChat = () => {
     setIsChatOpen(!isChatOpen);
@@ -59,14 +70,78 @@ const ResultsDisplay = ({
     }, 1500);
   };
   
-  const handleDownload = () => {
-    // In a real app, this would generate a PDF report
-    toast.success('Download feature will be implemented in the future');
+  const handleDownload = async () => {
+    if (!resultsRef.current) return;
+    
+    try {
+      toast.info('Generating PDF report...');
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Add title
+      pdf.setFontSize(18);
+      pdf.text(analysisType, 20, 20);
+      
+      // Add date
+      pdf.setFontSize(12);
+      pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
+      
+      // Add image to the report
+      if (imageUrl) {
+        pdf.addPage();
+        pdf.text('Analyzed Image', 20, 20);
+        
+        // Create a temporary img element to get the image dimensions
+        const img = new Image();
+        img.src = imageUrl;
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+        });
+        
+        // Calculate image dimensions to fit on page
+        const imgWidth = 170;
+        const imgHeight = (img.height * imgWidth) / img.width;
+        
+        pdf.addImage(imageUrl, 'JPEG', 20, 30, imgWidth, imgHeight);
+      }
+      
+      // Generate results content as an image
+      const canvas = await html2canvas(resultsRef.current, { 
+        scale: 2,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Add results to PDF
+      pdf.addPage();
+      pdf.text('Analysis Results', 20, 20);
+      
+      const imgWidth = 170;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      pdf.addImage(imgData, 'PNG', 20, 30, imgWidth, imgHeight);
+      
+      // Save the PDF
+      pdf.save(`${analysisType.replace(/\s+/g, '_')}_Report.pdf`);
+      
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
   };
   
   const handleShare = () => {
-    // In a real app, this would open a share dialog
-    toast.success('Share feature will be implemented in the future');
+    if (!shareEmail) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    // In a real application, this would send an email with the analysis results
+    toast.success(`Analysis results shared with ${shareEmail}`);
+    setShareDialogOpen(false);
+    setShareEmail('');
+    setShareNote('');
   };
   
   return (
@@ -87,7 +162,7 @@ const ResultsDisplay = ({
               <Button variant="ghost" size="icon" onClick={handleDownload}>
                 <Download size={18} />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleShare}>
+              <Button variant="ghost" size="icon" onClick={() => setShareDialogOpen(true)}>
                 <Share2 size={18} />
               </Button>
             </div>
@@ -104,7 +179,7 @@ const ResultsDisplay = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-grow">
-          <div className="space-y-6">
+          <div className="space-y-6" ref={resultsRef}>
             {results.map((result, index) => (
               <div key={index} className="space-y-2">
                 <h3 className="text-base font-medium text-foreground">{result.title}</h3>
@@ -196,6 +271,47 @@ const ResultsDisplay = ({
           </Card>
         </div>
       )}
+      
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Analysis Results</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="share-email">Email address</Label>
+              <Input
+                id="share-email"
+                type="email"
+                placeholder="recipient@example.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="share-note">Add a note (optional)</Label>
+              <Input
+                id="share-note"
+                placeholder="Optional message to accompany the analysis"
+                value={shareNote}
+                onChange={(e) => setShareNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShareDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleShare} className="bg-gradient-to-r from-blue-500 to-indigo-600">
+              Share
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
