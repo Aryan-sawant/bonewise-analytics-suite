@@ -20,7 +20,7 @@ export function NavBarDemo() {
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-      <div className="flex items-center gap-2 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md py-3 px-6 rounded-full shadow-xl border border-white/20">
+      <div className="flex items-center gap-2 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md py-3 px-6 rounded-full shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300">
         {navItems.map((item) => {
           const Icon = item.icon
           
