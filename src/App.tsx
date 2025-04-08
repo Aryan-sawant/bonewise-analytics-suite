@@ -14,6 +14,7 @@ import AnalysisHistory from "./pages/AnalysisHistory";
 import ProfilePage from "./pages/ProfilePage";
 import Result from "./pages/Result";
 import NotFound from "./pages/NotFound";
+import FindDoctor from "./pages/FindDoctor";
 
 const App = () => (
   <TooltipProvider>
@@ -59,6 +60,11 @@ const App = () => (
       <Route path="/result" element={
         <AuroraWrapper>
           <Result />
+        </AuroraWrapper>
+      } />
+      <Route path="/find-doctor" element={
+        <AuroraWrapper>
+          <FindDoctor />
         </AuroraWrapper>
       } />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

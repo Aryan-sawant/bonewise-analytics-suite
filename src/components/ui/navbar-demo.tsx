@@ -1,5 +1,5 @@
 
-import { Home, User, FlaskConical, History } from 'lucide-react'
+import { Home, User, FlaskConical, History, MapPin } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
@@ -11,6 +11,7 @@ export function NavBarDemo() {
     { name: 'Home', url: '/', icon: Home },
     { name: 'Dashboard', url: '/tasks', icon: User },
     { name: 'Analysis', url: '/bone-analysis', icon: FlaskConical },
+    { name: 'Find Doctor', url: '/find-doctor', icon: MapPin },
     { name: 'History', url: '/analysis-history', icon: History }
   ]
 

@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -29,8 +28,15 @@ const Result = () => {
   const searchParams = new URLSearchParams(location.search);
   const analysisType = searchParams.get('type') || '';
   const imageId = searchParams.get('id') || '';
+  const specialty = searchParams.get('specialty') || '';
   
   useEffect(() => {
+    if (analysisType === 'consultation' && specialty) {
+      setLoading(false);
+      setFindDoctorOpen(true);
+      return;
+    }
+    
     const simulateLoading = setTimeout(() => {
       setLoading(false);
       
@@ -97,7 +103,7 @@ const Result = () => {
     }, 2000);
     
     return () => clearTimeout(simulateLoading);
-  }, [analysisType, imageId]);
+  }, [analysisType, imageId, specialty]);
   
   const handleDownload = async () => {
     if (!resultData || !resultsRef.current) return;
@@ -267,11 +273,11 @@ const Result = () => {
   
   return (
     <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
-      <header className="mb-12">
+      <header className="mb-8">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <Button variant="outline" size="icon" onClick={() => navigate('/analysis')}>
+              <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft size={16} />
               </Button>
               <h1 className="text-3xl font-bold tracking-tight">Analysis Results</h1>
@@ -281,16 +287,14 @@ const Result = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {user?.userType === 'common' && resultData && !loading && (
-              <Button 
-                variant="outline" 
-                className="gap-2 border-indigo-200 hover:bg-indigo-50"
-                onClick={() => setFindDoctorOpen(true)}
-              >
-                <MapPin size={16} className="text-indigo-500" />
-                <span className="text-indigo-700">Find Specialist</span>
-              </Button>
-            )}
+            <Button 
+              variant="default" 
+              className="gap-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
+              onClick={() => setFindDoctorOpen(true)}
+            >
+              <MapPin size={16} className="text-white" />
+              <span className="text-white font-medium">Find Specialist</span>
+            </Button>
             <Button 
               variant="outline" 
               className="gap-2"
@@ -321,7 +325,25 @@ const Result = () => {
         </div>
       </header>
       
-      {loading ? (
+      {analysisType === 'consultation' ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="h-32 w-32 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+            <MapPin size={48} className="text-indigo-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Find a Medical Specialist</h2>
+          <p className="text-muted-foreground mb-6 max-w-lg">
+            Connect with medical specialists who can provide professional care based on your bone health needs
+          </p>
+          <Button 
+            className="gap-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
+            onClick={() => setFindDoctorOpen(true)}
+            size="lg"
+          >
+            <MapPin size={18} className="text-white" />
+            <span className="text-white font-medium">Find a Doctor Now</span>
+          </Button>
+        </div>
+      ) : loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <span className="loader mb-6"></span>
           <p className="text-lg text-muted-foreground animate-pulse">Analyzing your image with AI...</p>
@@ -329,14 +351,43 @@ const Result = () => {
         </div>
       ) : (
         resultData && (
-          <div ref={resultsRef}>
-            <ResultsDisplay
-              imageUrl={resultData.imageUrl}
-              analysisType={resultData.analysisType}
-              results={resultData.results}
-              timestamp={resultData.timestamp}
-            />
-          </div>
+          <>
+            <div ref={resultsRef}>
+              <ResultsDisplay
+                imageUrl={resultData.imageUrl}
+                analysisType={resultData.analysisType}
+                results={resultData.results}
+                timestamp={resultData.timestamp}
+              />
+            </div>
+            
+            <div className="mt-12 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-lg p-6 border">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="md:w-1/2">
+                  <h3 className="text-xl font-bold mb-2">Need Professional Help?</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Based on your analysis, we recommend consulting with a {resultData.specialistType.toLowerCase()}. 
+                    They can provide professional medical advice and treatment options for your condition.
+                  </p>
+                  <Button 
+                    className="gap-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
+                    onClick={() => setFindDoctorOpen(true)}
+                    size="lg"
+                  >
+                    <MapPin size={18} className="text-white" />
+                    <span className="text-white font-medium">Find a {resultData.specialistType} Near You</span>
+                  </Button>
+                </div>
+                <div className="md:w-1/2 flex justify-center">
+                  <img 
+                    src="https://images.unsplash.com/photo-1622902046580-2b47f47f5471?q=80&w=800" 
+                    alt="Doctor consultation" 
+                    className="rounded-lg object-cover h-48 w-full md:h-36 md:w-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
         )
       )}
       
@@ -380,14 +431,12 @@ const Result = () => {
         </DialogContent>
       </Dialog>
       
-      {resultData && (
-        <FindDoctorDialog 
-          open={findDoctorOpen} 
-          onOpenChange={setFindDoctorOpen} 
-          specialistType={resultData.specialistType}
-          analysisType={resultData.analysisType}
-        />
-      )}
+      {<FindDoctorDialog 
+        open={findDoctorOpen} 
+        onOpenChange={setFindDoctorOpen} 
+        specialistType={resultData?.specialistType || specialty || 'Orthopedic Specialist'}
+        analysisType={resultData?.analysisType || 'Bone Health Analysis'}
+      />}
     </div>
   );
 };
