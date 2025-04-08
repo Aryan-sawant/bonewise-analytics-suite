@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { AnimatedHero } from '@/components/ui/animated-hero';
+import { AnimatedHero } from '@/components/ui/component';
 import { useAuthContext } from '@/contexts/AuthContext';
 import Hero from '@/components/Hero';
 import ChatbotButton from '@/components/ChatbotButton';
@@ -58,7 +58,11 @@ const Index = () => {
         analysisType="Bone Health Analysis"
       />
       
-      <ChatbotButton />
+      <ChatbotButton 
+        analysisContext="general"
+        taskTitle="General Inquiry"
+        analysisId="landing-page"
+      />
     </div>
   );
 };

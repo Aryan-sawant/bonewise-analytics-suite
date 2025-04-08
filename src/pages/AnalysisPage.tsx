@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,7 @@ const AnalysisPage = () => {
           </div>
           
           <Button 
-            onClick={() => setFindDoctorOpen(true)}
+            onClick={() => setFindDoctorOpen(true)} 
             variant="outline" 
             className="gap-2"
           >
@@ -164,7 +165,8 @@ const AnalysisPage = () => {
             </Button>
           </div>
         ) : (
-          <ImageUpload onUpload={handleUpload} isUploading={isUploading}>
+          <div>
+            <ImageUpload onUpload={handleUpload} isUploading={isUploading} />
             {isUploading ? (
               <Skeleton className="w-[350px] h-[200px]" />
             ) : (
@@ -173,7 +175,7 @@ const AnalysisPage = () => {
                 <p className="text-sm text-muted-foreground">Click to upload an image</p>
               </div>
             )}
-          </ImageUpload>
+          </div>
         )}
 
         <Button 

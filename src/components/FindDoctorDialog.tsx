@@ -58,8 +58,8 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  const googleMapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
   
   // Initialize specialists and active specialty based on analysis type
   useEffect(() => {
@@ -82,42 +82,46 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
     if (!window.google && !document.getElementById('google-maps-script')) {
       const script = document.createElement('script');
       script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBfRRgBujn9Gf6JZUgjz8fIn7UwA1oBJ8k&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBfRRgBujn9Gf6JZUgjz8fIn7UwA1oBJ8k&libraries=places,geometry&callback=initMap`;
       script.async = true;
       script.defer = true;
-      script.onload = () => {
+      
+      // Define the callback globally
+      window.initMap = () => {
+        console.log("Google Maps API loaded");
         if (userCoordinates && mapRef.current) {
-          initMap();
+          initializeMap();
         }
       };
+      
       document.head.appendChild(script);
     } else if (window.google && userCoordinates && mapRef.current) {
-      initMap();
+      initializeMap();
     }
   }, [userCoordinates, mapRef.current]);
 
   // Fetch doctors when specialty or location changes
   useEffect(() => {
-    if (userCoordinates && activeSpecialty) {
+    if (userCoordinates && activeSpecialty && window.google) {
       searchNearbyDoctors();
     }
   }, [userCoordinates, activeSpecialty]);
 
-  const initMap = () => {
-    if (!mapRef.current || !userCoordinates) return;
+  const initializeMap = () => {
+    if (!mapRef.current || !userCoordinates || !window.google) return;
     
-    googleMapRef.current = new google.maps.Map(mapRef.current, {
+    googleMapRef.current = new window.google.maps.Map(mapRef.current, {
       center: userCoordinates,
       zoom: 13,
       mapTypeControl: false,
     });
     
     // Add user location marker
-    new google.maps.Marker({
+    new window.google.maps.Marker({
       position: userCoordinates,
       map: googleMapRef.current,
       icon: {
-        path: google.maps.SymbolPath.CIRCLE,
+        path: window.google.maps.SymbolPath.CIRCLE,
         scale: 10,
         fillColor: "#4338ca",
         fillOpacity: 0.4,
@@ -142,8 +146,8 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
           
           // Reverse geocode to get address
           if (window.google && window.google.maps) {
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ location: coords }, (results, status) => {
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ location: coords }, (results: any, status: string) => {
               if (status === "OK" && results && results[0]) {
                 setLocation(results[0].formatted_address);
               } else {
@@ -182,10 +186,10 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
     setDoctors([]);
     
     // Clear previous markers
-    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current.forEach((marker: any) => marker.setMap(null));
     markersRef.current = [];
     
-    const service = new google.maps.places.PlacesService(googleMapRef.current);
+    const service = new window.google.maps.places.PlacesService(googleMapRef.current);
     const searchTerm = `${activeSpecialty} doctor`;
     
     service.nearbySearch({
@@ -193,21 +197,21 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
       radius: 5000, // 5km radius
       type: 'doctor',
       keyword: searchTerm,
-    }, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+    }, (results: any[], status: string) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
         const foundDoctors: Doctor[] = [];
-        const bounds = new google.maps.LatLngBounds();
+        const bounds = new window.google.maps.LatLngBounds();
         bounds.extend(userCoordinates);
         
-        results.forEach((place, index) => {
+        results.forEach((place: any, index: number) => {
           if (!place.geometry || !place.geometry.location) return;
           
           // Create marker for each result
-          const marker = new google.maps.Marker({
+          const marker = new window.google.maps.Marker({
             position: place.geometry.location,
             map: googleMapRef.current || null,
             title: place.name,
-            animation: google.maps.Animation.DROP,
+            animation: window.google.maps.Animation.DROP,
           });
           
           markersRef.current.push(marker);
@@ -222,8 +226,8 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
           });
           
           // Calculate distance from user location
-          const distance = google.maps.geometry
-            ? google.maps.geometry.spherical.computeDistanceBetween(
+          const distance = window.google.maps.geometry
+            ? window.google.maps.geometry.spherical.computeDistanceBetween(
                 userCoordinates, 
                 place.geometry.location
               )
@@ -291,18 +295,28 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
   const getPlaceDetails = (placeId: string) => {
     if (!window.google || !googleMapRef.current) return;
     
-    const service = new google.maps.places.PlacesService(googleMapRef.current);
+    const service = new window.google.maps.places.PlacesService(googleMapRef.current);
     
     service.getDetails({
       placeId: placeId,
       fields: ['name', 'formatted_phone_number', 'website', 'opening_hours', 'review']
-    }, (place, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+    }, (place: any, status: string) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
         console.log('Place details:', place);
         // You could update the selected doctor with more details here
       }
     });
   };
+
+  // Add global callback for Google Maps API
+  if (typeof window !== 'undefined' && !window.initMap) {
+    window.initMap = () => {
+      console.log("Google Maps API loaded");
+      if (userCoordinates && mapRef.current) {
+        initializeMap();
+      }
+    };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -551,5 +565,12 @@ const FindDoctorDialog = ({ open, onOpenChange, specialistType, analysisType }: 
     </Dialog>
   );
 };
+
+// Add typings for the global window.initMap function
+declare global {
+  interface Window {
+    initMap: () => void;
+  }
+}
 
 export default FindDoctorDialog;
