@@ -1,602 +1,204 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, X, Upload, MapPin } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft } from 'lucide-react';
-import ChatbotButton from '@/components/ChatbotButton';
-import { motion } from 'framer-motion';
-import { AuroraBackground } from '@/components/ui/aurora-background';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
-const TASK_TITLES: Record<string, string> = {
-  'fracture-detection': 'Bone Fracture Detection',
-  'bone-marrow': 'Bone Marrow Cell Classification',
-  'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
-  'osteoporosis': 'Osteoporosis Stage & BMD Score',
-  'bone-age': 'Bone Age Detection',
-  'spine-fracture': 'Cervical Spine Fracture Detection',
-  'bone-tumor': 'Bone Tumor/Cancer Detection',
-  'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
-};
-
-const TASK_GUIDANCE: Record<string, string> = {
-  'fracture-detection': 'Upload an X-ray image of the bone area. The image should clearly show the suspected fracture area.',
-  'bone-marrow': 'Upload a microscope image of the bone marrow sample.',
-  'osteoarthritis': 'Upload an X-ray or MRI image of the knee joint.',
-  'osteoporosis': 'Upload a DEXA scan or X-ray image of the spine, hip, or wrist.',
-  'bone-age': 'Upload an X-ray image of the hand and wrist.',
-  'spine-fracture': 'Upload an X-ray, CT scan or MRI image of the cervical spine.',
-  'bone-tumor': 'Upload an X-ray, MRI, or CT scan showing the suspected area.',
-  'bone-infection': 'Upload an X-ray, MRI, or bone scan showing the affected area.'
-};
+import FindDoctorDialog from '@/components/FindDoctorDialog';
 
 const AnalysisPage = () => {
-  const { taskId } = useParams<{ taskId: string }>();
+  const { taskId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
-  const [image, setImage] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [results, setResults] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [analysisId, setAnalysisId] = useState<string | null>(null);
-  const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null);
-  const [isResultsMaximized, setIsResultsMaximized] = useState(false);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [isImageModalMaximized, setIsImageModalMaximized] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const resultsRef = useRef<HTMLDivElement>(null);
+
+  const [taskDetails, setTaskDetails] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [findDoctorOpen, setFindDoctorOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-  }, [user, navigate]);
+    const fetchTaskDetails = async () => {
+      // Mock task details based on taskId
+      const mockTasks = {
+        '1': {
+          id: '1',
+          title: 'Bone Fracture Detection',
+          description: 'Upload an X-ray image to detect potential bone fractures.',
+          specialistType: 'Orthopedic Surgeon',
+          instructions: [
+            'Ensure the X-ray image is clear and well-lit.',
+            'Position the bone of interest in the center of the image.',
+            'Avoid images with excessive artifacts or obstructions.'
+          ]
+        },
+        '2': {
+          id: '2',
+          title: 'Osteoporosis Prediction',
+          description: 'Upload a bone density scan to predict the likelihood of osteoporosis.',
+          specialistType: 'Endocrinologist',
+          instructions: [
+            'Upload a recent bone density scan in DICOM format.',
+            'Ensure the scan includes the lumbar spine and hip regions.',
+            'Provide patient age and gender for accurate analysis.'
+          ]
+        },
+        '3': {
+          id: '3',
+          title: 'Arthritis Detection',
+          description: 'Upload an X-ray image to detect potential arthritis.',
+          specialistType: 'Rheumatologist',
+          instructions: [
+            'Ensure the X-ray image is clear and well-lit.',
+            'Position the joint of interest in the center of the image.',
+            'Avoid images with excessive artifacts or obstructions.'
+          ]
+        },
+        '4': {
+          id: '4',
+          title: 'Bone Tumor Detection',
+          description: 'Upload an X-ray image to detect potential bone tumors.',
+          specialistType: 'Orthopedic Oncologist',
+          instructions: [
+            'Ensure the X-ray image is clear and well-lit.',
+            'Position the bone of interest in the center of the image.',
+            'Avoid images with excessive artifacts or obstructions.'
+          ]
+        },
+      };
 
-  useEffect(() => {
-    if (taskId && !TASK_TITLES[taskId]) {
-      toast.error('Invalid analysis task');
-      navigate('/tasks');
-    }
+      const task = mockTasks[taskId as keyof typeof mockTasks];
+      if (task) {
+        setTaskDetails(task);
+      } else {
+        toast.error('Task not found');
+        navigate('/tasks');
+      }
+    };
+
+    fetchTaskDetails();
   }, [taskId, navigate]);
 
-  const handleImageUpload = (file: File) => {
-    setImage(file);
-    setImageUrl(URL.createObjectURL(file));
-    setResults(null);
-    setError(null);
-    setAnalysisId(null);
-    setStoredImageUrl(null);
-    setIsImageModalOpen(false);
-    setIsImageModalMaximized(false);
-    setZoomLevel(1);
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImageBase64(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  const handleUpload = async (file: File) => {
+    setSelectedImage(file);
+    setIsUploading(true);
+    
+    // Simulate upload process
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    setIsUploading(false);
+    toast.success('Image uploaded successfully');
   };
 
-  const handleAnalyze = async () => {
-    if (!image || !imageBase64 || !taskId || !user) {
+  const handleAnalyze = () => {
+    if (!selectedImage) {
       toast.error('Please upload an image first');
       return;
     }
 
-    setAnalyzing(true);
-    setError(null);
-
-    try {
-      console.log("Sending image for analysis...");
-
-      const { data, error } = await supabase.functions.invoke('analyze-bone-image', {
-        body: {
-          image: imageBase64,
-          taskId,
-          userType: user.userType === 'doctor' ? 'doctor' : 'common',
-          userId: user.id
-        }
-      });
-
-      if (error) {
-        console.error('Function error:', error);
-        throw new Error(`Analysis failed: ${error.message}`);
-      }
-
-      if (data?.error) {
-        console.error('Data error:', data.error);
-        throw new Error(data.error);
-      }
-
-      setResults(data.analysis);
-
-      if (data.analysisId) {
-        setAnalysisId(data.analysisId);
-      }
-
-      if (data.imageUrl) {
-        setStoredImageUrl(data.imageUrl);
-      }
-
-      toast.success('Analysis complete');
-    } catch (error) {
-      console.error('Analysis error:', error);
-      setError('Failed to analyze image. Please try again or try a different image.');
-      toast.error('Failed to analyze image. Please try again.');
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const handleDownloadResults = async () => {
-    if (!results || !resultsRef.current) return;
+    setIsAnalyzing(true);
     
-    try {
-      toast.info('Generating PDF...');
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
-      const tempContainer = document.createElement('div');
-      tempContainer.style.width = '700px';
-      tempContainer.style.padding = '20px';
-      tempContainer.style.backgroundColor = '#ffffff';
-      tempContainer.style.fontFamily = 'Arial, sans-serif';
-      tempContainer.style.color = '#000000';
-      
-      const heading = document.createElement('h1');
-      heading.textContent = TASK_TITLES[taskId || ''] || 'Bone Analysis';
-      heading.style.fontSize = '24px';
-      heading.style.fontWeight = 'bold';
-      heading.style.marginBottom = '20px';
-      heading.style.color = '#000000';
-      tempContainer.appendChild(heading);
-      
-      const timestampEl = document.createElement('p');
-      timestampEl.textContent = `Analysis Date: ${new Date().toLocaleString()}`;
-      timestampEl.style.fontSize = '14px';
-      timestampEl.style.marginBottom = '20px';
-      timestampEl.style.color = '#000000';
-      tempContainer.appendChild(timestampEl);
-      
-      const resultsClone = resultsRef.current.cloneNode(true) as HTMLDivElement;
-      
-      const allTextElements = resultsClone.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div');
-      allTextElements.forEach(el => {
-        (el as HTMLElement).style.color = '#000000';
-        (el as HTMLElement).style.opacity = '1';
-        (el as HTMLElement).style.fontWeight = (el as HTMLElement).tagName.startsWith('H') ? 'bold' : 'normal';
-      });
-      
-      tempContainer.appendChild(resultsClone);
-      
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      document.body.appendChild(tempContainer);
-      
-      pdf.setFontSize(18);
-      pdf.setTextColor(0, 0, 0);
-      const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
-      pdf.text(taskTitle, 20, 20);
-      
-      pdf.setFontSize(12);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`Analysis Date: ${new Date().toLocaleString()}`, 20, 30);
-      
-      pdf.setDrawColor(100, 100, 100);
-      pdf.line(20, 35, 190, 35);
-      
-      if (imageUrl) {
-        pdf.addPage();
-        pdf.setFontSize(14);
-        pdf.setTextColor(0, 0, 0);
-        pdf.text('Analyzed Image', 20, 20);
-        
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-        });
-        
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        
-        const maxImgWidth = pageWidth - 40;
-        const maxImgHeight = pageHeight - 50;
-        
-        let imgWidth = img.width;
-        let imgHeight = img.height;
-        
-        if (imgWidth > maxImgWidth) {
-          const ratio = maxImgWidth / imgWidth;
-          imgWidth = maxImgWidth;
-          imgHeight = imgHeight * ratio;
-        }
-        
-        if (imgHeight > maxImgHeight) {
-          const ratio = maxImgHeight / imgHeight;
-          imgHeight = maxImgHeight;
-          imgWidth = imgWidth * ratio;
-        }
-        
-        const xOffset = (pageWidth - imgWidth) / 2;
-        
-        pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
-      }
-      
-      pdf.addPage();
-      pdf.setFontSize(16);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Analysis Results', 20, 20);
-      
-      const canvas = await html2canvas(tempContainer, { 
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        onclone: (doc, element) => {
-          const allText = element.querySelectorAll('*');
-          allText.forEach(el => {
-            if (el instanceof HTMLElement) {
-              el.style.color = '#000000';
-              el.style.opacity = '1';
-              el.style.textShadow = 'none';
-            }
-          });
-        }
-      });
-      
-      document.body.removeChild(tempContainer);
-      
-      const imgData = canvas.toDataURL('image/png');
-      
-      const contentWidth = pdf.internal.pageSize.getWidth() - 40;
-      const contentHeight = canvas.height * contentWidth / canvas.width;
-      
-      const pageHeight = pdf.internal.pageSize.getHeight() - 40;
-      
-      if (contentHeight < pageHeight - 30) {
-        pdf.addImage(imgData, 'PNG', 20, 30, contentWidth, contentHeight);
-      } else {
-        const pageCount = Math.ceil(contentHeight / pageHeight);
-        
-        const imgPageHeight = canvas.height / pageCount;
-        const pdfPageHeight = contentHeight / pageCount;
-        
-        for (let i = 0; i < pageCount; i++) {
-          if (i > 0) pdf.addPage();
-          
-          const sy = imgPageHeight * i;
-          const sHeight = Math.min(imgPageHeight, canvas.height - sy);
-          
-          const pdfImgHeight = Math.min(pdfPageHeight, contentHeight - (pdfPageHeight * i));
-          
-          const tmpCanvas = document.createElement('canvas');
-          tmpCanvas.width = canvas.width;
-          tmpCanvas.height = sHeight;
-          const ctx = tmpCanvas.getContext('2d');
-          
-          if (ctx) {
-            ctx.drawImage(
-              canvas, 
-              0, sy, canvas.width, sHeight, 
-              0, 0, tmpCanvas.width, tmpCanvas.height
-            );
-            
-            const pageImgData = tmpCanvas.toDataURL('image/png');
-            
-            const yPosition = i === 0 ? 30 : 20;
-            pdf.addImage(pageImgData, 'PNG', 20, yPosition, contentWidth, pdfImgHeight);
-          }
-        }
-      }
-      
-      const pageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(10);
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
-        pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
-      }
-      
-      const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
-      
-      toast.success('PDF downloaded successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
-    }
+    // Simulate analysis process
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      toast.success('Analysis complete');
+      navigate(`/result?type=${taskDetails?.title.split(' ')[0].toLowerCase()}&id=${taskId}`);
+    }, 2000);
   };
 
-  const openImageModal = () => {
-    setIsImageModalOpen(true);
-  };
-
-  const closeImageModal = () => {
-    setIsImageModalOpen(false);
-    setIsImageModalMaximized(false);
-    setZoomLevel(1);
-  };
-
-  const toggleImageModalMaximize = () => {
-    setIsImageModalMaximized(!isImageModalMaximized);
-  };
-
-  const handleZoomIn = () => {
-    setZoomLevel((prevZoom) => Math.min(prevZoom + 0.25, 3));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel((prevZoom) => Math.max(prevZoom - 0.25, 0.5));
-  };
-
-  if (!taskId || !user) return null;
-
-  const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
-  const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
-
-  const formatResults = (resultsText: string) => {
-    if (!resultsText) return null;
-
-    const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
-
-    const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
-    return (
-      <div className="space-y-4 leading-relaxed" style={{ color: 'black' }}>
-        {paragraphs.map((para, index) => {
-          if (para.match(/^#+\s/) || para.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i)) {
-            const headingText = para.replace(/^#+\s/, '').replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):/i, '$1');
-            return <h3 key={index} className="text-xl font-bold mt-6 first:mt-0 text-primary/90 border-b pb-1">{headingText}</h3>;
-          }
-
-          if (para.includes('• ') || para.includes('- ') || para.includes('* ')) {
-            const listItems = para.split(/[•\-*]\s+/).filter(Boolean);
-            return (
-              <ul key={index} className="list-disc pl-5 space-y-2">
-                {listItems.map((item, i) => (
-                  <li key={i} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: item.trim() }} />
-                ))}
-              </ul>
-            );
-          }
-
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para }} />;
-        })}
-      </div>
-    );
-  };
-
-  const fadeIn = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.5 } 
-    }
+  const handleDeleteImage = () => {
+    setSelectedImage(null);
   };
 
   return (
-    <AuroraBackground showRadialGradient={false}>
-      <div className="container mx-auto px-4 py-12 animate-fade-in">
-        <motion.div 
-          className="flex justify-between items-center mb-6"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Button
-            variant="outline"
-            onClick={() => navigate('/bone-analysis')}
-            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+    <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
+      <header className="mb-10">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft size={16} />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{taskDetails?.title || 'Analysis'}</h1>
+              <p className="text-muted-foreground mt-1">{taskDetails?.description || 'Upload an image to analyze'}</p>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={() => setFindDoctorOpen(true)}
+            variant="outline" 
+            className="gap-2"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Tasks
+            <MapPin size={16} className="text-indigo-500" />
+            Find Specialist
           </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
-          >
-            <Home className="mr-2 h-4 w-4" />
-            Home
-          </Button>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            {TASK_TITLES[taskId] || 'Analysis'}
-          </h1>
-          <p className="text-muted-foreground mb-8 animate-fade-in">
-            {user.userType === 'doctor' ? 
-              'AI-assisted analysis for clinical evaluation' : 
-              'AI-powered analysis for informational purposes only'}
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <motion.div variants={fadeIn} initial="hidden" animate="visible">
-            <Card className="border transition-all duration-300 hover:shadow-lg animate-fade-in bg-card dark:bg-card-dark rounded-lg overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary to-blue-600 text-primary-foreground rounded-t-lg">
-                <CardTitle className="text-lg font-semibold text-primary-foreground">Upload Medical Image</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground mb-6">{taskGuidance}</p>
-                <ImageUpload
-                  onImageSelected={handleImageUpload}
-                  imageUrl={imageUrl}
-                  isLoading={analyzing}
-                />
-
-                <div className="mt-6 flex justify-between">
-                  {imageUrl && (
-                    <Button
-                      variant="secondary"
-                      onClick={openImageModal}
-                      className="mr-2 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
-                    >
-                      <Eye className="mr-2 h-4 w-4" style={{ color: 'black' }} />
-                      View Image
-                    </Button>
-                  )}
-                  <Button
-                    onClick={handleAnalyze}
-                    disabled={!image || analyzing}
-                    className="w-full md:w-auto transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 text-primary-foreground bg-gradient-to-r from-primary to-blue-600 rounded-lg border-0"
-                  >
-                    {analyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : 'Analyze Image'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
-            <Card className={`border transition-all duration-300 hover:shadow-lg animate-fade-in ${isResultsMaximized ? 'lg:col-span-2 fixed top-0 left-0 w-full h-full z-50 bg-white dark:bg-gray-950 rounded-none' : 'bg-card dark:bg-card-dark rounded-lg overflow-hidden'}`}>
-              <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg">
-                <CardTitle className="text-lg font-semibold text-primary-foreground">Analysis Results</CardTitle>
-                <div className="flex items-center space-x-2">
-                  {results && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownloadResults}
-                      className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg bg-white/20 text-white border-white/30 hover:bg-white/30"
-                    >
-                      <Download size={14} />
-                      Download PDF
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsResultsMaximized(!isResultsMaximized)}
-                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
-                  >
-                    {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className={`${isResultsMaximized ? 'h-[calc(100vh-8rem)] overflow-y-auto' : ''} bg-card-content dark:bg-card-content-dark rounded-b-lg p-6`}>
-                {results ? (
-                  <div className="prose dark:prose-invert max-w-none animate-fade-in text-typography-primary font-serif" ref={resultsRef} style={{ color: 'black' }}>
-                    {formatResults(results)}
-                  </div>
-                ) : error ? (
-                  <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 animate-fade-in">
-                    <p className="text-destructive">
-                      {error}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed animate-pulse">
-                    <p className="text-muted-foreground">
-                      {analyzing ? (
-                        <>Processing your image with AI...</>
-                      ) : 'Upload an image and click "Analyze Image" to see results'}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
         </div>
-
-        {results && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            <ChatbotButton
-              analysisContext={results}
-              taskTitle={taskTitle}
-              analysisId={analysisId}
-              className="rounded-lg mt-8"
-            />
-          </motion.div>
-        )}
-
-        {isImageModalOpen && imageUrl && (
-          <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 transition-all duration-300 ${isImageModalMaximized ? 'fixed top-0 left-0 w-full h-full' : ''}`}>
-            <motion.div 
-              className={`relative bg-card dark:bg-card-dark rounded-lg overflow-hidden max-w-3xl max-h-full ${isImageModalMaximized ? 'w-full h-full rounded-none' : ''}`}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            >
-              <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg mb-4">
-                <CardTitle className="text-lg font-semibold text-primary-foreground">Uploaded Image</CardTitle>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    onClick={handleZoomIn}
-                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
-                  >
-                    <ZoomIn size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={handleZoomOut}
-                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
-                  >
-                    <ZoomOut size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={toggleImageModalMaximize}
-                    className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
-                  >
-                    {isImageModalMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={closeImageModal}
-                    className="hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-white hover:bg-white/20"
-                  >
-                    <Minimize size={16} />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div style={{ overflow: 'auto', maxHeight: '70vh' }}> 
-                  <img
-                    src={imageUrl}
-                    alt="Uploaded Image"
-                    className="rounded-md max-w-full object-contain transition-all duration-300"
-                    style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }}
-                  />
-                </div>
-              </CardContent>
-            </motion.div>
+        
+        {taskDetails?.instructions && (
+          <div className="border rounded-lg p-4 bg-muted/50">
+            <h3 className="text-lg font-semibold mb-2">Task Instructions:</h3>
+            <ul className="list-disc pl-5 text-sm text-muted-foreground">
+              {taskDetails.instructions.map((instruction: string, index: number) => (
+                <li key={index}>{instruction}</li>
+              ))}
+            </ul>
           </div>
         )}
+      </header>
+
+      <div className="grid gap-6">
+        {selectedImage ? (
+          <div className="relative">
+            <img 
+              src={URL.createObjectURL(selectedImage)} 
+              alt="Uploaded" 
+              className="rounded-lg max-h-96 w-full object-contain" 
+            />
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="absolute top-2 right-2 shadow-md"
+              onClick={handleDeleteImage}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <ImageUpload onUpload={handleUpload} isUploading={isUploading}>
+            {isUploading ? (
+              <Skeleton className="w-[350px] h-[200px]" />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 w-full rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/10">
+                <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">Click to upload an image</p>
+              </div>
+            )}
+          </ImageUpload>
+        )}
+
+        <Button 
+          onClick={handleAnalyze} 
+          disabled={!selectedImage || isAnalyzing}
+          className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white"
+        >
+          {isAnalyzing ? (
+            <>
+              Analyzing...
+              <span className="inline-block w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin ml-2"></span>
+            </>
+          ) : (
+            'Analyze Image'
+          )}
+        </Button>
       </div>
-    </AuroraBackground>
+      
+      <FindDoctorDialog 
+        open={findDoctorOpen} 
+        onOpenChange={setFindDoctorOpen} 
+        specialistType={taskDetails?.specialistType || "Orthopedic Specialist"}
+        analysisType={taskDetails?.title || "Bone Health Analysis"}
+      />
+    </div>
   );
 };
 
