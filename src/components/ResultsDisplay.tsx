@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -171,12 +170,12 @@ const ResultsDisplay = ({
       const contentWidth = pdf.internal.pageSize.getWidth() - 40;
       const contentHeight = canvas.height * contentWidth / canvas.width;
       
-      const contentPageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
+      const pageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
       
-      const imgPageHeight = canvas.height / contentPageCount;
-      const pdfPageHeight = contentHeight / contentPageCount;
+      const imgPageHeight = canvas.height / pageCount;
+      const pdfPageHeight = contentHeight / pageCount;
       
-      for (let i = 0; i < contentPageCount; i++) {
+      for (let i = 0; i < pageCount; i++) {
         if (i > 0) pdf.addPage();
         
         const sy = imgPageHeight * i;
@@ -203,12 +202,12 @@ const ResultsDisplay = ({
         }
       }
       
-      const totalPageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= totalPageCount; i++) {
+      const pageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`Page ${i} of ${totalPageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
+        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
         pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
       }
       

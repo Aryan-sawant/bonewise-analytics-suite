@@ -1,122 +1,189 @@
 
-import { Home, User, FlaskConical, History, MapPin } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { motion } from 'framer-motion';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import FindDoctorDialog from './FindDoctorDialog';
+import { Link, useLocation } from 'react-router-dom';
+import { User, LogOut, Menu, X, Bone } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 const NavBar = () => {
-  const { user } = useAuthContext();
-  const location = useLocation();
-  const [findDoctorOpen, setFindDoctorOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  
-  // Listen for scroll events to change navbar background
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const {
+    user,
+    logout
+  } = useAuthContext();
+
+  // Only render on landing page
+  if (location.pathname !== '/') {
+    return null;
+  }
+
+  // Handle scroll effect for navbar
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
     };
-    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
   
-  // Different navigation items based on user role or client type
-  const getNavItems = () => {
-    if (!user) {
-      return [
-        { name: 'Home', url: '/', icon: Home },
-      ];
-    }
-    
-    return [
-      { name: 'Home', url: '/', icon: Home },
-      { name: 'Tasks', url: '/tasks', icon: User },
-      { name: 'Analysis', url: '/bone-analysis', icon: FlaskConical },
-      { name: 'Find Doctor', url: '/find-doctor', icon: MapPin },
-      { name: 'History', url: '/analysis-history', icon: History },
-    ];
-  };
-
-  const navItems = getNavItems();
-
+  const navLinks = [{
+    name: 'Home',
+    path: '/'
+  }, {
+    name: 'Dashboard',
+    path: '/tasks',
+    requiresAuth: true
+  }, {
+    name: 'Bone Analysis',
+    path: '/bone-analysis',
+    requiresAuth: true
+  }];
+  
   return (
-    <>
-      <motion.nav 
-        className={cn(
-          "fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-2",
-          isScrolled && "bottom-4 transition-all duration-300"
-        )}
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      >
-        <div className="flex items-center gap-1 sm:gap-2 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md py-2 px-3 sm:px-6 rounded-full shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.url || 
-                            (item.url !== '/' && location.pathname.startsWith(item.url));
-            
-            if (item.name === 'Find Doctor') {
-              return (
-                <Button 
-                  key={item.name}
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setFindDoctorOpen(true)}
+    <header 
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-6 md:px-12", 
+        isScrolled 
+          ? "bg-white/80 backdrop-blur-sm shadow-sm dark:bg-gray-900/80" 
+          : "bg-transparent"
+      )}
+    >
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+            <Bone className="h-6 w-6 text-white" />
+          </div>
+          <span className="text-lg md:text-xl font-semibold text-foreground">BoneHealthAISuite</span>
+        </Link>
+        
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-8">
+          <ul className="flex items-center gap-6">
+            {navLinks.map(link => (!link.requiresAuth || user) && (
+              <li key={link.name}>
+                <Link 
+                  to={link.path} 
                   className={cn(
-                    "flex items-center gap-1 sm:gap-2 rounded-full hover:bg-white/20 transition-all duration-300",
-                    isActive && "bg-primary/10 text-primary"
+                    "text-base font-medium transition-all duration-300 hover:text-primary", 
+                    location.pathname === link.path 
+                      ? "text-primary" 
+                      : "text-foreground/80"
                   )}
                 >
-                  <Icon size={18} />
-                  <span className="hidden sm:inline font-medium">{item.name}</span>
-                </Button>
-              );
-            }
-            
-            return (
-              <Link key={item.name} to={item.url}>
+                  {link.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          
+          {user ? (
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                {user.userType === 'doctor' ? 'Doctor' : 'User'}: {user.name || user.email}
+              </div>
+              <Button variant="ghost" size="sm" className="gap-2" onClick={logout}>
+                <LogOut size={16} />
+                <span>Logout</span>
+              </Button>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
+                <User size={18} />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Link to="/auth">
+                <Button variant="ghost" size="sm">Log in</Button>
+              </Link>
+              <Link to="/auth?tab=signup">
                 <Button 
-                  variant="ghost" 
                   size="sm" 
-                  className={cn(
-                    "flex items-center gap-1 sm:gap-2 rounded-full hover:bg-white/20 transition-all duration-300",
-                    isActive && "bg-primary/10 text-primary"
-                  )}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 border-none hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300"
                 >
-                  <Icon size={18} />
-                  <span className="hidden sm:inline font-medium">{item.name}</span>
+                  Sign up
                 </Button>
               </Link>
-            );
-          })}
-          
-          {user && (
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={() => setFindDoctorOpen(true)}
-              className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white rounded-full ml-1"
-            >
-              <MapPin size={16} className="mr-1 sm:mr-2" />
-              <span className="hidden sm:inline font-medium">Consult Doctor</span>
-              <span className="sm:hidden">Consult</span>
-            </Button>
+            </div>
           )}
-        </div>
-      </motion.nav>
+        </nav>
+        
+        {/* Mobile Menu Button */}
+        <button 
+          className="md:hidden text-foreground" 
+          onClick={() => setIsMenuOpen(!isMenuOpen)} 
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+        >
+          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
       
-      <FindDoctorDialog 
-        open={findDoctorOpen} 
-        onOpenChange={setFindDoctorOpen} 
-        specialistType={user ? "Orthopedic Specialist" : ""}
-        analysisType="Bone Health Analysis"
-      />
-    </>
+      {/* Mobile Navigation */}
+      {isMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-[72px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-40 animate-fade-in">
+          <nav className="p-6 flex flex-col h-full">
+            <ul className="flex flex-col gap-4 mb-8">
+              {navLinks.map(link => (!link.requiresAuth || user) && (
+                <li key={link.name}>
+                  <Link 
+                    to={link.path} 
+                    className={cn(
+                      "text-lg font-medium block py-2 transition-all duration-300", 
+                      location.pathname === link.path 
+                        ? "text-primary" 
+                        : "text-foreground/80"
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            
+            {user ? (
+              <div className="mt-auto pb-8">
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-sm">
+                  <p className="font-medium">{user.name || 'User'}</p>
+                  <p className="text-muted-foreground">{user.email}</p>
+                  <p className="text-xs mt-1 text-blue-500">
+                    {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2 rounded-xl" 
+                  onClick={logout}
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-auto pb-8 flex flex-col gap-3">
+                <Link to="/auth">
+                  <Button variant="outline" className="w-full rounded-xl">Log in</Button>
+                </Link>
+                <Link to="/auth?tab=signup">
+                  <Button className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600">
+                    Sign up
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </nav>
+        </div>
+      )}
+    </header>
   );
 };
 

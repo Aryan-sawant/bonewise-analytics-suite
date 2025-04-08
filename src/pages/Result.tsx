@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, Download, Share2, MapPin } from 'lucide-react';
+import { ArrowLeft, Home, Download, Share2 } from 'lucide-react';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -10,8 +10,6 @@ import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import FindDoctorDialog from '@/components/FindDoctorDialog';
-import ConsultDoctorSection from '@/components/ConsultDoctorSection';
 
 const Result = () => {
   const location = useLocation();
@@ -22,22 +20,14 @@ const Result = () => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [shareNote, setShareNote] = useState('');
-  const [findDoctorOpen, setFindDoctorOpen] = useState(false);
   
   const resultsRef = useRef<HTMLDivElement>(null);
   
   const searchParams = new URLSearchParams(location.search);
   const analysisType = searchParams.get('type') || '';
   const imageId = searchParams.get('id') || '';
-  const specialty = searchParams.get('specialty') || '';
   
   useEffect(() => {
-    if (analysisType === 'consultation' && specialty) {
-      setLoading(false);
-      setFindDoctorOpen(true);
-      return;
-    }
-    
     const simulateLoading = setTimeout(() => {
       setLoading(false);
       
@@ -61,8 +51,7 @@ const Result = () => {
               title: 'Recommendation',
               content: 'This type of fracture typically requires immobilization with a cast or brace. Follow up with an orthopedic specialist is recommended for proper treatment planning.'
             }
-          ],
-          specialistType: 'Orthopedic Surgeon'
+          ]
         };
       } else if (analysisType === 'osteoporosis') {
         mockResults = {
@@ -82,8 +71,7 @@ const Result = () => {
               title: 'Fracture Risk Assessment',
               content: 'Based on the BMD estimation and bone structure analysis, there appears to be an elevated risk of fragility fractures. Consider discussing preventive measures with your healthcare provider.'
             }
-          ],
-          specialistType: 'Endocrinologist'
+          ]
         };
       } else {
         mockResults = {
@@ -95,8 +83,7 @@ const Result = () => {
               title: 'Analysis Results',
               content: 'The AI analysis has been completed. Detailed results will be available for this analysis type in a future update.'
             }
-          ],
-          specialistType: 'Orthopedic Specialist'
+          ]
         };
       }
       
@@ -104,7 +91,7 @@ const Result = () => {
     }, 2000);
     
     return () => clearTimeout(simulateLoading);
-  }, [analysisType, imageId, specialty]);
+  }, [analysisType, imageId]);
   
   const handleDownload = async () => {
     if (!resultData || !resultsRef.current) return;
@@ -210,12 +197,12 @@ const Result = () => {
       const contentWidth = pdf.internal.pageSize.getWidth() - 40;
       const contentHeight = canvas.height * contentWidth / canvas.width;
       
-      const contentPageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
+      const pageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
       
-      const imgPageHeight = canvas.height / contentPageCount;
-      const pdfPageHeight = contentHeight / contentPageCount;
+      const imgPageHeight = canvas.height / pageCount;
+      const pdfPageHeight = contentHeight / pageCount;
       
-      for (let i = 0; i < contentPageCount; i++) {
+      for (let i = 0; i < pageCount; i++) {
         if (i > 0) pdf.addPage();
         
         const sy = imgPageHeight * i;
@@ -242,12 +229,12 @@ const Result = () => {
         }
       }
       
-      const totalPageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= totalPageCount; i++) {
+      const pageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`Page ${i} of ${totalPageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
+        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
         pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
       }
       
@@ -274,11 +261,11 @@ const Result = () => {
   
   return (
     <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
-      <header className="mb-8">
+      <header className="mb-12">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+              <Button variant="outline" size="icon" onClick={() => navigate('/analysis')}>
                 <ArrowLeft size={16} />
               </Button>
               <h1 className="text-3xl font-bold tracking-tight">Analysis Results</h1>
@@ -287,15 +274,7 @@ const Result = () => {
               {loading ? 'Processing your image...' : resultData?.analysisType} results
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button 
-              variant="default" 
-              className="gap-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
-              onClick={() => setFindDoctorOpen(true)}
-            >
-              <MapPin size={16} className="text-white" />
-              <span className="text-white font-medium">Find Specialist</span>
-            </Button>
+          <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
               className="gap-2"
@@ -326,25 +305,7 @@ const Result = () => {
         </div>
       </header>
       
-      {analysisType === 'consultation' ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="h-32 w-32 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
-            <MapPin size={48} className="text-indigo-500" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2">Find a Medical Specialist</h2>
-          <p className="text-muted-foreground mb-6 max-w-lg">
-            Connect with medical specialists who can provide professional care based on your bone health needs
-          </p>
-          <Button 
-            className="gap-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
-            onClick={() => setFindDoctorOpen(true)}
-            size="lg"
-          >
-            <MapPin size={18} className="text-white" />
-            <span className="text-white font-medium">Find a Doctor Now</span>
-          </Button>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <span className="loader mb-6"></span>
           <p className="text-lg text-muted-foreground animate-pulse">Analyzing your image with AI...</p>
@@ -352,21 +313,14 @@ const Result = () => {
         </div>
       ) : (
         resultData && (
-          <>
-            <div ref={resultsRef}>
-              <ResultsDisplay
-                imageUrl={resultData.imageUrl}
-                analysisType={resultData.analysisType}
-                results={resultData.results}
-                timestamp={resultData.timestamp}
-              />
-            </div>
-            
-            <ConsultDoctorSection 
-              specialistType={resultData.specialistType} 
+          <div ref={resultsRef}>
+            <ResultsDisplay
+              imageUrl={resultData.imageUrl}
               analysisType={resultData.analysisType}
+              results={resultData.results}
+              timestamp={resultData.timestamp}
             />
-          </>
+          </div>
         )
       )}
       
@@ -409,13 +363,6 @@ const Result = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      <FindDoctorDialog 
-        open={findDoctorOpen} 
-        onOpenChange={setFindDoctorOpen} 
-        specialistType={resultData?.specialistType || specialty || 'Orthopedic Specialist'}
-        analysisType={resultData?.analysisType || 'Bone Health Analysis'}
-      />
     </div>
   );
 };

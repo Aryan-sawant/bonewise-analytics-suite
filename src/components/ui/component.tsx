@@ -5,9 +5,8 @@
 import { motion } from "framer-motion";
 import React from "react";
 import { AuroraBackground } from "@/components/ui/aurora-background";
-import { Hero } from "@/components/ui/animated-hero";
 
-// Export Hero as AnimatedHero (alias export)
+// Add the Hero component from animated-hero
 export { Hero as AnimatedHero } from "@/components/ui/animated-hero";
 export { AuroraBackground } from "@/components/ui/aurora-background";
 export { NavBar } from "@/components/ui/tubelight-navbar";
