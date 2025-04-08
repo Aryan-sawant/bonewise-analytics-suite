@@ -8,6 +8,9 @@ interface Window {
       Map: any;
       Marker: any;
       LatLngBounds: any;
+      Animation: {
+        DROP: number;
+      };
       places: {
         PlacesService: any;
         PlacesServiceStatus: any;

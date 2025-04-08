@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 interface HeroProps {
-  onTryNow?: () => void; // Make it optional with ?
+  onTryNow?: () => void; // Optional prop
 }
 
 const Hero = ({ onTryNow }: HeroProps) => {
