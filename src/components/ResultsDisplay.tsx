@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -37,7 +36,6 @@ const ResultsDisplay = ({
   const [shareEmail, setShareEmail] = useState('');
   const [shareNote, setShareNote] = useState('');
   
-  // Reference for PDF export
   const resultsRef = useRef<HTMLDivElement>(null);
   
   const toggleChat = () => {
@@ -52,12 +50,10 @@ const ResultsDisplay = ({
     e.preventDefault();
     if (!inputValue.trim()) return;
     
-    // Add user message
     setChatMessages([...chatMessages, { sender: 'user', text: inputValue }]);
     setInputValue('');
     setIsWaitingForResponse(true);
     
-    // Simulate AI response
     setTimeout(() => {
       setChatMessages(prev => [
         ...prev, 
@@ -83,56 +79,56 @@ const ResultsDisplay = ({
         compress: true
       });
       
-      // Add title
       pdf.setFontSize(18);
-      pdf.setTextColor(0, 0, 128); // Dark blue title
+      pdf.setTextColor(0, 0, 0);
       pdf.text(analysisType, 20, 20);
       
-      // Add date
       pdf.setFontSize(12);
-      pdf.setTextColor(80, 80, 80); // Dark gray text
+      pdf.setTextColor(0, 0, 0);
       pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
       
-      // Add a divider line
-      pdf.setDrawColor(200, 200, 200);
+      pdf.setDrawColor(100, 100, 100);
       pdf.line(20, 35, 190, 35);
       
-      // Create a temporary container to style the results
       const tempContainer = document.createElement('div');
-      tempContainer.style.width = '700px'; // Wider to ensure text isn't cut off
+      tempContainer.style.width = '700px';
       tempContainer.style.padding = '20px';
       tempContainer.style.backgroundColor = '#ffffff';
       tempContainer.style.fontFamily = 'Arial, sans-serif';
+      tempContainer.style.color = '#000000';
       
-      // Clone the results div to the temp container
       const resultsClone = resultsRef.current.cloneNode(true) as HTMLDivElement;
+      
+      const allTextElements = resultsClone.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span');
+      allTextElements.forEach(el => {
+        (el as HTMLElement).style.color = '#000000';
+        (el as HTMLElement).style.opacity = '1';
+        (el as HTMLElement).style.fontWeight = (el as HTMLElement).tagName.startsWith('H') ? 'bold' : 'normal';
+      });
+      
       tempContainer.appendChild(resultsClone);
       
-      // Append to body temporarily (hidden)
       tempContainer.style.position = 'absolute';
       tempContainer.style.left = '-9999px';
       document.body.appendChild(tempContainer);
       
-      // Add image to the report with proper positioning
       if (imageUrl) {
         pdf.addPage();
         pdf.setFontSize(14);
         pdf.setTextColor(0, 0, 128);
         pdf.text('Analyzed Image', 20, 20);
         
-        // Create a temporary img element to get the image dimensions
         const img = new Image();
         img.src = imageUrl;
         await new Promise<void>((resolve) => {
           img.onload = () => resolve();
         });
         
-        // Calculate image dimensions to fit on page while maintaining aspect ratio
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         
-        const maxImgWidth = pageWidth - 40; // 20mm margins on each side
-        const maxImgHeight = pageHeight - 50; // Allow space for header and bottom margin
+        const maxImgWidth = pageWidth - 40;
+        const maxImgHeight = pageHeight - 50;
         
         let imgWidth = img.width;
         let imgHeight = img.height;
@@ -149,19 +145,16 @@ const ResultsDisplay = ({
           imgWidth = imgWidth * ratio;
         }
         
-        // Center the image
         const xOffset = (pageWidth - imgWidth) / 2;
         
         pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
       }
       
-      // Generate results content in multiple pages if needed
       pdf.addPage();
       pdf.setFontSize(16);
-      pdf.setTextColor(0, 0, 128);
+      pdf.setTextColor(0, 0, 0);
       pdf.text('Analysis Results', 20, 20);
       
-      // Generate canvas from the temp container with results
       const canvas = await html2canvas(tempContainer, { 
         scale: 2,
         backgroundColor: '#ffffff',
@@ -170,75 +163,54 @@ const ResultsDisplay = ({
         allowTaint: true
       });
       
-      // Clean up the temp element
       document.body.removeChild(tempContainer);
       
       const imgData = canvas.toDataURL('image/png');
       
-      // Calculate image dimensions to fit within the page width
-      const contentWidth = pdf.internal.pageSize.getWidth() - 40; // 20mm margin on each side
-      
-      // Calculate the height proportionally
+      const contentWidth = pdf.internal.pageSize.getWidth() - 40;
       const contentHeight = canvas.height * contentWidth / canvas.width;
       
-      // Split content across multiple pages if needed
-      const pageHeight = pdf.internal.pageSize.getHeight() - 40; // 20mm margin top and bottom
+      const pageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
       
-      // If content fits on one page
-      if (contentHeight < pageHeight - 30) { // 30mm for the header
-        pdf.addImage(imgData, 'PNG', 20, 30, contentWidth, contentHeight);
-      } else {
-        // Content needs multiple pages - calculate the number of pages needed
-        const pageCount = Math.ceil(contentHeight / pageHeight);
+      const imgPageHeight = canvas.height / pageCount;
+      const pdfPageHeight = contentHeight / pageCount;
+      
+      for (let i = 0; i < pageCount; i++) {
+        if (i > 0) pdf.addPage();
         
-        // Scale factors for positioning
-        const imgPageHeight = canvas.height / pageCount;
-        const pdfPageHeight = contentHeight / pageCount;
+        const sy = imgPageHeight * i;
+        const sHeight = Math.min(imgPageHeight, canvas.height - sy);
         
-        // For each page
-        for (let i = 0; i < pageCount; i++) {
-          if (i > 0) pdf.addPage();
+        const pdfImgHeight = Math.min(pdfPageHeight, contentHeight - (pdfPageHeight * i));
+        
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = canvas.width;
+        tmpCanvas.height = sHeight;
+        const ctx = tmpCanvas.getContext('2d');
+        
+        if (ctx) {
+          ctx.drawImage(
+            canvas, 
+            0, sy, canvas.width, sHeight, 
+            0, 0, tmpCanvas.width, tmpCanvas.height
+          );
           
-          // Calculate the source rectangle to crop from the canvas
-          const sy = imgPageHeight * i;
-          const sHeight = Math.min(imgPageHeight, canvas.height - sy);
+          const pageImgData = tmpCanvas.toDataURL('image/png');
           
-          // Calculate the height to use in the PDF
-          const pdfImgHeight = Math.min(pdfPageHeight, contentHeight - (pdfPageHeight * i));
-          
-          // Create a temporary canvas for the current page segment
-          const tmpCanvas = document.createElement('canvas');
-          tmpCanvas.width = canvas.width;
-          tmpCanvas.height = sHeight;
-          const ctx = tmpCanvas.getContext('2d');
-          
-          if (ctx) {
-            ctx.drawImage(
-              canvas, 
-              0, sy, canvas.width, sHeight, 
-              0, 0, tmpCanvas.width, tmpCanvas.height
-            );
-            
-            const pageImgData = tmpCanvas.toDataURL('image/png');
-            
-            // Add the image segment to the current page
-            const yPosition = i === 0 ? 30 : 20; // Account for header on first page
-            pdf.addImage(pageImgData, 'PNG', 20, yPosition, contentWidth, pdfImgHeight);
-          }
+          const yPosition = i === 0 ? 30 : 20;
+          pdf.addImage(pageImgData, 'PNG', 20, yPosition, contentWidth, pdfImgHeight);
         }
       }
       
-      // Add footer
       const pageCount = pdf.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
-        pdf.setTextColor(150, 150, 150);
+        pdf.setTextColor(0, 0, 0);
         pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
         pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
       }
       
-      // Save the PDF
       pdf.save(`${analysisType.replace(/\s+/g, '_')}_Report.pdf`);
       
       toast.success('PDF downloaded successfully');
@@ -254,7 +226,6 @@ const ResultsDisplay = ({
       return;
     }
     
-    // In a real application, this would send an email with the analysis results
     toast.success(`Analysis results shared with ${shareEmail}`);
     setShareDialogOpen(false);
     setShareEmail('');
@@ -263,7 +234,6 @@ const ResultsDisplay = ({
   
   return (
     <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6", className)}>
-      {/* Image Card */}
       <Card className="lg:col-span-1 overflow-hidden">
         <div className="aspect-square w-full overflow-hidden">
           <img 
@@ -287,7 +257,6 @@ const ResultsDisplay = ({
         </CardFooter>
       </Card>
       
-      {/* Results Card */}
       <Card className="lg:col-span-2 flex flex-col">
         <CardHeader>
           <CardTitle>{analysisType} Results</CardTitle>
@@ -321,7 +290,6 @@ const ResultsDisplay = ({
         </CardFooter>
       </Card>
       
-      {/* Chat Component */}
       {isChatOpen && (
         <div className="lg:col-span-3 animate-fade-in">
           <Card className="border">
@@ -389,7 +357,6 @@ const ResultsDisplay = ({
         </div>
       )}
       
-      {/* Share Dialog */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

@@ -154,8 +154,32 @@ const AnalysisPage = () => {
       tempContainer.style.padding = '20px';
       tempContainer.style.backgroundColor = '#ffffff';
       tempContainer.style.fontFamily = 'Arial, sans-serif';
+      tempContainer.style.color = '#000000';
+      
+      const heading = document.createElement('h1');
+      heading.textContent = TASK_TITLES[taskId || ''] || 'Bone Analysis';
+      heading.style.fontSize = '24px';
+      heading.style.fontWeight = 'bold';
+      heading.style.marginBottom = '20px';
+      heading.style.color = '#000000';
+      tempContainer.appendChild(heading);
+      
+      const timestampEl = document.createElement('p');
+      timestampEl.textContent = `Analysis Date: ${new Date().toLocaleString()}`;
+      timestampEl.style.fontSize = '14px';
+      timestampEl.style.marginBottom = '20px';
+      timestampEl.style.color = '#000000';
+      tempContainer.appendChild(timestampEl);
       
       const resultsClone = resultsRef.current.cloneNode(true) as HTMLDivElement;
+      
+      const allTextElements = resultsClone.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div');
+      allTextElements.forEach(el => {
+        (el as HTMLElement).style.color = '#000000';
+        (el as HTMLElement).style.opacity = '1';
+        (el as HTMLElement).style.fontWeight = (el as HTMLElement).tagName.startsWith('H') ? 'bold' : 'normal';
+      });
+      
       tempContainer.appendChild(resultsClone);
       
       tempContainer.style.position = 'absolute';
@@ -163,21 +187,21 @@ const AnalysisPage = () => {
       document.body.appendChild(tempContainer);
       
       pdf.setFontSize(18);
-      pdf.setTextColor(0, 0, 128);
+      pdf.setTextColor(0, 0, 0);
       const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
       pdf.text(taskTitle, 20, 20);
       
       pdf.setFontSize(12);
-      pdf.setTextColor(80, 80, 80);
+      pdf.setTextColor(0, 0, 0);
       pdf.text(`Analysis Date: ${new Date().toLocaleString()}`, 20, 30);
       
-      pdf.setDrawColor(200, 200, 200);
+      pdf.setDrawColor(100, 100, 100);
       pdf.line(20, 35, 190, 35);
       
       if (imageUrl) {
         pdf.addPage();
         pdf.setFontSize(14);
-        pdf.setTextColor(0, 0, 128);
+        pdf.setTextColor(0, 0, 0);
         pdf.text('Analyzed Image', 20, 20);
         
         const img = new Image();
@@ -214,7 +238,7 @@ const AnalysisPage = () => {
       
       pdf.addPage();
       pdf.setFontSize(16);
-      pdf.setTextColor(0, 0, 128);
+      pdf.setTextColor(0, 0, 0);
       pdf.text('Analysis Results', 20, 20);
       
       const canvas = await html2canvas(tempContainer, { 
@@ -222,7 +246,17 @@ const AnalysisPage = () => {
         backgroundColor: '#ffffff',
         logging: false,
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
+        onclone: (doc, element) => {
+          const allText = element.querySelectorAll('*');
+          allText.forEach(el => {
+            if (el instanceof HTMLElement) {
+              el.style.color = '#000000';
+              el.style.opacity = '1';
+              el.style.textShadow = 'none';
+            }
+          });
+        }
       });
       
       document.body.removeChild(tempContainer);
@@ -274,7 +308,7 @@ const AnalysisPage = () => {
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
-        pdf.setTextColor(150, 150, 150);
+        pdf.setTextColor(0, 0, 0);
         pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
         pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
       }
