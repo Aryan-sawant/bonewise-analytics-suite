@@ -156,7 +156,7 @@ const mockDoctorsBySpecialty: Record<string, Doctor[]> = {
       id: 'dr9',
       name: 'Dr. Lisa Garcia',
       specialty: 'Pediatric Endocrinologist',
-      address: '222 Children's Hospital Way, Boston, MA 02115',
+      address: '222 Children\'s Hospital Way, Boston, MA 02115',
       distance: '0.9 miles',
       phone: '(617) 555-4567',
       hours: 'Mon-Fri: 9am-5pm',
