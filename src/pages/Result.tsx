@@ -1,7 +1,8 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, Download, Share2 } from 'lucide-react';
+import { ArrowLeft, Home, Download, Share2, MapPin } from 'lucide-react';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import FindDoctorDialog from '@/components/FindDoctorDialog';
 
 const Result = () => {
   const location = useLocation();
@@ -20,6 +22,7 @@ const Result = () => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [shareNote, setShareNote] = useState('');
+  const [findDoctorOpen, setFindDoctorOpen] = useState(false);
   
   const resultsRef = useRef<HTMLDivElement>(null);
   
@@ -51,7 +54,8 @@ const Result = () => {
               title: 'Recommendation',
               content: 'This type of fracture typically requires immobilization with a cast or brace. Follow up with an orthopedic specialist is recommended for proper treatment planning.'
             }
-          ]
+          ],
+          specialistType: 'Orthopedic Surgeon'
         };
       } else if (analysisType === 'osteoporosis') {
         mockResults = {
@@ -71,7 +75,8 @@ const Result = () => {
               title: 'Fracture Risk Assessment',
               content: 'Based on the BMD estimation and bone structure analysis, there appears to be an elevated risk of fragility fractures. Consider discussing preventive measures with your healthcare provider.'
             }
-          ]
+          ],
+          specialistType: 'Endocrinologist'
         };
       } else {
         mockResults = {
@@ -83,7 +88,8 @@ const Result = () => {
               title: 'Analysis Results',
               content: 'The AI analysis has been completed. Detailed results will be available for this analysis type in a future update.'
             }
-          ]
+          ],
+          specialistType: 'Orthopedic Specialist'
         };
       }
       
@@ -197,12 +203,12 @@ const Result = () => {
       const contentWidth = pdf.internal.pageSize.getWidth() - 40;
       const contentHeight = canvas.height * contentWidth / canvas.width;
       
-      const pageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
+      const contentPageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
       
-      const imgPageHeight = canvas.height / pageCount;
-      const pdfPageHeight = contentHeight / pageCount;
+      const imgPageHeight = canvas.height / contentPageCount;
+      const pdfPageHeight = contentHeight / contentPageCount;
       
-      for (let i = 0; i < pageCount; i++) {
+      for (let i = 0; i < contentPageCount; i++) {
         if (i > 0) pdf.addPage();
         
         const sy = imgPageHeight * i;
@@ -229,12 +235,12 @@ const Result = () => {
         }
       }
       
-      const pageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
+      const totalPageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
+        pdf.text(`Page ${i} of ${totalPageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
         pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
       }
       
@@ -274,7 +280,17 @@ const Result = () => {
               {loading ? 'Processing your image...' : resultData?.analysisType} results
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {user?.userType === 'common' && resultData && !loading && (
+              <Button 
+                variant="outline" 
+                className="gap-2 border-indigo-200 hover:bg-indigo-50"
+                onClick={() => setFindDoctorOpen(true)}
+              >
+                <MapPin size={16} className="text-indigo-500" />
+                <span className="text-indigo-700">Find Specialist</span>
+              </Button>
+            )}
             <Button 
               variant="outline" 
               className="gap-2"
@@ -363,6 +379,15 @@ const Result = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {resultData && (
+        <FindDoctorDialog 
+          open={findDoctorOpen} 
+          onOpenChange={setFindDoctorOpen} 
+          specialistType={resultData.specialistType}
+          analysisType={resultData.analysisType}
+        />
+      )}
     </div>
   );
 };

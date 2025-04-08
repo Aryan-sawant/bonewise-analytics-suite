@@ -12,6 +12,7 @@ import TaskSelector from "./pages/TaskSelector";
 import AnalysisPage from "./pages/AnalysisPage";
 import AnalysisHistory from "./pages/AnalysisHistory";
 import ProfilePage from "./pages/ProfilePage";
+import Result from "./pages/Result";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -53,6 +54,11 @@ const App = () => (
       <Route path="/profile" element={
         <AuroraWrapper>
           <ProfilePage />
+        </AuroraWrapper>
+      } />
+      <Route path="/result" element={
+        <AuroraWrapper>
+          <Result />
         </AuroraWrapper>
       } />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
