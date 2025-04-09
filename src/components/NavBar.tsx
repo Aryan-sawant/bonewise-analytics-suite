@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User, LogOut, Menu, X, Bone, UserRound } from 'lucide-react';
@@ -114,14 +113,14 @@ const NavBar = () => {
               <div className="text-sm text-muted-foreground">
                 {user.userType === 'doctor' ? 'Doctor' : 'User'}: {user.name || user.email}
               </div>
-              <Button variant="gradient" size="sm" className="gap-2" onClick={logout}>
+              <Button variant="gradient" size="sm" className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl" onClick={logout}>
                 <LogOut size={16} />
                 <span>Logout</span>
               </Button>
               <Button 
                 variant="gradient" 
                 size="sm" 
-                className="gap-2" 
+                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl" 
                 onClick={handleConsultSpecialist}
               >
                 <UserRound size={16} />
@@ -134,12 +133,12 @@ const NavBar = () => {
           ) : (
             <div className="flex items-center gap-4">
               <Link to="/auth">
-                <Button variant="gradient" size="sm">Log in</Button>
+                <Button variant="gradient" size="sm" className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">Log in</Button>
               </Link>
               <Link to="/auth?tab=signup">
                 <Button 
                   size="sm" 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 border-none hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300"
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 border-none hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300"
                 >
                   Sign up
                 </Button>
@@ -191,7 +190,7 @@ const NavBar = () => {
                 </div>
                 <Button 
                   variant="gradient" 
-                  className="w-full justify-start gap-2 rounded-xl mb-4" 
+                  className="w-full justify-start gap-2 rounded-xl mb-4 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105" 
                   onClick={logout}
                 >
                   <LogOut size={16} />
@@ -200,7 +199,7 @@ const NavBar = () => {
                 {user.userType !== 'doctor' && (
                   <Button 
                     variant="gradient" 
-                    className="w-full justify-start gap-2 rounded-xl" 
+                    className="w-full justify-start gap-2 rounded-xl hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105" 
                     onClick={handleConsultSpecialist}
                   >
                     <UserRound size={16} />
@@ -211,10 +210,10 @@ const NavBar = () => {
             ) : (
               <div className="mt-auto pb-8 flex flex-col gap-3">
                 <Link to="/auth">
-                  <Button variant="gradient" className="w-full rounded-xl">Log in</Button>
+                  <Button variant="gradient" className="w-full rounded-xl hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105">Log in</Button>
                 </Link>
                 <Link to="/auth?tab=signup">
-                  <Button className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600">
+                  <Button className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105">
                     Sign up
                   </Button>
                 </Link>

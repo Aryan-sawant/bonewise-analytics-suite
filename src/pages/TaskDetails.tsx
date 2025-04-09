@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -187,8 +188,8 @@ const TaskDetails = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <Button 
-        variant="outline" 
-        className="mb-6" 
+        variant="gradient" 
+        className="mb-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl" 
         onClick={() => navigate('/tasks')}
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Tasks
@@ -219,9 +220,10 @@ const TaskDetails = () => {
             </div>
             {!editing ? (
               <Button 
-                variant="outline" 
+                variant="gradient" 
                 size="sm" 
                 onClick={() => setEditing(true)}
+                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
               >
                 <Edit className="mr-1 h-4 w-4" /> Edit
               </Button>
@@ -231,13 +233,15 @@ const TaskDetails = () => {
                   variant="outline" 
                   size="sm" 
                   onClick={handleCancelEdit}
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
                 >
                   <X className="mr-1 h-4 w-4" /> Cancel
                 </Button>
                 <Button 
-                  variant="default" 
+                  variant="gradient" 
                   size="sm" 
                   onClick={handleSaveChanges}
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
                 >
                   <Save className="mr-1 h-4 w-4" /> Save
                 </Button>
@@ -248,8 +252,8 @@ const TaskDetails = () => {
         <CardContent className="space-y-6">
           <div className="flex items-center">
             <Button 
-              variant={task.completed ? "default" : "outline"} 
-              className={task.completed ? "bg-green-500 hover:bg-green-600" : ""}
+              variant={task.completed ? "gradient" : "outline"} 
+              className={`hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl ${task.completed ? "bg-gradient-to-r from-green-500 to-green-600" : ""}`}
               onClick={handleToggleComplete}
             >
               <CheckSquare className="mr-2 h-4 w-4" />
@@ -300,6 +304,7 @@ const TaskDetails = () => {
           <Button 
             variant="destructive" 
             onClick={handleDeleteTask}
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
           >
             <Trash className="mr-2 h-4 w-4" /> Delete Task
           </Button>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -115,18 +116,18 @@ const ProfilePage = () => {
       </style>
       <div className="flex justify-between items-center mb-6">
         <Button
-          variant="outline"
+          variant="gradient"
           onClick={handleGoToDashboard}
-          className="hover-scale transition-transform active:scale-95 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl"
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
 
         <Button
-          variant="outline"
+          variant="gradient"
           onClick={handleGoToHome}
-          className="hover-scale transition-transform active:scale-95 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl"
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
@@ -227,7 +228,7 @@ const ProfilePage = () => {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={loading || !name.trim()}
-                  className="w-full md:w-auto hover-scale transition-transform active:scale-95 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl"
+                  className="w-full md:w-auto hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
                 </Button>

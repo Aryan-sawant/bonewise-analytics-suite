@@ -203,12 +203,20 @@ const Tasks = () => {
               Home
             </Button>
 
-            <Button onClick={() => navigate('/bone-analysis')} variant="gradient" className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">
+            <Button 
+              onClick={() => navigate('/bone-analysis')} 
+              variant="gradient" 
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+            >
               <Bone className="mr-2 h-4 w-4" />
               Bone Analysis
             </Button>
 
-            <Button variant="gradient" onClick={handleLogout}  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">
+            <Button 
+              variant="gradient"
+              onClick={handleLogout}  
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>

@@ -300,7 +300,12 @@ const Result = () => {
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <Button variant="gradient" size="icon" onClick={() => navigate('/analysis')}>
+              <Button 
+                variant="gradient" 
+                size="icon" 
+                onClick={() => navigate('/analysis')}
+                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl"
+              >
                 <ArrowLeft size={16} />
               </Button>
               <h1 className="text-3xl font-bold tracking-tight">Analysis Results</h1>
@@ -312,7 +317,7 @@ const Result = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <Button 
               variant="gradient" 
-              className="gap-2"
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
               onClick={handleDownload}
               disabled={loading || !resultData}
             >
@@ -321,7 +326,7 @@ const Result = () => {
             </Button>
             <Button 
               variant="gradient" 
-              className="gap-2"
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
               onClick={() => setShareDialogOpen(true)}
               disabled={loading || !resultData}
             >
@@ -331,7 +336,7 @@ const Result = () => {
             {user && user.userType !== 'doctor' && resultData && (
               <Button 
                 variant="gradient" 
-                className="gap-2"
+                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
                 onClick={handleConsultSpecialist}
               >
                 <UserRound size={16} />
@@ -340,7 +345,7 @@ const Result = () => {
             )}
             <Button 
               variant="gradient" 
-              className="gap-2" 
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl" 
               onClick={() => navigate('/dashboard')}
             >
               <Home size={16} />
@@ -399,10 +404,14 @@ const Result = () => {
             <Button
               variant="outline"
               onClick={() => setShareDialogOpen(false)}
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
             >
               Cancel
             </Button>
-            <Button onClick={handleShare} className="bg-gradient-to-r from-blue-500 to-indigo-600">
+            <Button 
+              onClick={handleShare} 
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+            >
               Share
             </Button>
           </DialogFooter>
