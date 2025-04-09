@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // Added CardDescription
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,375 +65,251 @@ const AnalysisPage = () => {
   const [isImageModalMaximized, setIsImageModalMaximized] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const [titleFadeIn, setTitleFadeIn] = useState(false); // Added state for title fade-in
+  const [titleFadeIn, setTitleFadeIn] = useState(false);
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    // Trigger title fade-in effect
     setTimeout(() => setTitleFadeIn(true), 100);
   }, [user, navigate]);
 
   useEffect(() => {
     if (taskId && !TASK_TITLES[taskId]) {
       toast.error('Invalid analysis task');
-      navigate('/tasks'); // Navigate back to task selection or dashboard
+      navigate('/tasks');
     }
   }, [taskId, navigate]);
 
   // --- Functions (handleImageUpload, handleAnalyze, handleDownloadResults, handleConsultSpecialist, openImageModal, closeImageModal, toggleImageModalMaximize, handleZoomIn, handleZoomOut, formatResults) remain the same ---
-  const handleImageUpload = (file: File) => {
-    setImage(file);
-    setImageUrl(URL.createObjectURL(file));
-    setResults(null);
-    setError(null);
-    setAnalysisId(null);
-    setStoredImageUrl(null);
-    setIsImageModalOpen(false);
-    setIsImageModalMaximized(false);
-    setZoomLevel(1);
+    const handleImageUpload = (file: File) => {
+        setImage(file);
+        setImageUrl(URL.createObjectURL(file));
+        setResults(null);
+        setError(null);
+        setAnalysisId(null);
+        setStoredImageUrl(null);
+        setIsImageModalOpen(false);
+        setIsImageModalMaximized(false);
+        setZoomLevel(1);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImageBase64(reader.result as string);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+        setImageBase64(reader.result as string);
+        };
+        reader.readAsDataURL(file);
     };
-    reader.readAsDataURL(file);
-  };
 
-  const handleAnalyze = async () => {
-    if (!image || !imageBase64 || !taskId || !user) {
-      toast.error('Please upload an image first');
-      return;
-    }
-
-    setAnalyzing(true);
-    setError(null);
-    setResults(null); // Clear previous results
-
-    try {
-      console.log("Sending image for analysis...");
-
-      const { data, error } = await supabase.functions.invoke('analyze-bone-image', {
-        body: {
-          image: imageBase64,
-          taskId,
-          userType: user.userType === 'doctor' ? 'doctor' : 'common',
-          userId: user.id
+    const handleAnalyze = async () => {
+        if (!image || !imageBase64 || !taskId || !user) {
+        toast.error('Please upload an image first');
+        return;
         }
-      });
 
-      if (error) {
-        console.error('Function error:', error);
-        throw new Error(`Analysis failed: ${error.message}`);
-      }
+        setAnalyzing(true);
+        setError(null);
+        setResults(null);
 
-      if (data?.error) {
-        console.error('Data error:', data.error);
-        throw new Error(data.error);
-      }
+        try {
+        console.log("Sending image for analysis...");
 
-      setResults(data.analysis);
-
-      if (data.analysisId) {
-        setAnalysisId(data.analysisId);
-      }
-
-      if (data.imageUrl) {
-        setStoredImageUrl(data.imageUrl);
-      }
-
-      toast.success('Analysis complete');
-    } catch (error) {
-      console.error('Analysis error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      setError(`Failed to analyze image. ${errorMessage}. Please try again or try a different image.`);
-      toast.error('Failed to analyze image. Please try again.');
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const handleDownloadResults = async () => {
-    if (!results || !resultsRef.current) {
-      toast.warn('No results to download.');
-      return;
-    }
-
-    toast.info('Generating PDF...');
-    try {
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4',
-            compress: true
+        const { data, error } = await supabase.functions.invoke('analyze-bone-image', {
+            body: {
+            image: imageBase64,
+            taskId,
+            userType: user.userType === 'doctor' ? 'doctor' : 'common',
+            userId: user.id
+            }
         });
 
-        const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
-        const analysisDate = new Date().toLocaleString();
-        const userEmail = user?.email || 'N/A'; // Get user email safely
+        if (error) {
+            console.error('Function error:', error);
+            throw new Error(`Analysis failed: ${error.message}`);
+        }
 
-        // --- Header Function ---
-        const addHeaderFooter = (doc: jsPDF, pageNum: number, pageCount: number) => {
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const pageWidth = doc.internal.pageSize.getWidth();
+        if (data?.error) {
+            console.error('Data error:', data.error);
+            throw new Error(data.error);
+        }
 
-            // Header
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text(taskTitle, 20, 15);
-            doc.text(`User: ${userEmail}`, pageWidth - 20, 15, { align: 'right' });
-            doc.setDrawColor(200);
-            doc.line(20, 18, pageWidth - 20, 18);
+        setResults(data.analysis);
 
-            // Footer
-            doc.setFontSize(8);
-            doc.setTextColor(150);
-            doc.text(`Page ${pageNum} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-            doc.text(`Generated: ${analysisDate}`, 20, pageHeight - 10);
-            doc.text('AI-Powered Analysis - For Informational Purposes Only', pageWidth - 20, pageHeight - 10, { align: 'right' });
-        };
+        if (data.analysisId) {
+            setAnalysisId(data.analysisId);
+        }
 
-        let currentPage = 1;
-        const addPageWithHeaderFooter = () => {
-            if (currentPage > 1) {
-                addHeaderFooter(pdf, currentPage - 1, 0); // Add footer to previous page before adding new
-            }
-            pdf.addPage();
-            currentPage++;
-        };
+        if (data.imageUrl) {
+            setStoredImageUrl(data.imageUrl);
+        }
 
-        // --- Title Page ---
-        pdf.setFontSize(24);
-        pdf.setTextColor(0);
-        pdf.text(taskTitle, pdf.internal.pageSize.getWidth() / 2, 60, { align: 'center' });
+        toast.success('Analysis complete');
+        } catch (error) {
+        console.error('Analysis error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        setError(`Failed to analyze image. ${errorMessage}. Please try again or try a different image.`);
+        toast.error('Failed to analyze image. Please try again.');
+        } finally {
+        setAnalyzing(false);
+        }
+    };
 
-        pdf.setFontSize(14);
-        pdf.text(`Analysis Report`, pdf.internal.pageSize.getWidth() / 2, 75, { align: 'center' });
+    const handleDownloadResults = async () => {
+        if (!results || !resultsRef.current) {
+        toast.warn('No results to download.');
+        return;
+        }
 
-        pdf.setFontSize(12);
-        pdf.text(`User: ${userEmail}`, pdf.internal.pageSize.getWidth() / 2, 90, { align: 'center' });
-        pdf.text(`Date: ${analysisDate}`, pdf.internal.pageSize.getWidth() / 2, 100, { align: 'center' });
-
-        // --- Image Page (if exists) ---
-        if (imageUrl) {
-            addPageWithHeaderFooter();
-            pdf.setFontSize(16);
-            pdf.setTextColor(0);
-            pdf.text('Analyzed Image', 20, 30);
-
-            const img = new Image();
-            img.crossOrigin = "anonymous"; // Attempt to handle CORS for external images
-            img.src = storedImageUrl || imageUrl; // Prefer stored URL if available
-
-            await new Promise<void>((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = (e) => {
-                    console.error("Image loading error:", e);
-                    toast.error("Could not load image for PDF export.");
-                    reject(new Error("Image load failed"));
-                };
+        toast.info('Generating PDF...');
+        try {
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
             });
 
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const maxImgWidth = pageWidth - 40; // Margins
-            const maxImgHeight = pageHeight - 60; // Margins + space for header/footer
+            const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
+            const analysisDate = new Date().toLocaleString();
+            const userEmail = user?.email || 'N/A';
 
-            let imgWidth = img.width;
-            let imgHeight = img.height;
-            let ratio = 1;
+            const addHeaderFooter = (doc: jsPDF, pageNum: number, pageCount: number) => {
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(taskTitle, 20, 15);
+                doc.text(`User: ${userEmail}`, pageWidth - 20, 15, { align: 'right' });
+                doc.setDrawColor(200);
+                doc.line(20, 18, pageWidth - 20, 18);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Page ${pageNum} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text(`Generated: ${analysisDate}`, 20, pageHeight - 10);
+                doc.text('AI-Powered Analysis - For Informational Purposes Only', pageWidth - 20, pageHeight - 10, { align: 'right' });
+            };
 
-            if (imgWidth > maxImgWidth) {
-                ratio = maxImgWidth / imgWidth;
-                imgWidth = maxImgWidth;
-                imgHeight = imgHeight * ratio;
+            let currentPage = 1;
+            const addPageWithHeaderFooter = () => {
+                if (currentPage > 1) addHeaderFooter(pdf, currentPage - 1, 0);
+                pdf.addPage();
+                currentPage++;
+            };
+
+            pdf.setFontSize(24); pdf.setTextColor(0);
+            pdf.text(taskTitle, pdf.internal.pageSize.getWidth() / 2, 60, { align: 'center' });
+            pdf.setFontSize(14);
+            pdf.text(`Analysis Report`, pdf.internal.pageSize.getWidth() / 2, 75, { align: 'center' });
+            pdf.setFontSize(12);
+            pdf.text(`User: ${userEmail}`, pdf.internal.pageSize.getWidth() / 2, 90, { align: 'center' });
+            pdf.text(`Date: ${analysisDate}`, pdf.internal.pageSize.getWidth() / 2, 100, { align: 'center' });
+
+            if (imageUrl || storedImageUrl) {
+                addPageWithHeaderFooter();
+                pdf.setFontSize(16); pdf.setTextColor(0);
+                pdf.text('Analyzed Image', 20, 30);
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = storedImageUrl || imageUrl || '';
+
+                await new Promise<void>((resolve, reject) => {
+                    img.onload = () => resolve();
+                    img.onerror = (e) => { console.error("Image load error:", e); toast.error("PDF Export: Could not load image."); reject(e); };
+                });
+
+                const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight();
+                const maxImgWidth = pageWidth - 40; const maxImgHeight = pageHeight - 60;
+                let imgWidth = img.width; let imgHeight = img.height; let ratio = 1;
+
+                if (imgWidth > maxImgWidth) { ratio = maxImgWidth / imgWidth; imgWidth = maxImgWidth; imgHeight *= ratio; }
+                if (imgHeight > maxImgHeight) { ratio = maxImgHeight / imgHeight; imgHeight = maxImgHeight; imgWidth *= ratio; }
+
+                const xOffset = (pageWidth - imgWidth) / 2; const yOffset = 40;
+                try { pdf.addImage(img, 'JPEG', xOffset, yOffset, imgWidth, imgHeight); }
+                catch (e) { console.error("jsPDF addImage error:", e); toast.error("Failed to add image to PDF."); pdf.text("Error: Could not embed image.", xOffset, yOffset + 10); }
             }
 
-            if (imgHeight > maxImgHeight) {
-                ratio = maxImgHeight / imgHeight;
-                imgHeight = maxImgHeight;
-                imgWidth = imgWidth * ratio;
-            }
-
-            const xOffset = (pageWidth - imgWidth) / 2;
-            const yOffset = 40; // Space below title
-            try {
-              pdf.addImage(img, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
-            } catch (e) {
-                console.error("jsPDF addImage error:", e);
-                toast.error("Failed to add image to PDF.");
-                pdf.text("Error: Could not embed image.", xOffset, yOffset + 10);
-            }
-        }
-
-        // --- Results Page ---
-        addPageWithHeaderFooter();
-        pdf.setFontSize(16);
-        pdf.setTextColor(0);
-        pdf.text('Analysis Results', 20, 30);
-
-        const elementToRender = resultsRef.current;
-        const MARGIN = 20;
-        const PAGE_WIDTH = pdf.internal.pageSize.getWidth() - MARGIN * 2;
-        const PAGE_HEIGHT = pdf.internal.pageSize.getHeight() - 40; // Space for header/footer + title
-
-        // Use html2canvas to render the results div
-        const canvas = await html2canvas(elementToRender, {
-            scale: 2, // Higher scale for better quality
-            logging: false,
-            useCORS: true,
-            backgroundColor: null // Use transparent background
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = PAGE_WIDTH;
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-        let heightLeft = pdfHeight;
-        let position = 40; // Initial position below title
-
-        pdf.addImage(imgData, 'PNG', MARGIN, position, pdfWidth, pdfHeight);
-        heightLeft -= PAGE_HEIGHT;
-
-        // Add new pages if content exceeds one page
-        while (heightLeft > 0) {
-            position = heightLeft - pdfHeight + 40; // Adjust position for the next page
             addPageWithHeaderFooter();
-            pdf.addImage(imgData, 'PNG', MARGIN, position, pdfWidth, pdfHeight);
-            heightLeft -= PAGE_HEIGHT;
-        }
+            pdf.setFontSize(16); pdf.setTextColor(0);
+            pdf.text('Analysis Results', 20, 30);
 
-        // --- Finalize PDF ---
-        const totalPages = currentPage -1; // Adjust count as addPage was called one extra time potentially
-        for (let i = 1; i <= totalPages; i++) {
-            pdf.setPage(i);
-            addHeaderFooter(pdf, i, totalPages);
-        }
+            const elementToRender = resultsRef.current;
+            const MARGIN = 20; const PAGE_WIDTH = pdf.internal.pageSize.getWidth() - MARGIN * 2; const PAGE_HEIGHT = pdf.internal.pageSize.getHeight() - 40;
+            const canvas = await html2canvas(elementToRender, { scale: 2, logging: false, useCORS: true, backgroundColor: null });
+            const imgData = canvas.toDataURL('image/png'); const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = PAGE_WIDTH; const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            let heightLeft = pdfHeight; let position = 40;
 
-        const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-        pdf.save(fileName);
+            pdf.addImage(imgData, 'PNG', MARGIN, position, pdfWidth, pdfHeight); heightLeft -= PAGE_HEIGHT;
 
-        toast.success('PDF downloaded successfully');
+            while (heightLeft > 0) {
+                position = heightLeft - pdfHeight + 40; addPageWithHeaderFooter();
+                pdf.addImage(imgData, 'PNG', MARGIN, position, pdfWidth, pdfHeight); heightLeft -= PAGE_HEIGHT;
+            }
 
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        toast.error('Failed to generate PDF. See console for details.');
-    } finally {
-        // Clean up any temporary elements if needed
-    }
-  };
+            const totalPages = currentPage - 1;
+            for (let i = 1; i <= totalPages; i++) { pdf.setPage(i); addHeaderFooter(pdf, i, totalPages); }
 
-  const handleConsultSpecialist = () => {
-    if (!taskId) return;
-    const specialistType = TASK_SPECIALISTS[taskId] || 'orthopedic doctor';
-    // Rest of the function remains the same...
-     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude, longitude } = position.coords;
-        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@@${latitude},${longitude},14z`;
-        window.open(mapsUrl, '_blank');
-      }, () => {
-        // Geolocation failed or denied
+            const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(fileName); toast.success('PDF downloaded successfully');
+
+        } catch (error) { console.error('Error generating PDF:', error); toast.error('Failed to generate PDF.'); }
+    };
+
+    const handleConsultSpecialist = () => {
+        if (!taskId) return;
+        const specialistType = TASK_SPECIALISTS[taskId] || 'orthopedic doctor';
+        if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const { latitude, longitude } = position.coords;
+            const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@@${latitude},${longitude},14z`;
+            window.open(mapsUrl, '_blank');
+        }, () => {
+            const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+            window.open(mapsUrl, '_blank');
+            toast.info("Could not get location. Searching nationwide.");
+        });
+        } else {
         const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
         window.open(mapsUrl, '_blank');
-        toast.info("Could not get location. Searching nationwide.");
-      });
-    } else {
-      // Geolocation not supported
-      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
-      window.open(mapsUrl, '_blank');
-      toast.info("Geolocation not supported. Searching nationwide.");
-    }
-  };
+        toast.info("Geolocation not supported. Searching nationwide.");
+        }
+    };
 
-  const openImageModal = () => setIsImageModalOpen(true);
-  const closeImageModal = () => {
-    setIsImageModalOpen(false);
-    setIsImageModalMaximized(false); // Reset maximization on close
-    setZoomLevel(1); // Reset zoom on close
-  };
-  const toggleImageModalMaximize = () => setIsImageModalMaximized(!isImageModalMaximized);
-  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
-  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+    const openImageModal = () => setIsImageModalOpen(true);
+    const closeImageModal = () => { setIsImageModalOpen(false); setIsImageModalMaximized(false); setZoomLevel(1); };
+    const toggleImageModalMaximize = () => setIsImageModalMaximized(!isImageModalMaximized);
+    const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
+    const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
 
-  const formatResults = (resultsText: string): React.ReactNode => {
-      if (!resultsText) return null;
-
-      // Enhanced parsing logic
-      const lines = resultsText.split('\n');
-      const formattedElements: React.ReactNode[] = [];
-      let currentListItems: string[] = [];
-      let listType: 'bullet' | 'numbered' | null = null;
-
-      const flushList = () => {
-          if (currentListItems.length > 0) {
-              const ListComponent = listType === 'numbered' ? 'ol' : 'ul';
-              formattedElements.push(
-                  <ListComponent key={`list-${formattedElements.length}`} className={`list-${listType === 'numbered' ? 'decimal' : 'disc'} pl-6 space-y-1 my-3`}>
-                      {currentListItems.map((item, i) => (
-                          <li key={i} dangerouslySetInnerHTML={{ __html: item }} />
-                      ))}
-                  </ListComponent>
-              );
-              currentListItems = [];
-              listType = null;
-          }
-      };
-
-      lines.forEach((line, index) => {
-          const trimmedLine = line.trim();
-
-          // Check for headings (###, ##, #)
-          if (trimmedLine.startsWith('### ')) {
-              flushList();
-              formattedElements.push(<h4 key={index} className="text-lg font-semibold mt-4 mb-2" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(4) }} />);
-          } else if (trimmedLine.startsWith('## ')) {
-              flushList();
-              formattedElements.push(<h3 key={index} className="text-xl font-semibold mt-5 mb-2 border-b pb-1" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(3) }} />);
-          } else if (trimmedLine.startsWith('# ')) {
-              flushList();
-              formattedElements.push(<h2 key={index} className="text-2xl font-bold mt-6 mb-3 border-b-2 pb-1" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(2) }} />);
-          }
-          // Check for bold keywords used as headings
-          else if (trimmedLine.match(/^\*\*(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):\*\*/i)) {
-               flushList();
-               const headingText = trimmedLine.replace(/^\*\*/, '').replace(/:\*\*/, '');
-               formattedElements.push(<h3 key={index} className="text-xl font-semibold mt-5 mb-2 border-b pb-1">{headingText}:</h3>);
-          }
-          // Check for bullet points (*, -, •)
-          else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
-              if (listType !== 'bullet') flushList();
-              listType = 'bullet';
-              currentListItems.push(trimmedLine.substring(2));
-          }
-           // Check for numbered lists (1., 2.)
-          else if (trimmedLine.match(/^\d+\.\s/)) {
-               if (listType !== 'numbered') flushList();
-               listType = 'numbered';
-               currentListItems.push(trimmedLine.replace(/^\d+\.\s/, ''));
-          }
-          // Check for paragraphs (ignore empty lines)
-          else if (trimmedLine) {
-              flushList();
-              // Render bold text correctly
-              formattedElements.push(<p key={index} className="my-2 leading-relaxed" dangerouslySetInnerHTML={{ __html: trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />);
-          }
-          // Handle empty lines between paragraphs or after lists
-          else {
-              flushList();
-          }
-      });
-
-      // Flush any remaining list items at the end
-      flushList();
-
-      return <div className="space-y-2">{formattedElements}</div>;
-  };
+    const formatResults = (resultsText: string): React.ReactNode => {
+        if (!resultsText) return null;
+        const lines = resultsText.split('\n');
+        const formattedElements: React.ReactNode[] = []; let currentListItems: string[] = []; let listType: 'bullet' | 'numbered' | null = null;
+        const flushList = () => {
+            if (currentListItems.length > 0) {
+                const ListComponent = listType === 'numbered' ? 'ol' : 'ul';
+                formattedElements.push( <ListComponent key={`list-${formattedElements.length}`} className={`list-${listType === 'numbered' ? 'decimal' : 'disc'} pl-6 space-y-1 my-3`}> {currentListItems.map((item, i) => ( <li key={i} dangerouslySetInnerHTML={{ __html: item }} /> ))} </ListComponent> );
+                currentListItems = []; listType = null;
+            }
+        };
+        lines.forEach((line, index) => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('### ')) { flushList(); formattedElements.push(<h4 key={index} className="text-lg font-semibold mt-4 mb-2" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(4) }} />); }
+            else if (trimmedLine.startsWith('## ')) { flushList(); formattedElements.push(<h3 key={index} className="text-xl font-semibold mt-5 mb-2 border-b pb-1" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(3) }} />); }
+            else if (trimmedLine.startsWith('# ')) { flushList(); formattedElements.push(<h2 key={index} className="text-2xl font-bold mt-6 mb-3 border-b-2 pb-1" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(2) }} />); }
+            else if (trimmedLine.match(/^\*\*(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):\*\*/i)) { flushList(); const headingText = trimmedLine.replace(/^\*\*/, '').replace(/:\*\*/, ''); formattedElements.push(<h3 key={index} className="text-xl font-semibold mt-5 mb-2 border-b pb-1">{headingText}:</h3>); }
+            else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) { if (listType !== 'bullet') flushList(); listType = 'bullet'; currentListItems.push(trimmedLine.substring(2)); }
+            else if (trimmedLine.match(/^\d+\.\s/)) { if (listType !== 'numbered') flushList(); listType = 'numbered'; currentListItems.push(trimmedLine.replace(/^\d+\.\s/, '')); }
+            else if (trimmedLine) { flushList(); formattedElements.push(<p key={index} className="my-2 leading-relaxed" dangerouslySetInnerHTML={{ __html: trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />); }
+            else { flushList(); }
+        });
+        flushList();
+        return <div className="space-y-2">{formattedElements}</div>;
+    };
   // --- End of Functions ---
 
-  if (!taskId || !user) return null; // Return null or loading indicator
+  if (!taskId || !user) return null;
 
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
@@ -448,18 +324,16 @@ const AnalysisPage = () => {
   };
 
   return (
-    <AuroraBackground showRadialGradient={true}> {/* Keep Aurora background */}
-      <div className="container mx-auto px-4 py-12 "> {/* Removed animate-fade-in from main container */}
+    <AuroraBackground showRadialGradient={true}>
+      <div className="container mx-auto px-4 py-12 ">
          <style>
             {`
-            /* Add any specific styles needed here, or rely on Tailwind */
             .hover-scale { transition: transform 0.2s ease-out; }
             .hover-scale:hover { transform: scale(1.05); }
             .fade-in-title { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
             .fade-in-title.visible { opacity: 1; transform: translateY(0); }
             .animate-fade-in { animation: fadeInAnimation 0.5s ease-out forwards; }
             @keyframes fadeInAnimation { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-            /* Ensure prose styles don't override all text color */
              .prose p, .prose li, .prose h1, .prose h2, .prose h3, .prose h4, .prose strong { color: inherit; }
             `}
          </style>
@@ -472,7 +346,7 @@ const AnalysisPage = () => {
         >
           <Button
             variant="gradient"
-            onClick={() => navigate('/bone-analysis')} // Navigate back to task selector
+            onClick={() => navigate('/bone-analysis')}
             className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -487,13 +361,12 @@ const AnalysisPage = () => {
                 <Home className="mr-2 h-4 w-4" />
                 Home
              </Button>
-             {/* Consult Specialist Button removed from here, placed below results */}
           </div>
         </motion.div>
 
-        {/* --- MODIFIED TITLE SECTION --- */}
+        {/* --- Page Title Block --- */}
         <div className={`bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl mb-8 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
-          <h1 className="text-3xl font-bold mb-2"> {/* Removed gradient text style */}
+          <h1 className="text-3xl font-bold mb-2">
             {taskTitle}
           </h1>
           <p className="text-muted-foreground">
@@ -502,16 +375,15 @@ const AnalysisPage = () => {
               'AI-powered analysis for informational purposes only'}
           </p>
         </div>
-        {/* --- END OF MODIFIED TITLE SECTION --- */}
-
 
         {/* --- Main Content Grid --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* --- Image Upload Card --- */}
           <motion.div variants={fadeIn} initial="hidden" animate="visible" className="animate-fade-in">
+             {/* Apply the gradient style here */}
              <Card className="border transition-all duration-300 hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-blue-500/20 to-indigo-500/20"> {/* Subtler header */}
-                   <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">Upload Medical Image</CardTitle>
+                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg"> {/* <<<< MODIFIED STYLE */}
+                   <CardTitle className="text-lg font-semibold text-primary-foreground">Upload Medical Image</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                    <p className="text-sm text-muted-foreground mb-6">{taskGuidance}</p>
@@ -534,14 +406,9 @@ const AnalysisPage = () => {
                       <Button
                          onClick={handleAnalyze}
                          disabled={!image || analyzing}
-                         className="flex-1 sm:flex-none hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
+                         className="flex-1 sm:flex-none hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white" // Keep analyze button gradient
                       >
-                         {analyzing ? (
-                            <>
-                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                               Analyzing...
-                            </>
-                         ) : 'Analyze Image'}
+                         {analyzing ? ( <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing... </> ) : 'Analyze Image'}
                       </Button>
                    </div>
                 </CardContent>
@@ -550,16 +417,18 @@ const AnalysisPage = () => {
 
           {/* --- Analysis Results Card --- */}
            <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className={`animate-fade-in ${isResultsMaximized ? 'fixed inset-0 z-50 overflow-hidden' : ''}`}>
+             {/* Apply the gradient style here */}
              <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full w-full rounded-none shadow-2xl' : 'hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden'}`}>
-                <CardHeader className={`flex flex-row items-center justify-between bg-gradient-to-r from-indigo-500/20 to-violet-500/20 ${isResultsMaximized ? '' : 'rounded-t-lg'}`}>
-                   <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">Analysis Results</CardTitle>
+                <CardHeader className={`flex flex-row items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground ${isResultsMaximized ? '' : 'rounded-t-lg'}`}> {/* <<<< MODIFIED STYLE */}
+                   <CardTitle className="text-lg font-semibold text-primary-foreground">Analysis Results</CardTitle>
                    <div className="flex items-center space-x-1">
                       {results && (
                          <Button
                             variant="outline"
                             size="sm"
                             onClick={handleDownloadResults}
-                            className="flex items-center gap-1 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg border-indigo-500/50 text-indigo-600 dark:text-indigo-300 dark:border-indigo-400/50 hover:bg-indigo-500/10 text-xs px-2 py-1 h-auto"
+                             // Adjusted button style for better contrast on gradient
+                            className="flex items-center gap-1 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs px-2 py-1 h-auto"
                          >
                             <Download size={14} />
                             PDF
@@ -569,15 +438,15 @@ const AnalysisPage = () => {
                          variant="ghost"
                          size="icon"
                          onClick={() => setIsResultsMaximized(!isResultsMaximized)}
-                         className="transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-indigo-500/10 w-8 h-8"
+                          // Adjusted button style for better contrast on gradient
+                         className="transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg text-white hover:bg-white/20 w-8 h-8"
                       >
                          {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
                       </Button>
                    </div>
                 </CardHeader>
-                <CardContent className={`p-6 ${isResultsMaximized ? 'h-[calc(100%-5rem)] overflow-y-auto' : 'min-h-[200px]'} bg-white/95 dark:bg-gray-900/90 ${isResultsMaximized ? '' : 'rounded-b-lg'}`}>
+                <CardContent className={`p-6 ${isResultsMaximized ? 'h-[calc(100%-4rem)] overflow-y-auto' : 'min-h-[200px]'} bg-white/95 dark:bg-gray-900/90 ${isResultsMaximized ? '' : 'rounded-b-lg'}`}> {/* Adjusted height calc */}
                    {results ? (
-                      // Apply prose for basic formatting, ensure text color is not overridden globally
                       <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none animate-fade-in text-gray-800 dark:text-gray-200" ref={resultsRef}>
                          {formatResults(results)}
                       </div>
@@ -589,9 +458,7 @@ const AnalysisPage = () => {
                    ) : (
                       <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                          <p>
-                            {analyzing ? (
-                               <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing...</span>
-                            ) : 'Upload an image and click "Analyze Image" to view results.'}
+                            {analyzing ? ( <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing...</span> ) : 'Upload an image and click "Analyze Image" to view results.'}
                          </p>
                       </div>
                    )}
@@ -612,11 +479,11 @@ const AnalysisPage = () => {
               analysisContext={results}
               taskTitle={taskTitle}
               analysisId={analysisId}
-              className="rounded-lg w-full sm:w-auto" // Adjust width for responsiveness
+              className="rounded-lg w-full sm:w-auto"
             />
             {user.userType !== 'doctor' && (
               <Button
-                variant="outline" // Changed variant for distinction
+                variant="outline"
                 onClick={handleConsultSpecialist}
                 className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg border-primary/70 text-primary hover:bg-primary/10 w-full sm:w-auto"
               >
@@ -637,23 +504,21 @@ const AnalysisPage = () => {
                  exit={{ scale: 0.9, opacity: 0 }}
                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
               >
-                 {/* Modal Header */}
                  <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploaded Image</h3>
                     <div className="flex items-center space-x-1">
                         <Button variant="ghost" size="icon" onClick={handleZoomIn} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomIn size={18} /></Button>
                         <Button variant="ghost" size="icon" onClick={handleZoomOut} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomOut size={18} /></Button>
                         <Button variant="ghost" size="icon" onClick={toggleImageModalMaximize} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8">{isImageModalMaximized ? <Minimize size={18} /> : <Maximize size={18} />}</Button>
-                        <Button variant="ghost" size="icon" onClick={closeImageModal} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><Minimize size={18} /></Button> {/* Using Minimize for close */}
+                        <Button variant="ghost" size="icon" onClick={closeImageModal} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><Minimize size={18} /></Button>
                     </div>
                  </div>
-                 {/* Modal Content - Image Area */}
                  <div className="flex-grow p-4 overflow-auto flex items-center justify-center">
                     <img
                        src={imageUrl}
                        alt="Uploaded for analysis"
-                       className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out block" // Ensure block display
-                       style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }} // Center origin for zoom
+                       className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out block"
+                       style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
                     />
                  </div>
               </motion.div>
