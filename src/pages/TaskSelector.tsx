@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -88,10 +87,10 @@ const TaskSelector = () => {
     navigate(`/analysis/${analysisId}`);
   };
 
-  if (!user) return null;
+  if (!user) return null; // Or return a loading indicator
 
   return (
-    <div className="container mx-auto px-4 py-12 animate-fade-in">
+    <div className="container mx-auto px-4 py-12"> {/* Removed animate-fade-in here, moved to individual elements if needed */}
       <style>
         {`
         .hover-scale {
@@ -131,9 +130,19 @@ const TaskSelector = () => {
           opacity: 1;
           transform: translateY(0);
         }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); } /* Added slight Y transform for entry */
+            to { opacity: 1; transform: translateY(0); }
+        }
         `}
       </style>
-      
+
+      {/* Back Button */}
       <Button
         variant="gradient"
         onClick={() => navigate('/tasks')}
@@ -143,20 +152,36 @@ const TaskSelector = () => {
         Back to Dashboard
       </Button>
 
-      <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Select Analysis Type</h1>
-      <p className="text-muted-foreground mb-8 animate-fade-in">
-        Choose the type of bone health analysis you would like to perform
-      </p>
+      {/* --- MODIFIED TITLE SECTION --- */}
+      <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl mb-8">
+        <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
+          Select Analysis Type
+        </h1>
+        <p className="text-muted-foreground">
+          Choose the type of bone health analysis you would like to perform
+        </p>
+      </div>
+      {/* --- END OF MODIFIED TITLE SECTION --- */}
 
+
+      {/* Analysis Options Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {analysisOptions.map((option) => (
-          <Card key={option.id} className="hover-card transition-all duration-300 hover:shadow-2xl transform hover:translate-z-0 hover:scale-103 rounded-xl border border-gray-100 bg-white/90 backdrop-blur-sm animate-fade-in">
+        {analysisOptions.map((option, index) => (
+          <Card
+            key={option.id}
+            className="hover-card transition-all duration-300 hover:shadow-2xl transform hover:translate-z-0 hover:scale-103 rounded-xl border border-gray-100 bg-white/90 backdrop-blur-sm animate-fade-in"
+            style={{ animationDelay: `${index * 0.05}s` }} // Staggered animation
+          >
             <CardHeader className="pb-2">
-              <div className="mb-3 bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl inline-block">{option.icon}</div>
+              <div className="mb-3 bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl inline-block">
+                {option.icon}
+              </div>
               <CardTitle className="font-semibold text-lg hover-title">{option.title}</CardTitle>
-              <CardDescription className="text-muted-foreground text-sm mt-1">{option.description}</CardDescription>
+              <CardDescription className="text-muted-foreground text-sm mt-1 h-10"> {/* Added fixed height */}
+                {option.description}
+              </CardDescription>
             </CardHeader>
-            <CardFooter className="pt-4">
+            <CardFooter className="pt-4 mt-auto"> {/* Added mt-auto to push footer down */}
               <Button
                 className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
                 onClick={() => handleAnalysisSelect(option.id)}
