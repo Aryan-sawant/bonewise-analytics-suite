@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // Added CardDescription
 import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft, UserRound, X } from 'lucide-react'; // Added X for close
+import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft, UserRound, X } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 import { motion } from 'framer-motion';
-// import { AuroraBackground } from '@/components/ui/aurora-background'; // Removing Aurora background to use standard page bg
+// Removed AuroraBackground import as we are using standard page bg
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -66,7 +66,7 @@ const AnalysisPage = () => {
   const [isImageModalMaximized, setIsImageModalMaximized] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const [titleFadeIn, setTitleFadeIn] = useState(false); // Added for fade effect
+  const [titleFadeIn, setTitleFadeIn] = useState(false);
 
   // --- EFFECTS (Unchanged) ---
   useEffect(() => {
@@ -83,12 +83,12 @@ const AnalysisPage = () => {
   useEffect(() => {
     if (taskId && !TASK_TITLES[taskId]) {
       toast.error('Invalid analysis task');
-      navigate('/tasks'); // Redirect to dashboard or task selection
+      navigate('/tasks');
     }
   }, [taskId, navigate]);
   // --- END EFFECTS ---
 
-  // --- HANDLERS (Unchanged, except for minor PDF styling adjustments) ---
+  // --- HANDLERS (Mostly Unchanged) ---
   const handleImageUpload = (file: File) => {
     setImage(file);
     setImageUrl(URL.createObjectURL(file));
@@ -119,7 +119,6 @@ const AnalysisPage = () => {
     try {
       console.log("Sending image for analysis...");
 
-      // Assuming 'analyze-bone-image' is your Netlify/Supabase function name
       const { data, error: functionError } = await supabase.functions.invoke('analyze-bone-image', {
         body: {
           image: imageBase64,
@@ -138,7 +137,7 @@ const AnalysisPage = () => {
         console.error('Function returned error:', data.error);
         throw new Error(data.error);
       }
-       // Check if 'analysis' or 'message' exists in the response
+
       const analysisResult = data?.analysis || data?.message;
 
       if (!analysisResult) {
@@ -154,12 +153,8 @@ const AnalysisPage = () => {
       }
 
       if (data.imageUrl) {
-        setStoredImageUrl(data.imageUrl); // Store the Supabase URL if returned
-      } else if (image) {
-        // If no Supabase URL, maybe upload and store temp URL? Decide on strategy.
-        // For now, we rely on the function returning the stored URL.
+        setStoredImageUrl(data.imageUrl);
       }
-
 
       toast.success('Analysis complete');
     } catch (error) {
@@ -172,7 +167,7 @@ const AnalysisPage = () => {
     }
   };
 
- const handleDownloadResults = async () => {
+ const handleDownloadResults = async () => { // Keeping PDF generation logic
     if (!results || !resultsRef.current) {
         toast.error("No results available to download.");
         return;
@@ -189,82 +184,69 @@ const AnalysisPage = () => {
     });
 
     try {
-        // --- Page 1: Title and Info ---
+        // Page 1: Title and Info
         pdf.setFontSize(18);
-        pdf.setTextColor(0, 0, 0); // Black text
+        pdf.setTextColor(0, 0, 0);
         pdf.text(taskTitle, 20, 20);
-
         pdf.setFontSize(12);
         pdf.text(`Analysis Date: ${new Date().toLocaleString()}`, 20, 30);
         if(user?.email) {
-            pdf.text(`Patient/User ID: ${user.email}`, 20, 36); // Use email as example ID
+            pdf.text(`Patient/User ID: ${user.email}`, 20, 36);
         }
-        pdf.setDrawColor(150, 150, 150); // Lighter gray line
-        pdf.line(20, 42, 190, 42); // Line below info
+        pdf.setDrawColor(150, 150, 150);
+        pdf.line(20, 42, 190, 42);
 
-        let currentPageHeight = 50; // Start content below the line
+        let currentPageHeight = 50;
         const pageHeight = pdf.internal.pageSize.getHeight();
         const pageWidth = pdf.internal.pageSize.getWidth();
         const margin = 20;
         const contentWidth = pageWidth - 2 * margin;
-        const contentStartY = 50; // Where content starts on the page
 
-        // --- Add Image if available (Optional: could be on a separate page) ---
-        const effectiveImageUrl = storedImageUrl || imageUrl; // Prioritize stored URL
+        // Add Image if available
+         const effectiveImageUrl = storedImageUrl || imageUrl;
          if (effectiveImageUrl) {
-            pdf.addPage(); // Start image on a new page
+            pdf.addPage();
             pdf.setFontSize(14);
             pdf.text('Analyzed Image', margin, 20);
             try {
                 const img = new Image();
-                img.crossOrigin = 'anonymous'; // Attempt CORS handling
+                img.crossOrigin = 'anonymous';
                 img.src = effectiveImageUrl;
                 await new Promise<void>((resolve, reject) => {
                     img.onload = () => resolve();
-                    img.onerror = (e) => {
-                        console.error("Image load error:", e);
-                        reject(new Error('Failed to load image for PDF'));
-                    };
+                    img.onerror = (e) => reject(new Error('Failed to load image for PDF'));
                 });
 
                 const maxImgWidth = contentWidth;
-                const maxImgHeight = pageHeight - 40; // Room for title and footer
+                const maxImgHeight = pageHeight - 40;
                 let imgWidth = img.width;
                 let imgHeight = img.height;
                 let ratio = 1;
 
-                if (imgWidth > maxImgWidth) {
-                    ratio = maxImgWidth / imgWidth;
-                    imgWidth = maxImgWidth;
-                    imgHeight *= ratio;
-                }
-                if (imgHeight > maxImgHeight) {
-                    ratio = maxImgHeight / imgHeight;
-                    imgHeight = maxImgHeight;
-                    imgWidth *= ratio;
-                }
+                if (imgWidth > maxImgWidth) ratio = maxImgWidth / imgWidth;
+                else if (imgHeight > maxImgHeight) ratio = maxImgHeight / imgHeight;
+
+                imgWidth *= ratio;
+                imgHeight *= ratio;
 
                 const xOffset = (pageWidth - imgWidth) / 2;
-                pdf.addImage(effectiveImageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight); // Adjust format if needed (PNG?)
+                pdf.addImage(effectiveImageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
             } catch (imgError) {
                 console.error("Error adding image to PDF:", imgError);
-                 pdf.setPage(pdf.getNumberOfPages()); // Go back to the last page added
+                 pdf.setPage(pdf.getNumberOfPages());
                 pdf.setFontSize(10);
-                pdf.setTextColor(255, 0, 0); // Red text for error
+                pdf.setTextColor(255, 0, 0);
                 pdf.text('Error: Could not load image for PDF.', margin, 30);
-                pdf.setTextColor(0, 0, 0); // Reset text color
-                // Optionally, remove the blank page if image fails?
-                // if (pdf.getNumberOfPages() > 1) pdf.deletePage(pdf.getNumberOfPages());
+                pdf.setTextColor(0, 0, 0);
             }
-            pdf.addPage(); // Add a fresh page for the text results
-            currentPageHeight = 30; // Reset Y position for text page
+            pdf.addPage();
+            currentPageHeight = 30;
             pdf.setFontSize(16);
             pdf.text('Analysis Results', margin, 20);
             pdf.setDrawColor(150, 150, 150);
             pdf.line(margin, 23, pageWidth - margin, 23);
             currentPageHeight = 30;
         } else {
-             // If no image, add the results title on the first page
             pdf.setFontSize(16);
             pdf.text('Analysis Results', margin, currentPageHeight);
             pdf.setDrawColor(150, 150, 150);
@@ -272,19 +254,18 @@ const AnalysisPage = () => {
             currentPageHeight += 10;
         }
 
-
-        // --- Add Formatted Text Results ---
+        // Add Formatted Text Results
         const resultsElement = resultsRef.current;
         const canvas = await html2canvas(resultsElement, {
-             scale: 2, // Increase scale for better resolution
+             scale: 2,
              logging: false,
              useCORS: true,
-             backgroundColor: '#ffffff', // Ensure background is white
-             onclone: (doc) => { // Style cleanup within the clone
+             backgroundColor: '#ffffff',
+             onclone: (doc) => {
                  const allElements = doc.querySelectorAll('*');
                  allElements.forEach(el => {
                      if (el instanceof HTMLElement) {
-                         el.style.color = '#000000 !important'; // Force black color
+                         el.style.color = '#000000 !important';
                          el.style.webkitTextFillColor = '#000000 !important';
                          el.style.background = 'none !important';
                          el.style.backgroundColor = 'transparent !important';
@@ -299,53 +280,52 @@ const AnalysisPage = () => {
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = contentWidth;
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        const pageMaxHeight = pageHeight - margin - 30; // Space for header/footer
+        const pageMaxHeight = pageHeight - margin - 30;
 
         let heightLeft = pdfHeight;
-        let position = currentPageHeight; // Start below title/line
-
-        // pdf.addImage(imgData, 'PNG', margin, position, pdfWidth, pdfHeight); // Initial add (for single page)
+        let position = currentPageHeight;
 
         while (heightLeft > 0) {
-            // If it's not the first chunk of the results, add a new page
-            if (position !== currentPageHeight) {
+            if (position !== currentPageHeight && position > margin) { // Don't add page if it's the very first chunk
                 pdf.addPage();
-                position = 20; // Reset position for new page (margin from top)
-                 pdf.setFontSize(10); // Add continuation note maybe?
-                 // pdf.text('(continued...)', margin, position - 5);
+                position = 20;
             }
 
-            let currentChunkHeight = Math.min(heightLeft, pageMaxHeight - (position - 20)); // available space on current page
+            let currentChunkHeight = Math.min(heightLeft, pageMaxHeight - (position - margin));
 
-            // Check if adding this chunk exceeds the current page height allowance
-            if (position + currentChunkHeight > pageHeight - margin) {
-                 currentChunkHeight = pageHeight - margin - position; // Fit to remaining space
+             if (position + currentChunkHeight > pageHeight - margin) {
+                 currentChunkHeight = pageHeight - margin - position;
              }
 
-            // Calculate the portion of the canvas to draw
-             const canvasStartY = (pdfHeight - heightLeft) * (imgProps.height / pdfHeight);
-             const canvasChunkHeight = currentChunkHeight * (imgProps.height / pdfHeight);
+             // Avoid tiny chunks causing infinite loops
+             if (currentChunkHeight <= 1) {
+                 if (heightLeft > 1 && position + heightLeft <= pageHeight - margin) {
+                     currentChunkHeight = heightLeft; // Add the remainder if it fits
+                 } else if (heightLeft > 1) {
+                     // Need a new page for the remainder
+                     pdf.addPage();
+                     position = 20;
+                     currentChunkHeight = Math.min(heightLeft, pageMaxHeight);
+                 } else {
+                     break; // Nothing left or too small to add
+                 }
+             }
 
-             // Draw the specific chunk
-             pdf.addImage(imgData, 'PNG', margin, position, pdfWidth, currentChunkHeight, undefined, 'FAST', 0, canvasStartY, imgProps.width, canvasChunkHeight);
+            const canvasStartY = (pdfHeight - heightLeft) * (imgProps.height / pdfHeight);
+            const canvasChunkHeight = currentChunkHeight * (imgProps.height / pdfHeight);
+
+            pdf.addImage(imgData, 'PNG', margin, position, pdfWidth, currentChunkHeight, undefined, 'FAST', 0, canvasStartY, imgProps.width, canvasChunkHeight);
 
             heightLeft -= currentChunkHeight;
-            position += currentChunkHeight; // Position for the *next* potential chunk (will reset if new page)
-
-            // Safety break if something goes wrong
-            if (currentChunkHeight <= 0) {
-                console.error("PDF generation loop error: chunk height is zero or negative.");
-                break;
-            }
+            position += currentChunkHeight;
         }
 
-
-        // --- Add Footer to all pages ---
+        // Add Footer
         const totalPages = pdf.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
           pdf.setPage(i);
           pdf.setFontSize(10);
-          pdf.setTextColor(100, 100, 100); // Gray footer text
+          pdf.setTextColor(100, 100, 100);
           pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 15, pageHeight - 10);
           pdf.text('AI Bone Health Analysis | For Informational Purposes Only', margin, pageHeight - 10);
         }
@@ -359,37 +339,36 @@ const AnalysisPage = () => {
     }
   };
 
-  const handleConsultSpecialist = () => {
+
+  const handleConsultSpecialist = () => { // Unchanged
     if (!taskId) return;
     const specialistType = TASK_SPECIALISTS[taskId] || 'orthopedic doctor';
     const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
-
-    // Try geolocation first
     if (navigator.geolocation) {
       toast.info("Trying to find specialists near you...");
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          const preciseMapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@${latitude},${longitude},14z`; // Search near coords
+          const preciseMapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@${latitude},${longitude},14z`;
           window.open(preciseMapsUrl, '_blank');
         },
         (error) => {
           console.warn("Geolocation failed:", error.message);
           toast.warn("Could not get your location. Opening general search.");
-          window.open(mapsUrl, '_blank'); // Fallback to general search
+          window.open(mapsUrl, '_blank');
         },
-        { timeout: 5000 } // Add a timeout
+        { timeout: 5000 }
       );
     } else {
-      window.open(mapsUrl, '_blank'); // Fallback if geolocation not supported
+      window.open(mapsUrl, '_blank');
     }
   };
 
   const openImageModal = () => setIsImageModalOpen(true);
   const closeImageModal = () => {
     setIsImageModalOpen(false);
-    setIsImageModalMaximized(false); // Reset maximize state on close
-    setZoomLevel(1); // Reset zoom on close
+    setIsImageModalMaximized(false);
+    setZoomLevel(1);
   };
   const toggleImageModalMaximize = () => setIsImageModalMaximized(!isImageModalMaximized);
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
@@ -397,30 +376,25 @@ const AnalysisPage = () => {
   // --- END HANDLERS ---
 
   // --- RENDER LOGIC ---
-  if (!taskId || !user) return null; // Could show a loading spinner
+  if (!taskId || !user) return null;
 
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
 
-  // Simplified formatResults - assuming basic HTML formatting is handled by the backend/AI
    const formatResults = (resultsText: string | null): JSX.Element | null => {
         if (!resultsText) return null;
-
-        // Basic formatting: replace newlines with <br> and bold **text**
         const formattedHtml = resultsText
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-            .replace(/\n/g, '<br />'); // Newlines
-
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br />');
         return (
             <div
-                className="prose dark:prose-invert max-w-none text-typography-primary text-sm md:text-base" // Responsive text size
+                className="prose dark:prose-invert max-w-none text-typography-primary text-sm md:text-base"
                 ref={resultsRef}
                 dangerouslySetInnerHTML={{ __html: formattedHtml }}
-                style={{ color: 'black' }} // Ensure text color is black for PDF
+                style={{ color: 'black' }} // Ensure black text for PDF
             />
         );
     };
-
 
   const fadeIn = {
     hidden: { opacity: 0, y: 15 },
@@ -433,97 +407,41 @@ const AnalysisPage = () => {
   // --- END RENDER LOGIC ---
 
   return (
-    // Removed AuroraBackground wrapper
-    <div className="container mx-auto px-4 py-12"> {/* Removed animate-fade-in from container */}
+    <div className="container mx-auto px-4 py-12">
        <style>
         {`
-         /* Add hover/animation styles if needed, e.g. from previous examples */
-        .hover-scale {
-          transition: transform 0.2s ease-out;
-        }
-
-        .hover-scale:hover {
-          transform: scale(1.05);
-        }
-         .fade-in-title {
-          opacity: 0;
-          transform: translateY(-10px);
-          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-
-        .fade-in-title.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-         .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        /* Style for maximized results */
-        .results-maximized {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw; /* Full viewport width */
-          height: 100vh; /* Full viewport height */
-          z-index: 50; /* Ensure it's above other content */
-          overflow: hidden; /* Prevent body scroll */
-          background-color: white; /* Or your theme's background */
-          display: flex;
-          flex-direction: column;
-        }
-         .results-maximized .card-content-maximized {
-          flex-grow: 1; /* Allow content to take available space */
-          overflow-y: auto; /* Enable scrolling within the content */
-        }
+        .hover-scale { transition: transform 0.2s ease-out; }
+        .hover-scale:hover { transform: scale(1.05); }
+        .fade-in-title { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+        .fade-in-title.visible { opacity: 1; transform: translateY(0); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .results-maximized { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; overflow: hidden; background-color: white; display: flex; flex-direction: column; }
+        .results-maximized .card-content-maximized { flex-grow: 1; overflow-y: auto; }
         `}
       </style>
 
-      {/* --- MODIFIED HEADER/TITLE SECTION --- */}
+      {/* Header Buttons */}
       <motion.div
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4" // Adjusted layout
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
       >
-        <Button
-          variant="gradient"
-          onClick={() => navigate('/bone-analysis')} // Navigate back to selector page
-          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl self-start" // Align button left
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Select Task
+        <Button variant="gradient" onClick={() => navigate('/bone-analysis')} className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl self-start">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Select Task
         </Button>
-
-        <div className="flex items-center gap-2 self-start sm:self-center"> {/* Align buttons */}
-          <Button
-            variant="gradient"
-            onClick={() => navigate('/')} // Navigate to Home/Dashboard
-            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
-          >
-            <Home className="mr-2 h-4 w-4" />
-            Home
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <Button variant="gradient" onClick={() => navigate('/')} className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">
+            <Home className="mr-2 h-4 w-4" /> Home
           </Button>
-
           {results && user.userType !== 'doctor' && (
-            <Button
-              variant="gradient" // Changed to gradient for consistency
-              onClick={handleConsultSpecialist}
-              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl" // Rounded-xl
-            >
-              <UserRound className="mr-2 h-4 w-4" />
-              Find a Specialist
+            <Button variant="gradient" onClick={handleConsultSpecialist} className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl">
+              <UserRound className="mr-2 h-4 w-4" /> Find a Specialist
             </Button>
           )}
         </div>
       </motion.div>
 
-      {/* Applied the background styling to this title block */}
+      {/* --- Main Title Block with Gradient Background --- */}
        <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl mb-8">
         <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
           {taskTitle}
@@ -534,50 +452,31 @@ const AnalysisPage = () => {
               'AI-powered analysis for informational purposes only. Always consult a qualified healthcare professional.'}
         </p>
       </div>
-      {/* --- END OF MODIFIED HEADER/TITLE SECTION --- */}
+      {/* --- End Main Title Block --- */}
 
 
       {/* Main Content Grid */}
-      <div className={`grid grid-cols-1 ${isResultsMaximized ? '' : 'lg:grid-cols-2'} gap-8`}> {/* Adjust grid when results maximized */}
+      <div className={`grid grid-cols-1 ${isResultsMaximized ? '' : 'lg:grid-cols-2'} gap-8`}>
 
-        {/* Image Upload Card (Hidden when results maximized) */}
+        {/* Image Upload Card (Standard Header) */}
         {!isResultsMaximized && (
           <motion.div variants={fadeIn} initial="hidden" animate="visible" className="animate-fade-in">
+            {/* REMOVED gradient from CardHeader, restored default text/bg */}
             <Card className="border transition-all duration-300 hover:shadow-lg bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-              <CardHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10"> {/* Subtle gradient header */}
-                <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">Upload Medical Image</CardTitle>
+              <CardHeader className="border-b bg-gray-50 dark:bg-gray-700/50 p-4">
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Upload Medical Image</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <p className="text-sm text-muted-foreground mb-6">{taskGuidance}</p>
-                <ImageUpload
-                  onImageSelected={handleImageUpload}
-                  imageUrl={imageUrl}
-                  isLoading={analyzing}
-                />
-
+                <ImageUpload onImageSelected={handleImageUpload} imageUrl={imageUrl} isLoading={analyzing} />
                 <div className="mt-6 flex flex-col sm:flex-row justify-between gap-3">
                   {imageUrl && (
-                    <Button
-                      variant="outline" // Changed to outline
-                      onClick={openImageModal}
-                      className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl flex items-center gap-2" // rounded-xl
-                    >
-                      <Eye className="h-4 w-4" />
-                      View Image
+                    <Button variant="outline" onClick={openImageModal} className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl flex items-center gap-2">
+                      <Eye className="h-4 w-4" /> View Image
                     </Button>
                   )}
-                  <Button
-                    onClick={handleAnalyze}
-                    disabled={!image || analyzing}
-                    variant="gradient" // Use gradient for primary action
-                    className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl w-full sm:w-auto" // Full width on small screens
-                  >
-                    {analyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : 'Analyze Image'}
+                  <Button onClick={handleAnalyze} disabled={!image || analyzing} variant="gradient" className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl w-full sm:w-auto">
+                    {analyzing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>) : 'Analyze Image'}
                   </Button>
                 </div>
               </CardContent>
@@ -585,101 +484,51 @@ const AnalysisPage = () => {
           </motion.div>
         )}
 
-        {/* Analysis Results Card */}
+        {/* Analysis Results Card (Standard Header) */}
          <motion.div
-            variants={fadeIn}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: isResultsMaximized ? 0 : 0.1 }} // Faster transition if already maximized
-            className={`animate-fade-in ${isResultsMaximized ? 'results-maximized' : 'lg:col-span-1'}`} // Apply maximized styles conditionally
+            variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: isResultsMaximized ? 0 : 0.1 }}
+            className={`animate-fade-in ${isResultsMaximized ? 'results-maximized' : 'lg:col-span-1'}`}
         >
-            <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full flex flex-col rounded-none border-none shadow-none' : 'hover:shadow-lg bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm'}`}>
-                <CardHeader className={`flex flex-row items-center justify-between bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-4 ${isResultsMaximized ? 'rounded-none' : 'rounded-t-lg'}`}>
-                    <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">Analysis Results</CardTitle>
+            {/* REMOVED gradient from CardHeader, restored default text/bg */}
+            <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full flex flex-col rounded-none border-none shadow-none bg-white dark:bg-gray-900' : 'hover:shadow-lg bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm'}`}>
+                <CardHeader className={`flex flex-row items-center justify-between p-4 border-b bg-gray-50 dark:bg-gray-700/50 ${isResultsMaximized ? 'rounded-none' : 'rounded-t-lg'}`}>
+                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Analysis Results</CardTitle>
                     <div className="flex items-center space-x-2">
                         {results && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleDownloadResults}
-                                className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                                <Download size={14} />
-                                <span className="hidden sm:inline">Download PDF</span>
+                            <Button variant="outline" size="sm" onClick={handleDownloadResults} className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <Download size={14} /> <span className="hidden sm:inline">Download PDF</span>
                             </Button>
                         )}
-                         {/* Maximize/Minimize Button */}
-                         <Button
-                            variant="ghost"
-                            size="icon" // Make it an icon button
-                            onClick={() => setIsResultsMaximized(!isResultsMaximized)}
-                            className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            title={isResultsMaximized ? "Minimize Results" : "Maximize Results"}
-                        >
+                         <Button variant="ghost" size="icon" onClick={() => setIsResultsMaximized(!isResultsMaximized)} className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" title={isResultsMaximized ? "Minimize Results" : "Maximize Results"}>
                             {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent className={`p-6 ${isResultsMaximized ? 'card-content-maximized' : 'max-h-[60vh] overflow-y-auto'}`}> {/* Apply class for maximized scrolling */}
-                     {analyzing ? (
-                         <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 animate-pulse">
-                             <Loader2 className="h-8 w-8 text-primary mb-4 animate-spin" />
-                             <p className="text-muted-foreground">Processing your image with AI...</p>
-                             <p className="text-xs text-muted-foreground mt-2">This may take a moment.</p>
-                         </div>
-                    ) : results ? (
-                       formatResults(results) // Use the refactored function
-                    ) : error ? (
-                        <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 bg-destructive/10 animate-fade-in">
-                            <p className="text-destructive font-medium">Analysis Failed</p>
-                             <p className="text-destructive text-sm mt-2">
-                                {error}
-                            </p>
-                             <Button variant="link" className="mt-4 text-destructive" onClick={() => setError(null)}>Dismiss</Button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed">
-                            <p className="text-muted-foreground">
-                                Upload an image and click "Analyze Image" to see results here.
-                            </p>
-                        </div>
-                    )}
+                <CardContent className={`p-6 ${isResultsMaximized ? 'card-content-maximized' : 'max-h-[60vh] overflow-y-auto'}`}>
+                     {analyzing ? ( <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 animate-pulse"><Loader2 className="h-8 w-8 text-primary mb-4 animate-spin" /><p className="text-muted-foreground">Processing...</p></div>)
+                     : results ? ( formatResults(results) )
+                     : error ? ( <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 bg-destructive/10"><p className="text-destructive font-medium">Analysis Failed</p><p className="text-destructive text-sm mt-2">{error}</p><Button variant="link" className="mt-4 text-destructive" onClick={() => setError(null)}>Dismiss</Button></div>)
+                     : ( <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed"><p className="text-muted-foreground">Upload image & click "Analyze" for results.</p></div>)}
                 </CardContent>
             </Card>
         </motion.div>
 
-
       </div> {/* End Grid */}
 
-      {/* Chatbot Button (appears below grid when results exist and not maximized) */}
+      {/* Chatbot Button (Unchanged logic) */}
         {results && !isResultsMaximized && (
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }} // Slightly delayed fade-in
-                className="mt-8 w-full flex justify-center" // Center the button container
-            >
-                <ChatbotButton
-                    analysisContext={results}
-                    taskTitle={taskTitle}
-                    analysisId={analysisId} // Pass analysisId if available
-                    className="rounded-lg shadow-lg w-full max-w-md" // Add max-width
-                />
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="mt-8 w-full flex justify-center">
+                <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg shadow-lg w-full max-w-md"/>
             </motion.div>
         )}
 
-
-      {/* Image Modal (Unchanged) */}
+      {/* Image Modal (Unchanged logic, minor header style change) */}
       {isImageModalOpen && imageUrl && (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300`}>
-          <motion.div
-            className={`relative bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-2xl flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl max-h-[90vh]'}`}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-b dark:border-gray-700 flex-shrink-0">
+          <motion.div className={`relative bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-2xl flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl max-h-[90vh]'}`}
+            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 300, damping: 25 }}>
+            {/* Modal Header - Standard Background */}
+            <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0">
                <p className="font-semibold text-gray-800 dark:text-white">Uploaded Image</p>
                 <div className="flex items-center space-x-1">
                    <Button variant="ghost" size="icon" onClick={handleZoomIn} title="Zoom In" className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"><ZoomIn size={18} /></Button>
@@ -690,14 +539,10 @@ const AnalysisPage = () => {
                     <Button variant="ghost" size="icon" onClick={closeImageModal} title="Close" className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50"><X size={18} /></Button>
                 </div>
             </div>
-             {/* Modal Content - Image */}
+            {/* Modal Content */}
             <div className="flex-grow p-4 overflow-auto flex items-center justify-center">
-              <img
-                src={imageUrl}
-                alt="Uploaded for analysis"
-                className="block max-w-full max-h-full object-contain transition-transform duration-200 ease-out"
-                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }} // Zoom from center
-              />
+              <img src={imageUrl} alt="Uploaded for analysis" className="block max-w-full max-h-full object-contain transition-transform duration-200 ease-out"
+                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }} />
             </div>
           </motion.div>
         </div>
