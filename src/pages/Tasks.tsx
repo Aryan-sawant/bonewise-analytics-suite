@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -194,20 +195,20 @@ const Tasks = () => {
           </div>
           <div className="flex gap-3">
             <Button
-              variant="outline"
+              variant="gradient"
               onClick={() => navigate('/')}
-              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl"
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
             >
               <Home className="mr-2 h-4 w-4" />
               Home
             </Button>
 
-            <Button onClick={() => navigate('/bone-analysis')} variant="outline"  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl">
+            <Button onClick={() => navigate('/bone-analysis')} variant="gradient" className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">
               <Bone className="mr-2 h-4 w-4" />
               Bone Analysis
             </Button>
 
-            <Button variant="outline" onClick={handleLogout}  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-xl">
+            <Button variant="gradient" onClick={handleLogout}  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>

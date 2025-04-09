@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -197,12 +198,12 @@ const Result = () => {
       const contentWidth = pdf.internal.pageSize.getWidth() - 40;
       const contentHeight = canvas.height * contentWidth / canvas.width;
       
-      const pageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
+      const totalPageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
       
-      const imgPageHeight = canvas.height / pageCount;
-      const pdfPageHeight = contentHeight / pageCount;
+      const imgPageHeight = canvas.height / totalPageCount;
+      const pdfPageHeight = contentHeight / totalPageCount;
       
-      for (let i = 0; i < pageCount; i++) {
+      for (let i = 0; i < totalPageCount; i++) {
         if (i > 0) pdf.addPage();
         
         const sy = imgPageHeight * i;
@@ -229,12 +230,12 @@ const Result = () => {
         }
       }
       
-      const pageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
+      const finalPageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= finalPageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
+        pdf.text(`Page ${i} of ${finalPageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
         pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
       }
       
@@ -277,18 +278,18 @@ const Result = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
         const { latitude, longitude } = position.coords;
-        // Create Google Maps URL with search query for the specialist type
-        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@${latitude},${longitude},14z`;
+        // Create Google Maps URL with search query for the specialist type near me
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}+near+me/@${latitude},${longitude},14z`;
         // Open in a new tab
         window.open(mapsUrl, '_blank');
       }, () => {
         // If geolocation fails, open with just the search term
-        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}+near+me`;
         window.open(mapsUrl, '_blank');
       });
     } else {
       // Fallback if geolocation is not supported
-      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}+near+me`;
       window.open(mapsUrl, '_blank');
     }
   };
@@ -299,7 +300,7 @@ const Result = () => {
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <Button variant="outline" size="icon" onClick={() => navigate('/analysis')}>
+              <Button variant="gradient" size="icon" onClick={() => navigate('/analysis')}>
                 <ArrowLeft size={16} />
               </Button>
               <h1 className="text-3xl font-bold tracking-tight">Analysis Results</h1>
@@ -310,7 +311,7 @@ const Result = () => {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button 
-              variant="outline" 
+              variant="gradient" 
               className="gap-2"
               onClick={handleDownload}
               disabled={loading || !resultData}
@@ -319,7 +320,7 @@ const Result = () => {
               Download PDF
             </Button>
             <Button 
-              variant="outline" 
+              variant="gradient" 
               className="gap-2"
               onClick={() => setShareDialogOpen(true)}
               disabled={loading || !resultData}
@@ -338,7 +339,7 @@ const Result = () => {
               </Button>
             )}
             <Button 
-              variant="outline" 
+              variant="gradient" 
               className="gap-2" 
               onClick={() => navigate('/dashboard')}
             >

@@ -56,18 +56,18 @@ const NavBar = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
         const { latitude, longitude } = position.coords;
-        // Create Google Maps URL with search query for orthopedic doctors
-        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor/@${latitude},${longitude},14z`;
+        // Create Google Maps URL with search query for orthopedic doctors near me
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me/@${latitude},${longitude},14z`;
         // Open in a new tab
         window.open(mapsUrl, '_blank');
       }, () => {
         // If geolocation fails, open with just the search term
-        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
         window.open(mapsUrl, '_blank');
       });
     } else {
       // Fallback if geolocation is not supported
-      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
       window.open(mapsUrl, '_blank');
     }
   };
@@ -114,7 +114,7 @@ const NavBar = () => {
               <div className="text-sm text-muted-foreground">
                 {user.userType === 'doctor' ? 'Doctor' : 'User'}: {user.name || user.email}
               </div>
-              <Button variant="ghost" size="sm" className="gap-2" onClick={logout}>
+              <Button variant="gradient" size="sm" className="gap-2" onClick={logout}>
                 <LogOut size={16} />
                 <span>Logout</span>
               </Button>
@@ -134,7 +134,7 @@ const NavBar = () => {
           ) : (
             <div className="flex items-center gap-4">
               <Link to="/auth">
-                <Button variant="ghost" size="sm">Log in</Button>
+                <Button variant="gradient" size="sm">Log in</Button>
               </Link>
               <Link to="/auth?tab=signup">
                 <Button 
@@ -190,7 +190,7 @@ const NavBar = () => {
                   </p>
                 </div>
                 <Button 
-                  variant="outline" 
+                  variant="gradient" 
                   className="w-full justify-start gap-2 rounded-xl mb-4" 
                   onClick={logout}
                 >
@@ -211,7 +211,7 @@ const NavBar = () => {
             ) : (
               <div className="mt-auto pb-8 flex flex-col gap-3">
                 <Link to="/auth">
-                  <Button variant="outline" className="w-full rounded-xl">Log in</Button>
+                  <Button variant="gradient" className="w-full rounded-xl">Log in</Button>
                 </Link>
                 <Link to="/auth?tab=signup">
                   <Button className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600">

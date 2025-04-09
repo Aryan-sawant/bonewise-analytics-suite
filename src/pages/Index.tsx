@@ -32,18 +32,18 @@ const Index = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
         const { latitude, longitude } = position.coords;
-        // Create Google Maps URL with search query for orthopedic doctors
-        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor/@${latitude},${longitude},14z`;
+        // Create Google Maps URL with search query for orthopedic doctors near me
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me/@${latitude},${longitude},14z`;
         // Open in a new tab
         window.open(mapsUrl, '_blank');
       }, () => {
         // If geolocation fails, open with just the search term
-        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
         window.open(mapsUrl, '_blank');
       });
     } else {
       // Fallback if geolocation is not supported
-      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
       window.open(mapsUrl, '_blank');
     }
   };
@@ -130,7 +130,7 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/tasks')} 
-                  className="bg-white text-primary hover:bg-white/90 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
                 >
                   Go to Dashboard
                 </Button> 
@@ -138,19 +138,27 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/auth?tab=signup')} 
-                  className="bg-white text-primary hover:bg-white/90 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
                 >
                   Sign Up for Free
                 </Button>
               }
-              {user && (
+              {user ? (
                 <Button 
                   size="lg" 
                   onClick={handleConsultSpecialist} 
-                  className="bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
                 >
                   <UserRound className="mr-2 h-5 w-5" />
                   Consult a Specialist
+                </Button>
+              ) : (
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate('/auth')} 
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                >
+                  Log In
                 </Button>
               )}
             </div>
@@ -217,7 +225,7 @@ const Index = () => {
         <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 animate-fade-in">
           <Button 
             size="lg" 
-            className="shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300" 
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300" 
             onClick={() => navigate('/auth?tab=signup')}
           >
             Get Started
@@ -228,7 +236,7 @@ const Index = () => {
         <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 animate-fade-in">
           <Button 
             size="lg" 
-            className="shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700" 
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300" 
             onClick={handleConsultSpecialist}
           >
             <UserRound className="mr-2 h-5 w-5" />
