@@ -15,7 +15,6 @@ const toggleVariants = cva(
           "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
         gradient: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:brightness-105",
         pill: "rounded-full bg-white/10 shadow-sm hover:bg-white/20 border border-white/20",
-        'gradient-secondary': "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:brightness-105",
       },
       size: {
         default: "h-10 px-3",

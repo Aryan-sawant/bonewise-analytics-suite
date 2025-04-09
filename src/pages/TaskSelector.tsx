@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -12,10 +13,8 @@ import {
   Spline,
   Skull,
   Microscope,
-  ArrowLeft,
-  Home
+  ArrowLeft
 } from 'lucide-react';
-import { AuroraBackground } from '@/components/ui/aurora-background';
 
 const TaskSelector = () => {
   const navigate = useNavigate();
@@ -92,59 +91,83 @@ const TaskSelector = () => {
   if (!user) return null;
 
   return (
-    <AuroraBackground>
-      <div className="container mx-auto px-4 py-12 animate-fade-in">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <div>
-            <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Select Analysis Type</h1>
-            <p className="text-muted-foreground mb-4 animate-fade-in">
-              Choose the type of bone health analysis you would like to perform
-            </p>
-          </div>
-          
-          <div className="flex gap-3">
-            <Button
-              variant="gradient"
-              onClick={() => navigate('/tasks')}
-              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-            
-            <Button
-              variant="gradient"
-              onClick={() => navigate('/')}
-              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
-            >
-              <Home className="mr-2 h-4 w-4" />
-              Home
-            </Button>
-          </div>
-        </div>
+    <div className="container mx-auto px-4 py-12 animate-fade-in">
+      <style>
+        {`
+        .hover-scale {
+          transition: transform 0.2s ease-out;
+        }
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {analysisOptions.map((option) => (
-            <Card key={option.id} className="hover-card transition-all duration-300 hover:shadow-2xl transform hover:translate-z-0 hover:scale-103 rounded-xl border border-gray-100 bg-white/90 backdrop-blur-sm animate-fade-in">
-              <CardHeader className="pb-2">
-                <div className="mb-3 bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl inline-block">{option.icon}</div>
-                <CardTitle className="font-semibold text-lg hover-title">{option.title}</CardTitle>
-                <CardDescription className="text-muted-foreground text-sm mt-1">{option.description}</CardDescription>
-              </CardHeader>
-              <CardFooter className="pt-4">
-                <Button
-                  className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl"
-                  variant="gradient"
-                  onClick={() => handleAnalysisSelect(option.id)}
-                >
-                  Select
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        .hover-scale:hover {
+          transform: scale(1.05);
+        }
+
+        .hover-card {
+          transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+        }
+
+        .hover-card:hover {
+          transform: translateZ(5px) translateY(-3px);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .hover-title {
+          transition: color 0.2s ease-out, text-decoration 0.2s ease-out;
+        }
+
+        .hover-title:hover {
+          color: var(--primary); /* Use primary color on hover */
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+
+        .fade-in-title {
+          opacity: 0;
+          transform: translateY(-10px);
+          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .fade-in-title.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        `}
+      </style>
+      
+      <Button
+        variant="gradient"
+        onClick={() => navigate('/tasks')}
+        className="mb-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Dashboard
+      </Button>
+
+      <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Select Analysis Type</h1>
+      <p className="text-muted-foreground mb-8 animate-fade-in">
+        Choose the type of bone health analysis you would like to perform
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {analysisOptions.map((option) => (
+          <Card key={option.id} className="hover-card transition-all duration-300 hover:shadow-2xl transform hover:translate-z-0 hover:scale-103 rounded-xl border border-gray-100 bg-white/90 backdrop-blur-sm animate-fade-in">
+            <CardHeader className="pb-2">
+              <div className="mb-3 bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl inline-block">{option.icon}</div>
+              <CardTitle className="font-semibold text-lg hover-title">{option.title}</CardTitle>
+              <CardDescription className="text-muted-foreground text-sm mt-1">{option.description}</CardDescription>
+            </CardHeader>
+            <CardFooter className="pt-4">
+              <Button
+                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
+                onClick={() => handleAnalysisSelect(option.id)}
+              >
+                Select
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
       </div>
-    </AuroraBackground>
+    </div>
   );
 };
 

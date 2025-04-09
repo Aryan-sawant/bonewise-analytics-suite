@@ -433,7 +433,7 @@ const AnalysisPage = () => {
           <Button
             variant="outline"
             onClick={() => navigate('/bone-analysis')}
-            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Tasks
@@ -441,9 +441,9 @@ const AnalysisPage = () => {
 
           <div className="flex items-center gap-2">
             <Button
-              variant="gradient"
+              variant="outline"
               onClick={() => navigate('/')}
-              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
             >
               <Home className="mr-2 h-4 w-4" />
               Home
