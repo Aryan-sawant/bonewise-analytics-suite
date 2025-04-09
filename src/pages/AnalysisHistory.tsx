@@ -420,9 +420,9 @@ const AnalysisHistory = () => {
       </style>
       <div className="flex justify-between items-center mb-6">
         <Button
-          variant="outline"
+          variant="gradient"
           onClick={() => navigate('/tasks')}
-          className="group hover-scale transition-all active:scale-95 text-blue-500 hover:text-blue-600 border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
         >
           <svg 
             className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:-translate-x-1" 
@@ -437,9 +437,9 @@ const AnalysisHistory = () => {
         </Button>
 
         <Button
-          variant="outline"
+          variant="gradient"
           onClick={() => navigate('/')}
-          className="hover-scale transition-all active:scale-95 text-blue-500 hover:text-blue-600 border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
         >
           <Home className="mr-2 h-4 w-4" />
           Home
