@@ -718,19 +718,19 @@ const AnalysisHistory = () => {
       <div className="flex justify-between items-center mb-6">
         {/* Navigation Buttons */}
          <Button
-           variant="outline"
+           variant="gradient"
            size="sm"
            onClick={() => navigate('/tasks')}
-           className="hover-scale group transition-all duration-300 hover:shadow-sm active:scale-95 transform gap-1.5 rounded-md border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+           className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
          >
            <svg className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
            Dashboard
          </Button>
          <Button
-           variant="outline"
+           variant="gradient"
             size="sm"
            onClick={() => navigate('/')}
-           className="hover-scale transition-all duration-300 hover:shadow-sm active:scale-95 transform gap-1.5 rounded-md border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+           className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
          >
            <Home className="h-4 w-4" />
            Home
