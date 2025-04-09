@@ -444,7 +444,7 @@ const AnalysisPage = () => {
           <motion.div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
             <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg w-full sm:w-auto text-xs sm:text-sm" size="sm" />
             {user.userType !== 'doctor' && (
-              <Button variant="outline" size="sm" onClick={() => setShowConsultDialog(true)} className="hover-scale rounded-lg border-primary/70 text-primary hover:bg-primary/10 w-full sm:w-auto text-xs sm:text-sm">
+              <Button variant="gradient" size="sm" onClick={() => setShowConsultDialog(true)} className="hover-scale rounded-xl text-xs sm:text-sm">
                 <UserRound className="mr-1.5 h-4 w-4" /> Consult a Specialist Near You
               </Button>
             )}
