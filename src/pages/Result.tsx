@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, Download, Share2 } from 'lucide-react';
+import { ArrowLeft, Home, Download, Share2, UserRound } from 'lucide-react';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -259,6 +259,40 @@ const Result = () => {
     setShareNote('');
   };
   
+  const handleConsultSpecialist = () => {
+    let specialistType = "orthopedic doctor"; // Default specialist
+    
+    // Determine specialist type based on analysis type
+    if (analysisType === 'fracture') {
+      specialistType = "orthopedic doctor";
+    } else if (analysisType === 'osteoporosis') {
+      specialistType = "endocrinologist";
+    } else if (analysisType === 'bone-tumor') {
+      specialistType = "oncologist";
+    } else if (analysisType === 'spine-fracture') {
+      specialistType = "spine surgeon";
+    }
+    
+    // Use the user's current location to search for specialists in Google Maps
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        // Create Google Maps URL with search query for the specialist type
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@${latitude},${longitude},14z`;
+        // Open in a new tab
+        window.open(mapsUrl, '_blank');
+      }, () => {
+        // If geolocation fails, open with just the search term
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+        window.open(mapsUrl, '_blank');
+      });
+    } else {
+      // Fallback if geolocation is not supported
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+      window.open(mapsUrl, '_blank');
+    }
+  };
+  
   return (
     <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
       <header className="mb-12">
@@ -274,7 +308,7 @@ const Result = () => {
               {loading ? 'Processing your image...' : resultData?.analysisType} results
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button 
               variant="outline" 
               className="gap-2"
@@ -293,6 +327,16 @@ const Result = () => {
               <Share2 size={16} />
               Share
             </Button>
+            {user && user.userType !== 'doctor' && resultData && (
+              <Button 
+                variant="gradient" 
+                className="gap-2"
+                onClick={handleConsultSpecialist}
+              >
+                <UserRound size={16} />
+                Consult a Specialist
+              </Button>
+            )}
             <Button 
               variant="outline" 
               className="gap-2" 

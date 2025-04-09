@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft } from 'lucide-react';
+import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft, UserRound } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 import { motion } from 'framer-motion';
 import { AuroraBackground } from '@/components/ui/aurora-background';
@@ -33,6 +33,17 @@ const TASK_GUIDANCE: Record<string, string> = {
   'spine-fracture': 'Upload an X-ray, CT scan or MRI image of the cervical spine.',
   'bone-tumor': 'Upload an X-ray, MRI, or CT scan showing the suspected area.',
   'bone-infection': 'Upload an X-ray, MRI, or bone scan showing the affected area.'
+};
+
+const TASK_SPECIALISTS: Record<string, string> = {
+  'fracture-detection': 'orthopedic doctor',
+  'bone-marrow': 'hematologist',
+  'osteoarthritis': 'rheumatologist',
+  'osteoporosis': 'endocrinologist',
+  'bone-age': 'pediatric endocrinologist',
+  'spine-fracture': 'spine surgeon',
+  'bone-tumor': 'oncologist',
+  'bone-infection': 'infectious disease specialist'
 };
 
 const AnalysisPage = () => {
@@ -323,6 +334,26 @@ const AnalysisPage = () => {
     }
   };
 
+  const handleConsultSpecialist = () => {
+    if (!taskId) return;
+    
+    const specialistType = TASK_SPECIALISTS[taskId] || 'orthopedic doctor';
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@@${latitude},${longitude},14z`;
+        window.open(mapsUrl, '_blank');
+      }, () => {
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+        window.open(mapsUrl, '_blank');
+      });
+    } else {
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+      window.open(mapsUrl, '_blank');
+    }
+  };
+
   const openImageModal = () => {
     setIsImageModalOpen(true);
   };
@@ -408,14 +439,27 @@ const AnalysisPage = () => {
             Back to Tasks
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
-          >
-            <Home className="mr-2 h-4 w-4" />
-            Home
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 bg-primary-foreground text-blue-500 border-blue-500 hover:bg-blue-500/10 rounded-lg"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Home
+            </Button>
+            
+            {results && user.userType !== 'doctor' && (
+              <Button
+                variant="gradient"
+                onClick={handleConsultSpecialist}
+                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg"
+              >
+                <UserRound className="mr-2 h-4 w-4" />
+                Consult a Specialist
+              </Button>
+            )}
+          </div>
         </motion.div>
 
         <motion.div

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from '@/contexts/AuthContext';
 import { NavBarDemo } from '@/components/ui/navbar-demo';
+import { UserRound } from 'lucide-react';
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -25,6 +26,27 @@ const Index = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleConsultSpecialist = () => {
+    // Use the user's current location to search for bone specialists in Google Maps
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        // Create Google Maps URL with search query for orthopedic doctors
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor/@${latitude},${longitude},14z`;
+        // Open in a new tab
+        window.open(mapsUrl, '_blank');
+      }, () => {
+        // If geolocation fails, open with just the search term
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+        window.open(mapsUrl, '_blank');
+      });
+    } else {
+      // Fallback if geolocation is not supported
+      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+      window.open(mapsUrl, '_blank');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -121,6 +143,16 @@ const Index = () => {
                   Sign Up for Free
                 </Button>
               }
+              {user && (
+                <Button 
+                  size="lg" 
+                  onClick={handleConsultSpecialist} 
+                  className="bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                >
+                  <UserRound className="mr-2 h-5 w-5" />
+                  Consult a Specialist
+                </Button>
+              )}
             </div>
           </div>
         </section>
@@ -189,6 +221,18 @@ const Index = () => {
             onClick={() => navigate('/auth?tab=signup')}
           >
             Get Started
+          </Button>
+        </div>
+      }
+      {isScrolled && user && 
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 animate-fade-in">
+          <Button 
+            size="lg" 
+            className="shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700" 
+            onClick={handleConsultSpecialist}
+          >
+            <UserRound className="mr-2 h-5 w-5" />
+            Consult a Specialist
           </Button>
         </div>
       }

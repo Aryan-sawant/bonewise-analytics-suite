@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, LogOut, Menu, X, Bone } from 'lucide-react';
+import { User, LogOut, Menu, X, Bone, UserRound } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -51,6 +51,27 @@ const NavBar = () => {
     requiresAuth: true
   }];
   
+  const handleConsultSpecialist = () => {
+    // Use the user's current location to search for bone specialists in Google Maps
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        // Create Google Maps URL with search query for orthopedic doctors
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor/@${latitude},${longitude},14z`;
+        // Open in a new tab
+        window.open(mapsUrl, '_blank');
+      }, () => {
+        // If geolocation fails, open with just the search term
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+        window.open(mapsUrl, '_blank');
+      });
+    } else {
+      // Fallback if geolocation is not supported
+      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor`;
+      window.open(mapsUrl, '_blank');
+    }
+  };
+  
   return (
     <header 
       className={cn(
@@ -96,6 +117,15 @@ const NavBar = () => {
               <Button variant="ghost" size="sm" className="gap-2" onClick={logout}>
                 <LogOut size={16} />
                 <span>Logout</span>
+              </Button>
+              <Button 
+                variant="gradient" 
+                size="sm" 
+                className="gap-2" 
+                onClick={handleConsultSpecialist}
+              >
+                <UserRound size={16} />
+                <span>Consult a Specialist</span>
               </Button>
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
                 <User size={18} />
@@ -161,12 +191,22 @@ const NavBar = () => {
                 </div>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start gap-2 rounded-xl" 
+                  className="w-full justify-start gap-2 rounded-xl mb-4" 
                   onClick={logout}
                 >
                   <LogOut size={16} />
                   <span>Logout</span>
                 </Button>
+                {user.userType !== 'doctor' && (
+                  <Button 
+                    variant="gradient" 
+                    className="w-full justify-start gap-2 rounded-xl" 
+                    onClick={handleConsultSpecialist}
+                  >
+                    <UserRound size={16} />
+                    <span>Consult a Specialist</span>
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="mt-auto pb-8 flex flex-col gap-3">
