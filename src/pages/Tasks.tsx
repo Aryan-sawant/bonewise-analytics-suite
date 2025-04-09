@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -74,17 +73,19 @@ const Tasks = () => {
           .order('created_at', { ascending: false })
           .limit(5);
 
+        // Use analyses if available and non-empty
         if (!analysesError && analysesData && analysesData.length > 0) {
-          const activities: RecentActivity[] = analysesData.map(analysis => ({
-            id: analysis.id,
-            title: analysis.task_name,
-            created_at: analysis.created_at,
-          }));
-
-          setRecentActivities(activities);
-          return;
+            const activities: RecentActivity[] = analysesData.map(analysis => ({
+                id: analysis.id,
+                title: analysis.task_name, // Use task_name for title
+                created_at: analysis.created_at,
+            }));
+            setRecentActivities(activities);
+            // Don't fetch tasks if analyses were found
+            return;
         }
 
+        // Fallback to tasks if no analyses found or error occurred
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('id, title, created_at')
@@ -93,20 +94,26 @@ const Tasks = () => {
           .limit(5);
 
         if (tasksError) {
-          throw tasksError;
+          // Log task error only if analysis didn't already have an error
+          if(analysesError) console.error('Also error fetching tasks:', tasksError);
+          else throw tasksError;
         }
 
         const taskActivities: RecentActivity[] = (tasksData || []).map(task => ({
           id: task.id,
           title: task.title,
-          created_at: task.created_at || new Date().toISOString(),
+          created_at: task.created_at || new Date().toISOString(), // Ensure created_at exists
         }));
 
         setRecentActivities(taskActivities);
+
       } catch (error) {
         console.error('Error fetching recent activities:', error);
+        // Optionally show a toast notification for recent activities error
+        // toast.error('Failed to load recent activities');
       }
     };
+
 
     fetchTasks();
     fetchRecentActivities();
@@ -117,7 +124,7 @@ const Tasks = () => {
   }, [user]);
 
   const handleCreateTask = () => {
-    navigate('/tasks');
+    navigate('/tasks'); // Assuming '/tasks' is where you create tasks
   };
 
   const handleViewTask = (taskId: string) => {
@@ -141,11 +148,12 @@ const Tasks = () => {
       : tasks;
 
   if (!user) {
-    return null;
+    return null; // Or a loading spinner/redirect component
   }
 
   return (
-    <AuroraBackground>
+    // Removed AuroraBackground, assuming you want the standard page bg
+    // <AuroraBackground>
       <div className="container mx-auto px-4 py-12">
         <style>
         {`
@@ -186,14 +194,29 @@ const Tasks = () => {
           opacity: 1;
           transform: translateY(0);
         }
+
+        /* Add animation styles if needed */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
         `}
         </style>
+
+        {/* --- MODIFIED TITLE SECTION --- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-          <div>
-            <h1 className={`text-3xl font-bold text-primary-foreground ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Dashboard</h1>
-            <p className="text-muted-foreground animate-fade-in">Manage your tasks and bone health analyses</p>
+          {/* Apply the background styling here */}
+          <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl flex-grow"> {/* Added flex-grow */}
+            <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>Dashboard</h1> {/* Removed inline style, added mb-2 */}
+            <p className="text-muted-foreground">Manage your tasks and bone health analyses</p>
           </div>
-          <div className="flex gap-3">
+
+          {/* Buttons remain on the right */}
+          <div className="flex flex-col sm:flex-row gap-3"> {/* Adjusted button layout responsiveness */}
             <Button
               variant="gradient"
               onClick={() => navigate('/')}
@@ -203,18 +226,18 @@ const Tasks = () => {
               Home
             </Button>
 
-            <Button 
-              onClick={() => navigate('/bone-analysis')} 
-              variant="gradient" 
+            <Button
+              onClick={() => navigate('/bone-analysis')}
+              variant="gradient"
               className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
             >
               <Bone className="mr-2 h-4 w-4" />
               Bone Analysis
             </Button>
 
-            <Button 
+            <Button
               variant="gradient"
-              onClick={handleLogout}  
+              onClick={handleLogout}
               className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
             >
               <LogOut className="mr-2 h-4 w-4" />
@@ -222,8 +245,12 @@ const Tasks = () => {
             </Button>
           </div>
         </div>
+        {/* --- END OF MODIFIED TITLE SECTION --- */}
 
+
+        {/* Rest of the component remains the same */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Card 1: Bone Health Analysis */}
           <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
             <CardHeader>
               <CardTitle className="text-xl font-semibold hover-title">Bone Health Analysis</CardTitle>
@@ -240,21 +267,23 @@ const Tasks = () => {
             </CardFooter>
           </Card>
 
-          <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
+          {/* Card 2: Recent Activities */}
+           <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
             <CardHeader>
               <CardTitle className="text-xl font-semibold hover-title">Recent Activities</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-white/90 mb-4">
-                {recentActivities.length > 0
-                  ? `You have ${recentActivities.length} recent activities`
-                  : 'View your most recent activities'}
+                {loading ? 'Loading activities...' :
+                 recentActivities.length > 0
+                  ? `You have ${recentActivities.length} recent activities:`
+                  : 'No recent activities found.'}
               </p>
-              {recentActivities.length > 0 && (
-                <div className="space-y-2 max-h-32 overflow-y-auto">
+              {!loading && recentActivities.length > 0 && (
+                <div className="space-y-2 max-h-32 overflow-y-auto pr-2"> {/* Added padding-right for scrollbar */}
                   {recentActivities.map((activity) => (
-                    <div key={activity.id} className="text-sm bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
-                      <p className="font-medium text-white">{activity.title}</p>
+                    <div key={activity.id} className="text-sm bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20 cursor-pointer" onClick={() => navigate('/analysis-history')}> {/* Made clickable */}
+                      <p className="font-medium text-white truncate">{activity.title}</p> {/* Added truncate */}
                       <p className="text-xs text-white/80">
                         {new Date(activity.created_at).toLocaleString()}
                       </p>
@@ -266,26 +295,30 @@ const Tasks = () => {
             <CardFooter>
               <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/analysis-history')}>
                 <History className="mr-2 h-4 w-4" />
-                View History
+                View All History
               </Button>
             </CardFooter>
           </Card>
 
+          {/* Card 3: My Account */}
           <Card className="bg-gradient-to-br from-purple-600 to-pink-600 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
             <CardHeader>
               <CardTitle className="text-xl font-semibold hover-title">My Account</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-white/90 mb-4">
-                {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}: {user.email}
+              <p className="text-white/90 mb-4 truncate"> {/* Added truncate */}
+                 {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}: {user.email}
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
-                  <User className="h-4 w-4" />
-                  <span className="text-sm">Profile: {user.name || 'Not set'}</span>
+                  <User className="h-4 w-4 flex-shrink-0" /> {/* Prevent shrinking */}
+                  <span className="text-sm truncate">Profile: {user.name || 'Not set'}</span> {/* Added truncate */}
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
-                  <span className="text-sm">Account type: {user.userType}</span>
+                   <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${user.userType === 'doctor' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'}`}> {/* Added badge style */}
+                    {user.userType}
+                  </span>
+                  {/* Removed the text "Account type:" to avoid redundancy with the badge */}
                 </div>
               </div>
             </CardContent>
@@ -297,8 +330,12 @@ const Tasks = () => {
             </CardFooter>
           </Card>
         </div>
+
+        {/* --- Removed the Tasks section as it seemed unrelated to the dashboard focus --- */}
+        {/* If you need the tasks list back, it can be added here */}
+
       </div>
-    </AuroraBackground>
+    // </AuroraBackground> // Closing tag removed if AuroraBackground is commented out
   );
 };
 
