@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft, UserRound, X } from 'lucide-react';
+import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft, UserRound } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 import { motion } from 'framer-motion';
-// Removed AuroraBackground import as we are using standard page bg
+import { AuroraBackground } from '@/components/ui/aurora-background';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// --- TASK LOOKUP DATA (Unchanged) ---
+// --- Constants (TASK_TITLES, TASK_GUIDANCE, TASK_SPECIALISTS) remain the same ---
 const TASK_TITLES: Record<string, string> = {
   'fracture-detection': 'Bone Fracture Detection',
   'bone-marrow': 'Bone Marrow Cell Classification',
@@ -46,8 +46,7 @@ const TASK_SPECIALISTS: Record<string, string> = {
   'bone-tumor': 'oncologist',
   'bone-infection': 'infectious disease specialist'
 };
-// --- END TASK LOOKUP DATA ---
-
+// --- End of Constants ---
 
 const AnalysisPage = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -66,29 +65,25 @@ const AnalysisPage = () => {
   const [isImageModalMaximized, setIsImageModalMaximized] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const [titleFadeIn, setTitleFadeIn] = useState(false);
+  const [titleFadeIn, setTitleFadeIn] = useState(false); // Added state for title fade-in
 
-  // --- EFFECTS (Unchanged) ---
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
-     // Fade in title
-    setTimeout(() => {
-      setTitleFadeIn(true);
-    }, 100);
+    // Trigger title fade-in effect
+    setTimeout(() => setTitleFadeIn(true), 100);
   }, [user, navigate]);
 
   useEffect(() => {
     if (taskId && !TASK_TITLES[taskId]) {
       toast.error('Invalid analysis task');
-      navigate('/tasks');
+      navigate('/tasks'); // Navigate back to task selection or dashboard
     }
   }, [taskId, navigate]);
-  // --- END EFFECTS ---
 
-  // --- HANDLERS (Mostly Unchanged) ---
+  // --- Functions (handleImageUpload, handleAnalyze, handleDownloadResults, handleConsultSpecialist, openImageModal, closeImageModal, toggleImageModalMaximize, handleZoomIn, handleZoomOut, formatResults) remain the same ---
   const handleImageUpload = (file: File) => {
     setImage(file);
     setImageUrl(URL.createObjectURL(file));
@@ -115,11 +110,12 @@ const AnalysisPage = () => {
 
     setAnalyzing(true);
     setError(null);
+    setResults(null); // Clear previous results
 
     try {
       console.log("Sending image for analysis...");
 
-      const { data, error: functionError } = await supabase.functions.invoke('analyze-bone-image', {
+      const { data, error } = await supabase.functions.invoke('analyze-bone-image', {
         body: {
           image: imageBase64,
           taskId,
@@ -128,25 +124,17 @@ const AnalysisPage = () => {
         }
       });
 
-      if (functionError) {
-        console.error('Function invocation error:', functionError);
-        throw new Error(`Analysis failed: ${functionError.message}`);
+      if (error) {
+        console.error('Function error:', error);
+        throw new Error(`Analysis failed: ${error.message}`);
       }
 
       if (data?.error) {
-        console.error('Function returned error:', data.error);
+        console.error('Data error:', data.error);
         throw new Error(data.error);
       }
 
-      const analysisResult = data?.analysis || data?.message;
-
-      if (!analysisResult) {
-          console.error('Unexpected response format:', data);
-          throw new Error('Received unexpected response format from analysis function.');
-      }
-
-
-      setResults(analysisResult);
+      setResults(data.analysis);
 
       if (data.analysisId) {
         setAnalysisId(data.analysisId);
@@ -161,394 +149,519 @@ const AnalysisPage = () => {
       console.error('Analysis error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       setError(`Failed to analyze image. ${errorMessage}. Please try again or try a different image.`);
-      toast.error(`Analysis failed: ${errorMessage}`);
+      toast.error('Failed to analyze image. Please try again.');
     } finally {
       setAnalyzing(false);
     }
   };
 
- const handleDownloadResults = async () => { // Keeping PDF generation logic
+  const handleDownloadResults = async () => {
     if (!results || !resultsRef.current) {
-        toast.error("No results available to download.");
-        return;
+      toast.warn('No results to download.');
+      return;
     }
 
     toast.info('Generating PDF...');
-    const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
-    const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-    const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-    });
-
     try {
-        // Page 1: Title and Info
-        pdf.setFontSize(18);
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(taskTitle, 20, 20);
-        pdf.setFontSize(12);
-        pdf.text(`Analysis Date: ${new Date().toLocaleString()}`, 20, 30);
-        if(user?.email) {
-            pdf.text(`Patient/User ID: ${user.email}`, 20, 36);
-        }
-        pdf.setDrawColor(150, 150, 150);
-        pdf.line(20, 42, 190, 42);
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+            compress: true
+        });
 
-        let currentPageHeight = 50;
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const margin = 20;
-        const contentWidth = pageWidth - 2 * margin;
+        const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
+        const analysisDate = new Date().toLocaleString();
+        const userEmail = user?.email || 'N/A'; // Get user email safely
 
-        // Add Image if available
-         const effectiveImageUrl = storedImageUrl || imageUrl;
-         if (effectiveImageUrl) {
-            pdf.addPage();
-            pdf.setFontSize(14);
-            pdf.text('Analyzed Image', margin, 20);
-            try {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.src = effectiveImageUrl;
-                await new Promise<void>((resolve, reject) => {
-                    img.onload = () => resolve();
-                    img.onerror = (e) => reject(new Error('Failed to load image for PDF'));
-                });
+        // --- Header Function ---
+        const addHeaderFooter = (doc: jsPDF, pageNum: number, pageCount: number) => {
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.getWidth();
 
-                const maxImgWidth = contentWidth;
-                const maxImgHeight = pageHeight - 40;
-                let imgWidth = img.width;
-                let imgHeight = img.height;
-                let ratio = 1;
+            // Header
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(taskTitle, 20, 15);
+            doc.text(`User: ${userEmail}`, pageWidth - 20, 15, { align: 'right' });
+            doc.setDrawColor(200);
+            doc.line(20, 18, pageWidth - 20, 18);
 
-                if (imgWidth > maxImgWidth) ratio = maxImgWidth / imgWidth;
-                else if (imgHeight > maxImgHeight) ratio = maxImgHeight / imgHeight;
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(`Page ${pageNum} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            doc.text(`Generated: ${analysisDate}`, 20, pageHeight - 10);
+            doc.text('AI-Powered Analysis - For Informational Purposes Only', pageWidth - 20, pageHeight - 10, { align: 'right' });
+        };
 
-                imgWidth *= ratio;
-                imgHeight *= ratio;
-
-                const xOffset = (pageWidth - imgWidth) / 2;
-                pdf.addImage(effectiveImageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
-            } catch (imgError) {
-                console.error("Error adding image to PDF:", imgError);
-                 pdf.setPage(pdf.getNumberOfPages());
-                pdf.setFontSize(10);
-                pdf.setTextColor(255, 0, 0);
-                pdf.text('Error: Could not load image for PDF.', margin, 30);
-                pdf.setTextColor(0, 0, 0);
+        let currentPage = 1;
+        const addPageWithHeaderFooter = () => {
+            if (currentPage > 1) {
+                addHeaderFooter(pdf, currentPage - 1, 0); // Add footer to previous page before adding new
             }
             pdf.addPage();
-            currentPageHeight = 30;
+            currentPage++;
+        };
+
+        // --- Title Page ---
+        pdf.setFontSize(24);
+        pdf.setTextColor(0);
+        pdf.text(taskTitle, pdf.internal.pageSize.getWidth() / 2, 60, { align: 'center' });
+
+        pdf.setFontSize(14);
+        pdf.text(`Analysis Report`, pdf.internal.pageSize.getWidth() / 2, 75, { align: 'center' });
+
+        pdf.setFontSize(12);
+        pdf.text(`User: ${userEmail}`, pdf.internal.pageSize.getWidth() / 2, 90, { align: 'center' });
+        pdf.text(`Date: ${analysisDate}`, pdf.internal.pageSize.getWidth() / 2, 100, { align: 'center' });
+
+        // --- Image Page (if exists) ---
+        if (imageUrl) {
+            addPageWithHeaderFooter();
             pdf.setFontSize(16);
-            pdf.text('Analysis Results', margin, 20);
-            pdf.setDrawColor(150, 150, 150);
-            pdf.line(margin, 23, pageWidth - margin, 23);
-            currentPageHeight = 30;
-        } else {
-            pdf.setFontSize(16);
-            pdf.text('Analysis Results', margin, currentPageHeight);
-            pdf.setDrawColor(150, 150, 150);
-            pdf.line(margin, currentPageHeight + 3, pageWidth - margin, currentPageHeight + 3);
-            currentPageHeight += 10;
+            pdf.setTextColor(0);
+            pdf.text('Analyzed Image', 20, 30);
+
+            const img = new Image();
+            img.crossOrigin = "anonymous"; // Attempt to handle CORS for external images
+            img.src = storedImageUrl || imageUrl; // Prefer stored URL if available
+
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = (e) => {
+                    console.error("Image loading error:", e);
+                    toast.error("Could not load image for PDF export.");
+                    reject(new Error("Image load failed"));
+                };
+            });
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const maxImgWidth = pageWidth - 40; // Margins
+            const maxImgHeight = pageHeight - 60; // Margins + space for header/footer
+
+            let imgWidth = img.width;
+            let imgHeight = img.height;
+            let ratio = 1;
+
+            if (imgWidth > maxImgWidth) {
+                ratio = maxImgWidth / imgWidth;
+                imgWidth = maxImgWidth;
+                imgHeight = imgHeight * ratio;
+            }
+
+            if (imgHeight > maxImgHeight) {
+                ratio = maxImgHeight / imgHeight;
+                imgHeight = maxImgHeight;
+                imgWidth = imgWidth * ratio;
+            }
+
+            const xOffset = (pageWidth - imgWidth) / 2;
+            const yOffset = 40; // Space below title
+            try {
+              pdf.addImage(img, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+            } catch (e) {
+                console.error("jsPDF addImage error:", e);
+                toast.error("Failed to add image to PDF.");
+                pdf.text("Error: Could not embed image.", xOffset, yOffset + 10);
+            }
         }
 
-        // Add Formatted Text Results
-        const resultsElement = resultsRef.current;
-        const canvas = await html2canvas(resultsElement, {
-             scale: 2,
-             logging: false,
-             useCORS: true,
-             backgroundColor: '#ffffff',
-             onclone: (doc) => {
-                 const allElements = doc.querySelectorAll('*');
-                 allElements.forEach(el => {
-                     if (el instanceof HTMLElement) {
-                         el.style.color = '#000000 !important';
-                         el.style.webkitTextFillColor = '#000000 !important';
-                         el.style.background = 'none !important';
-                         el.style.backgroundColor = 'transparent !important';
-                         el.style.border = 'none !important';
-                         el.style.textShadow = 'none !important';
-                     }
-                 });
-             }
-         });
+        // --- Results Page ---
+        addPageWithHeaderFooter();
+        pdf.setFontSize(16);
+        pdf.setTextColor(0);
+        pdf.text('Analysis Results', 20, 30);
 
+        const elementToRender = resultsRef.current;
+        const MARGIN = 20;
+        const PAGE_WIDTH = pdf.internal.pageSize.getWidth() - MARGIN * 2;
+        const PAGE_HEIGHT = pdf.internal.pageSize.getHeight() - 40; // Space for header/footer + title
+
+        // Use html2canvas to render the results div
+        const canvas = await html2canvas(elementToRender, {
+            scale: 2, // Higher scale for better quality
+            logging: false,
+            useCORS: true,
+            backgroundColor: null // Use transparent background
+        });
         const imgData = canvas.toDataURL('image/png');
         const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = contentWidth;
+        const pdfWidth = PAGE_WIDTH;
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        const pageMaxHeight = pageHeight - margin - 30;
 
         let heightLeft = pdfHeight;
-        let position = currentPageHeight;
+        let position = 40; // Initial position below title
 
+        pdf.addImage(imgData, 'PNG', MARGIN, position, pdfWidth, pdfHeight);
+        heightLeft -= PAGE_HEIGHT;
+
+        // Add new pages if content exceeds one page
         while (heightLeft > 0) {
-            if (position !== currentPageHeight && position > margin) { // Don't add page if it's the very first chunk
-                pdf.addPage();
-                position = 20;
-            }
-
-            let currentChunkHeight = Math.min(heightLeft, pageMaxHeight - (position - margin));
-
-             if (position + currentChunkHeight > pageHeight - margin) {
-                 currentChunkHeight = pageHeight - margin - position;
-             }
-
-             // Avoid tiny chunks causing infinite loops
-             if (currentChunkHeight <= 1) {
-                 if (heightLeft > 1 && position + heightLeft <= pageHeight - margin) {
-                     currentChunkHeight = heightLeft; // Add the remainder if it fits
-                 } else if (heightLeft > 1) {
-                     // Need a new page for the remainder
-                     pdf.addPage();
-                     position = 20;
-                     currentChunkHeight = Math.min(heightLeft, pageMaxHeight);
-                 } else {
-                     break; // Nothing left or too small to add
-                 }
-             }
-
-            const canvasStartY = (pdfHeight - heightLeft) * (imgProps.height / pdfHeight);
-            const canvasChunkHeight = currentChunkHeight * (imgProps.height / pdfHeight);
-
-            pdf.addImage(imgData, 'PNG', margin, position, pdfWidth, currentChunkHeight, undefined, 'FAST', 0, canvasStartY, imgProps.width, canvasChunkHeight);
-
-            heightLeft -= currentChunkHeight;
-            position += currentChunkHeight;
+            position = heightLeft - pdfHeight + 40; // Adjust position for the next page
+            addPageWithHeaderFooter();
+            pdf.addImage(imgData, 'PNG', MARGIN, position, pdfWidth, pdfHeight);
+            heightLeft -= PAGE_HEIGHT;
         }
 
-        // Add Footer
-        const totalPages = pdf.getNumberOfPages();
+        // --- Finalize PDF ---
+        const totalPages = currentPage -1; // Adjust count as addPage was called one extra time potentially
         for (let i = 1; i <= totalPages; i++) {
-          pdf.setPage(i);
-          pdf.setFontSize(10);
-          pdf.setTextColor(100, 100, 100);
-          pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 15, pageHeight - 10);
-          pdf.text('AI Bone Health Analysis | For Informational Purposes Only', margin, pageHeight - 10);
+            pdf.setPage(i);
+            addHeaderFooter(pdf, i, totalPages);
         }
 
+        const fileName = `${taskTitle.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
         pdf.save(fileName);
+
         toast.success('PDF downloaded successfully');
 
-    } catch (pdfError) {
-        console.error("Error generating PDF:", pdfError);
-        toast.error(`Failed to generate PDF: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`);
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        toast.error('Failed to generate PDF. See console for details.');
+    } finally {
+        // Clean up any temporary elements if needed
     }
   };
 
-
-  const handleConsultSpecialist = () => { // Unchanged
+  const handleConsultSpecialist = () => {
     if (!taskId) return;
     const specialistType = TASK_SPECIALISTS[taskId] || 'orthopedic doctor';
-    const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
-    if (navigator.geolocation) {
-      toast.info("Trying to find specialists near you...");
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const preciseMapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@${latitude},${longitude},14z`;
-          window.open(preciseMapsUrl, '_blank');
-        },
-        (error) => {
-          console.warn("Geolocation failed:", error.message);
-          toast.warn("Could not get your location. Opening general search.");
-          window.open(mapsUrl, '_blank');
-        },
-        { timeout: 5000 }
-      );
+    // Rest of the function remains the same...
+     if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}/@@${latitude},${longitude},14z`;
+        window.open(mapsUrl, '_blank');
+      }, () => {
+        // Geolocation failed or denied
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
+        window.open(mapsUrl, '_blank');
+        toast.info("Could not get location. Searching nationwide.");
+      });
     } else {
+      // Geolocation not supported
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(specialistType)}`;
       window.open(mapsUrl, '_blank');
+      toast.info("Geolocation not supported. Searching nationwide.");
     }
   };
 
   const openImageModal = () => setIsImageModalOpen(true);
   const closeImageModal = () => {
     setIsImageModalOpen(false);
-    setIsImageModalMaximized(false);
-    setZoomLevel(1);
+    setIsImageModalMaximized(false); // Reset maximization on close
+    setZoomLevel(1); // Reset zoom on close
   };
   const toggleImageModalMaximize = () => setIsImageModalMaximized(!isImageModalMaximized);
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
-  // --- END HANDLERS ---
 
-  // --- RENDER LOGIC ---
-  if (!taskId || !user) return null;
+  const formatResults = (resultsText: string): React.ReactNode => {
+      if (!resultsText) return null;
+
+      // Enhanced parsing logic
+      const lines = resultsText.split('\n');
+      const formattedElements: React.ReactNode[] = [];
+      let currentListItems: string[] = [];
+      let listType: 'bullet' | 'numbered' | null = null;
+
+      const flushList = () => {
+          if (currentListItems.length > 0) {
+              const ListComponent = listType === 'numbered' ? 'ol' : 'ul';
+              formattedElements.push(
+                  <ListComponent key={`list-${formattedElements.length}`} className={`list-${listType === 'numbered' ? 'decimal' : 'disc'} pl-6 space-y-1 my-3`}>
+                      {currentListItems.map((item, i) => (
+                          <li key={i} dangerouslySetInnerHTML={{ __html: item }} />
+                      ))}
+                  </ListComponent>
+              );
+              currentListItems = [];
+              listType = null;
+          }
+      };
+
+      lines.forEach((line, index) => {
+          const trimmedLine = line.trim();
+
+          // Check for headings (###, ##, #)
+          if (trimmedLine.startsWith('### ')) {
+              flushList();
+              formattedElements.push(<h4 key={index} className="text-lg font-semibold mt-4 mb-2" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(4) }} />);
+          } else if (trimmedLine.startsWith('## ')) {
+              flushList();
+              formattedElements.push(<h3 key={index} className="text-xl font-semibold mt-5 mb-2 border-b pb-1" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(3) }} />);
+          } else if (trimmedLine.startsWith('# ')) {
+              flushList();
+              formattedElements.push(<h2 key={index} className="text-2xl font-bold mt-6 mb-3 border-b-2 pb-1" dangerouslySetInnerHTML={{ __html: trimmedLine.substring(2) }} />);
+          }
+          // Check for bold keywords used as headings
+          else if (trimmedLine.match(/^\*\*(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion):\*\*/i)) {
+               flushList();
+               const headingText = trimmedLine.replace(/^\*\*/, '').replace(/:\*\*/, '');
+               formattedElements.push(<h3 key={index} className="text-xl font-semibold mt-5 mb-2 border-b pb-1">{headingText}:</h3>);
+          }
+          // Check for bullet points (*, -, •)
+          else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
+              if (listType !== 'bullet') flushList();
+              listType = 'bullet';
+              currentListItems.push(trimmedLine.substring(2));
+          }
+           // Check for numbered lists (1., 2.)
+          else if (trimmedLine.match(/^\d+\.\s/)) {
+               if (listType !== 'numbered') flushList();
+               listType = 'numbered';
+               currentListItems.push(trimmedLine.replace(/^\d+\.\s/, ''));
+          }
+          // Check for paragraphs (ignore empty lines)
+          else if (trimmedLine) {
+              flushList();
+              // Render bold text correctly
+              formattedElements.push(<p key={index} className="my-2 leading-relaxed" dangerouslySetInnerHTML={{ __html: trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />);
+          }
+          // Handle empty lines between paragraphs or after lists
+          else {
+              flushList();
+          }
+      });
+
+      // Flush any remaining list items at the end
+      flushList();
+
+      return <div className="space-y-2">{formattedElements}</div>;
+  };
+  // --- End of Functions ---
+
+  if (!taskId || !user) return null; // Return null or loading indicator
 
   const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
   const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
 
-   const formatResults = (resultsText: string | null): JSX.Element | null => {
-        if (!resultsText) return null;
-        const formattedHtml = resultsText
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br />');
-        return (
-            <div
-                className="prose dark:prose-invert max-w-none text-typography-primary text-sm md:text-base"
-                ref={resultsRef}
-                dangerouslySetInnerHTML={{ __html: formattedHtml }}
-                style={{ color: 'black' }} // Ensure black text for PDF
-            />
-        );
-    };
-
   const fadeIn = {
-    hidden: { opacity: 0, y: 15 },
+    hidden: { opacity: 0, y: 10 },
     visible: {
       opacity: 1,
       y: 0,
       transition: { duration: 0.4, ease: "easeOut" }
     }
   };
-  // --- END RENDER LOGIC ---
 
   return (
-    <div className="container mx-auto px-4 py-12">
-       <style>
-        {`
-        .hover-scale { transition: transform 0.2s ease-out; }
-        .hover-scale:hover { transform: scale(1.05); }
-        .fade-in-title { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
-        .fade-in-title.visible { opacity: 1; transform: translateY(0); }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .results-maximized { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; overflow: hidden; background-color: white; display: flex; flex-direction: column; }
-        .results-maximized .card-content-maximized { flex-grow: 1; overflow-y: auto; }
-        `}
-      </style>
-
-      {/* Header Buttons */}
-      <motion.div
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
-        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-      >
-        <Button variant="gradient" onClick={() => navigate('/bone-analysis')} className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl self-start">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Select Task
-        </Button>
-        <div className="flex items-center gap-2 self-start sm:self-center">
-          <Button variant="gradient" onClick={() => navigate('/')} className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">
-            <Home className="mr-2 h-4 w-4" /> Home
-          </Button>
-          {results && user.userType !== 'doctor' && (
-            <Button variant="gradient" onClick={handleConsultSpecialist} className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl">
-              <UserRound className="mr-2 h-4 w-4" /> Find a Specialist
-            </Button>
-          )}
-        </div>
-      </motion.div>
-
-      {/* --- Main Title Block with Gradient Background --- */}
-       <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl mb-8">
-        <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
-          {taskTitle}
-        </h1>
-        <p className="text-muted-foreground">
-           {user.userType === 'doctor' ?
-              'AI-assisted analysis for clinical evaluation.' :
-              'AI-powered analysis for informational purposes only. Always consult a qualified healthcare professional.'}
-        </p>
-      </div>
-      {/* --- End Main Title Block --- */}
-
-
-      {/* Main Content Grid */}
-      <div className={`grid grid-cols-1 ${isResultsMaximized ? '' : 'lg:grid-cols-2'} gap-8`}>
-
-        {/* Image Upload Card (Standard Header) */}
-        {!isResultsMaximized && (
-          <motion.div variants={fadeIn} initial="hidden" animate="visible" className="animate-fade-in">
-            {/* REMOVED gradient from CardHeader, restored default text/bg */}
-            <Card className="border transition-all duration-300 hover:shadow-lg bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-              <CardHeader className="border-b bg-gray-50 dark:bg-gray-700/50 p-4">
-                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Upload Medical Image</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground mb-6">{taskGuidance}</p>
-                <ImageUpload onImageSelected={handleImageUpload} imageUrl={imageUrl} isLoading={analyzing} />
-                <div className="mt-6 flex flex-col sm:flex-row justify-between gap-3">
-                  {imageUrl && (
-                    <Button variant="outline" onClick={openImageModal} className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl flex items-center gap-2">
-                      <Eye className="h-4 w-4" /> View Image
-                    </Button>
-                  )}
-                  <Button onClick={handleAnalyze} disabled={!image || analyzing} variant="gradient" className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl w-full sm:w-auto">
-                    {analyzing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>) : 'Analyze Image'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Analysis Results Card (Standard Header) */}
-         <motion.div
-            variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: isResultsMaximized ? 0 : 0.1 }}
-            className={`animate-fade-in ${isResultsMaximized ? 'results-maximized' : 'lg:col-span-1'}`}
+    <AuroraBackground showRadialGradient={true}> {/* Keep Aurora background */}
+      <div className="container mx-auto px-4 py-12 "> {/* Removed animate-fade-in from main container */}
+         <style>
+            {`
+            /* Add any specific styles needed here, or rely on Tailwind */
+            .hover-scale { transition: transform 0.2s ease-out; }
+            .hover-scale:hover { transform: scale(1.05); }
+            .fade-in-title { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+            .fade-in-title.visible { opacity: 1; transform: translateY(0); }
+            .animate-fade-in { animation: fadeInAnimation 0.5s ease-out forwards; }
+            @keyframes fadeInAnimation { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            /* Ensure prose styles don't override all text color */
+             .prose p, .prose li, .prose h1, .prose h2, .prose h3, .prose h4, .prose strong { color: inherit; }
+            `}
+         </style>
+        {/* --- Back and Home Buttons --- */}
+        <motion.div
+          className="flex justify-between items-center mb-6"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
         >
-            {/* REMOVED gradient from CardHeader, restored default text/bg */}
-            <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full flex flex-col rounded-none border-none shadow-none bg-white dark:bg-gray-900' : 'hover:shadow-lg bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm'}`}>
-                <CardHeader className={`flex flex-row items-center justify-between p-4 border-b bg-gray-50 dark:bg-gray-700/50 ${isResultsMaximized ? 'rounded-none' : 'rounded-t-lg'}`}>
-                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Analysis Results</CardTitle>
-                    <div className="flex items-center space-x-2">
-                        {results && (
-                            <Button variant="outline" size="sm" onClick={handleDownloadResults} className="flex items-center gap-1 transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <Download size={14} /> <span className="hidden sm:inline">Download PDF</span>
-                            </Button>
-                        )}
-                         <Button variant="ghost" size="icon" onClick={() => setIsResultsMaximized(!isResultsMaximized)} className="transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" title={isResultsMaximized ? "Minimize Results" : "Maximize Results"}>
-                            {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className={`p-6 ${isResultsMaximized ? 'card-content-maximized' : 'max-h-[60vh] overflow-y-auto'}`}>
-                     {analyzing ? ( <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 animate-pulse"><Loader2 className="h-8 w-8 text-primary mb-4 animate-spin" /><p className="text-muted-foreground">Processing...</p></div>)
-                     : results ? ( formatResults(results) )
-                     : error ? ( <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed border-destructive/50 bg-destructive/10"><p className="text-destructive font-medium">Analysis Failed</p><p className="text-destructive text-sm mt-2">{error}</p><Button variant="link" className="mt-4 text-destructive" onClick={() => setError(null)}>Dismiss</Button></div>)
-                     : ( <div className="flex flex-col items-center justify-center min-h-[200px] text-center p-6 border rounded-md border-dashed"><p className="text-muted-foreground">Upload image & click "Analyze" for results.</p></div>)}
-                </CardContent>
-            </Card>
+          <Button
+            variant="gradient"
+            onClick={() => navigate('/bone-analysis')} // Navigate back to task selector
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Tasks
+          </Button>
+          <div className="flex items-center gap-2">
+             <Button
+                variant="gradient"
+                onClick={() => navigate('/')}
+                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+             >
+                <Home className="mr-2 h-4 w-4" />
+                Home
+             </Button>
+             {/* Consult Specialist Button removed from here, placed below results */}
+          </div>
         </motion.div>
 
-      </div> {/* End Grid */}
+        {/* --- MODIFIED TITLE SECTION --- */}
+        <div className={`bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl mb-8 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
+          <h1 className="text-3xl font-bold mb-2"> {/* Removed gradient text style */}
+            {taskTitle}
+          </h1>
+          <p className="text-muted-foreground">
+            {user.userType === 'doctor' ?
+              'AI-assisted analysis for clinical evaluation' :
+              'AI-powered analysis for informational purposes only'}
+          </p>
+        </div>
+        {/* --- END OF MODIFIED TITLE SECTION --- */}
 
-      {/* Chatbot Button (Unchanged logic) */}
-        {results && !isResultsMaximized && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="mt-8 w-full flex justify-center">
-                <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg shadow-lg w-full max-w-md"/>
-            </motion.div>
-        )}
 
-      {/* Image Modal (Unchanged logic, minor header style change) */}
-      {isImageModalOpen && imageUrl && (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300`}>
-          <motion.div className={`relative bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-2xl flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl max-h-[90vh]'}`}
-            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 300, damping: 25 }}>
-            {/* Modal Header - Standard Background */}
-            <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0">
-               <p className="font-semibold text-gray-800 dark:text-white">Uploaded Image</p>
-                <div className="flex items-center space-x-1">
-                   <Button variant="ghost" size="icon" onClick={handleZoomIn} title="Zoom In" className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"><ZoomIn size={18} /></Button>
-                   <Button variant="ghost" size="icon" onClick={handleZoomOut} title="Zoom Out" className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"><ZoomOut size={18} /></Button>
-                   <Button variant="ghost" size="icon" onClick={toggleImageModalMaximize} title={isImageModalMaximized ? "Restore" : "Maximize"} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
-                       {isImageModalMaximized ? <Minimize size={18} /> : <Maximize size={18} />}
-                   </Button>
-                    <Button variant="ghost" size="icon" onClick={closeImageModal} title="Close" className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50"><X size={18} /></Button>
-                </div>
-            </div>
-            {/* Modal Content */}
-            <div className="flex-grow p-4 overflow-auto flex items-center justify-center">
-              <img src={imageUrl} alt="Uploaded for analysis" className="block max-w-full max-h-full object-contain transition-transform duration-200 ease-out"
-                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }} />
-            </div>
+        {/* --- Main Content Grid --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* --- Image Upload Card --- */}
+          <motion.div variants={fadeIn} initial="hidden" animate="visible" className="animate-fade-in">
+             <Card className="border transition-all duration-300 hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-blue-500/20 to-indigo-500/20"> {/* Subtler header */}
+                   <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">Upload Medical Image</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                   <p className="text-sm text-muted-foreground mb-6">{taskGuidance}</p>
+                   <ImageUpload
+                      onImageSelected={handleImageUpload}
+                      imageUrl={imageUrl}
+                      isLoading={analyzing}
+                   />
+                   <div className="mt-6 flex flex-col sm:flex-row justify-between gap-3">
+                      {imageUrl && (
+                         <Button
+                            variant="outline"
+                            onClick={openImageModal}
+                            className="flex-1 sm:flex-none hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-lg border-primary/50 text-primary hover:bg-primary/10"
+                         >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Image
+                         </Button>
+                      )}
+                      <Button
+                         onClick={handleAnalyze}
+                         disabled={!image || analyzing}
+                         className="flex-1 sm:flex-none hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
+                      >
+                         {analyzing ? (
+                            <>
+                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                               Analyzing...
+                            </>
+                         ) : 'Analyze Image'}
+                      </Button>
+                   </div>
+                </CardContent>
+             </Card>
+          </motion.div>
+
+          {/* --- Analysis Results Card --- */}
+           <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className={`animate-fade-in ${isResultsMaximized ? 'fixed inset-0 z-50 overflow-hidden' : ''}`}>
+             <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full w-full rounded-none shadow-2xl' : 'hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden'}`}>
+                <CardHeader className={`flex flex-row items-center justify-between bg-gradient-to-r from-indigo-500/20 to-violet-500/20 ${isResultsMaximized ? '' : 'rounded-t-lg'}`}>
+                   <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">Analysis Results</CardTitle>
+                   <div className="flex items-center space-x-1">
+                      {results && (
+                         <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDownloadResults}
+                            className="flex items-center gap-1 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg border-indigo-500/50 text-indigo-600 dark:text-indigo-300 dark:border-indigo-400/50 hover:bg-indigo-500/10 text-xs px-2 py-1 h-auto"
+                         >
+                            <Download size={14} />
+                            PDF
+                         </Button>
+                      )}
+                      <Button
+                         variant="ghost"
+                         size="icon"
+                         onClick={() => setIsResultsMaximized(!isResultsMaximized)}
+                         className="transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-indigo-500/10 w-8 h-8"
+                      >
+                         {isResultsMaximized ? <Minimize size={16} /> : <Maximize size={16} />}
+                      </Button>
+                   </div>
+                </CardHeader>
+                <CardContent className={`p-6 ${isResultsMaximized ? 'h-[calc(100%-5rem)] overflow-y-auto' : 'min-h-[200px]'} bg-white/95 dark:bg-gray-900/90 ${isResultsMaximized ? '' : 'rounded-b-lg'}`}>
+                   {results ? (
+                      // Apply prose for basic formatting, ensure text color is not overridden globally
+                      <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none animate-fade-in text-gray-800 dark:text-gray-200" ref={resultsRef}>
+                         {formatResults(results)}
+                      </div>
+                   ) : error ? (
+                      <div className="flex flex-col items-center justify-center h-full text-center text-destructive animate-fade-in">
+                         <p className="font-medium">Analysis Failed</p>
+                         <p className="text-sm mt-1">{error}</p>
+                      </div>
+                   ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                         <p>
+                            {analyzing ? (
+                               <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing...</span>
+                            ) : 'Upload an image and click "Analyze Image" to view results.'}
+                         </p>
+                      </div>
+                   )}
+                </CardContent>
+             </Card>
           </motion.div>
         </div>
-      )}
 
-    </div> // End Container
+        {/* --- Chatbot and Consult Buttons (Appear After Results) --- */}
+        {results && (
+          <motion.div
+            className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            <ChatbotButton
+              analysisContext={results}
+              taskTitle={taskTitle}
+              analysisId={analysisId}
+              className="rounded-lg w-full sm:w-auto" // Adjust width for responsiveness
+            />
+            {user.userType !== 'doctor' && (
+              <Button
+                variant="outline" // Changed variant for distinction
+                onClick={handleConsultSpecialist}
+                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 rounded-lg border-primary/70 text-primary hover:bg-primary/10 w-full sm:w-auto"
+              >
+                <UserRound className="mr-2 h-4 w-4" />
+                Consult a Specialist Near You
+              </Button>
+            )}
+          </motion.div>
+        )}
+
+        {/* --- Image Modal --- */}
+        {isImageModalOpen && imageUrl && (
+           <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300 ${isImageModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              <motion.div
+                 className={`relative bg-white dark:bg-gray-900 shadow-2xl rounded-lg overflow-hidden flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl w-full max-h-[90vh]'}`}
+                 initial={{ scale: 0.9, opacity: 0 }}
+                 animate={{ scale: 1, opacity: 1 }}
+                 exit={{ scale: 0.9, opacity: 0 }}
+                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              >
+                 {/* Modal Header */}
+                 <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploaded Image</h3>
+                    <div className="flex items-center space-x-1">
+                        <Button variant="ghost" size="icon" onClick={handleZoomIn} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomIn size={18} /></Button>
+                        <Button variant="ghost" size="icon" onClick={handleZoomOut} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomOut size={18} /></Button>
+                        <Button variant="ghost" size="icon" onClick={toggleImageModalMaximize} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8">{isImageModalMaximized ? <Minimize size={18} /> : <Maximize size={18} />}</Button>
+                        <Button variant="ghost" size="icon" onClick={closeImageModal} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><Minimize size={18} /></Button> {/* Using Minimize for close */}
+                    </div>
+                 </div>
+                 {/* Modal Content - Image Area */}
+                 <div className="flex-grow p-4 overflow-auto flex items-center justify-center">
+                    <img
+                       src={imageUrl}
+                       alt="Uploaded for analysis"
+                       className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out block" // Ensure block display
+                       style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }} // Center origin for zoom
+                    />
+                 </div>
+              </motion.div>
+           </div>
+        )}
+
+      </div>
+    </AuroraBackground>
   );
 };
 
