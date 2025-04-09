@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -170,12 +171,12 @@ const ResultsDisplay = ({
       const contentWidth = pdf.internal.pageSize.getWidth() - 40;
       const contentHeight = canvas.height * contentWidth / canvas.width;
       
-      const pageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
+      const totalPages = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
       
-      const imgPageHeight = canvas.height / pageCount;
-      const pdfPageHeight = contentHeight / pageCount;
+      const imgPageHeight = canvas.height / totalPages;
+      const pdfPageHeight = contentHeight / totalPages;
       
-      for (let i = 0; i < pageCount; i++) {
+      for (let i = 0; i < totalPages; i++) {
         if (i > 0) pdf.addPage();
         
         const sy = imgPageHeight * i;
@@ -202,12 +203,12 @@ const ResultsDisplay = ({
         }
       }
       
-      const pageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
+      const finalPageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= finalPageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
+        pdf.text(`Page ${i} of ${finalPageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
         pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
       }
       
@@ -280,9 +281,9 @@ const ResultsDisplay = ({
           </span>
           <Button 
             onClick={toggleChat}
-            variant="outline" 
+            variant="gradient" 
             size="sm" 
-            className="gap-2"
+            className="gap-2 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl"
           >
             <MessageCircle size={16} />
             Ask about results
@@ -348,7 +349,12 @@ const ResultsDisplay = ({
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={isWaitingForResponse}
                 />
-                <Button type="submit" disabled={isWaitingForResponse}>
+                <Button 
+                  type="submit" 
+                  disabled={isWaitingForResponse}
+                  variant="gradient"
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl"
+                >
                   Send
                 </Button>
               </form>
@@ -387,10 +393,15 @@ const ResultsDisplay = ({
             <Button
               variant="outline"
               onClick={() => setShareDialogOpen(false)}
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl"
             >
               Cancel
             </Button>
-            <Button onClick={handleShare} className="bg-gradient-to-r from-blue-500 to-indigo-600">
+            <Button 
+              onClick={handleShare} 
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600"
+              variant="gradient"
+            >
               Share
             </Button>
           </DialogFooter>

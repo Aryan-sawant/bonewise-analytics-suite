@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bone, PlusCircle, ArrowRight, Home, User, History, LogOut } from 'lucide-react';
+import { Bone, PlusCircle, ArrowRight, Home, User, History, LogOut, FileChart, Search, Calendar, Settings } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -146,48 +146,7 @@ const Tasks = () => {
 
   return (
     <AuroraBackground>
-      <div className="container mx-auto px-4 py-12">
-        <style>
-        {`
-        .hover-scale {
-          transition: transform 0.2s ease-out;
-        }
-
-        .hover-scale:hover {
-          transform: scale(1.05);
-        }
-
-        .hover-card {
-          transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
-        }
-
-        .hover-card:hover {
-          transform: translateZ(5px) translateY(-3px);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .hover-title {
-          transition: color 0.2s ease-out, text-decoration 0.2s ease-out;
-        }
-
-        .hover-title:hover {
-          color: var(--primary); /* Use primary color on hover */
-          text-decoration: underline;
-          text-underline-offset: 3px;
-        }
-
-        .fade-in-title {
-          opacity: 0;
-          transform: translateY(-10px);
-          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-
-        .fade-in-title.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        `}
-        </style>
+      <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className={`text-3xl font-bold text-primary-foreground ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Dashboard</h1>
@@ -232,6 +191,14 @@ const Tasks = () => {
               <p className="text-white/90 mb-4 text-base font-bold">
                 Access AI-powered bone health analysis tools
               </p>
+              <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg mb-3">
+                <FileChart className="h-4 w-4 text-white" />
+                <span className="text-sm">Create detailed analysis with our AI</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg">
+                <Search className="h-4 w-4 text-white" />
+                <span className="text-sm">Detect bone conditions accurately</span>
+              </div>
             </CardContent>
             <CardFooter>
               <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/bone-analysis')}>
@@ -250,7 +217,7 @@ const Tasks = () => {
                   ? `You have ${recentActivities.length} recent activities`
                   : 'View your most recent activities'}
               </p>
-              {recentActivities.length > 0 && (
+              {recentActivities.length > 0 ? (
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {recentActivities.map((activity) => (
                     <div key={activity.id} className="text-sm bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
@@ -260,6 +227,17 @@ const Tasks = () => {
                       </p>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg">
+                    <Calendar className="h-4 w-4 text-white" />
+                    <span className="text-sm">Past analyses will appear here</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg">
+                    <History className="h-4 w-4 text-white" />
+                    <span className="text-sm">Track your health progress</span>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -285,6 +263,7 @@ const Tasks = () => {
                   <span className="text-sm">Profile: {user.name || 'Not set'}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
+                  <Settings className="h-4 w-4" />
                   <span className="text-sm">Account type: {user.userType}</span>
                 </div>
               </div>
@@ -295,6 +274,66 @@ const Tasks = () => {
                 Account Settings
               </Button>
             </CardFooter>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="hover-card transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border border-gray-100 bg-white/90 backdrop-blur-sm animate-fade-in">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold hover-title">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button 
+                variant="gradient" 
+                className="w-full py-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl flex flex-col items-center justify-center"
+                onClick={() => navigate('/bone-analysis')}
+              >
+                <Bone className="h-8 w-8 mb-2" />
+                <span>Start New Analysis</span>
+              </Button>
+              
+              <Button 
+                variant="gradient" 
+                className="w-full py-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl flex flex-col items-center justify-center"
+                onClick={() => navigate('/analysis-history')}
+              >
+                <History className="h-8 w-8 mb-2" />
+                <span>View Analysis History</span>
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className="hover-card transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border border-gray-100 bg-white/90 backdrop-blur-sm animate-fade-in">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold hover-title">Need Help?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Consult with specialists or get support with our AI-powered tools
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                  onClick={() => {
+                    const mapsUrl = "https://www.google.com/maps/search/orthopedic+doctor+near+me";
+                    window.open(mapsUrl, '_blank');
+                  }}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Consult a Specialist
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                  onClick={() => navigate('/profile')}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Account Settings
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>

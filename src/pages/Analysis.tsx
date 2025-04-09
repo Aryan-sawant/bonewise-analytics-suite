@@ -5,6 +5,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { isDoctor } from '@/types/auth';
 import { AuroraBackground } from '@/components/ui/aurora-background';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Home } from 'lucide-react';
 
 const Analysis = () => {
   const { user } = useAuthContext();
@@ -172,19 +174,41 @@ const Analysis = () => {
   return (
     <AuroraBackground>
       <div className="container page-transition max-w-6xl py-16 px-4 md:px-6">
-        <motion.header 
-          className="mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            Select Analysis Type
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Choose the type of bone health analysis you want to perform
-          </p>
-        </motion.header>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <motion.header 
+            className="flex-1"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              Select Analysis Type
+            </h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Choose the type of bone health analysis you want to perform
+            </p>
+          </motion.header>
+          
+          <div className="flex gap-3">
+            <Button
+              variant="gradient"
+              onClick={() => navigate('/tasks')}
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            
+            <Button
+              variant="gradient"
+              onClick={() => navigate('/')}
+              className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Home
+            </Button>
+          </div>
+        </div>
 
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"

@@ -1,19 +1,19 @@
 
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Lock } from 'lucide-react';
 
 interface AnalysisCardProps {
   title: string;
   description: string;
   icon: React.ReactNode;
   path: string;
-  color?: string;
+  color: string;
   disabled?: boolean;
-  prompt?: string; // Add prompt prop
-  className?: string;
+  prompt?: string;
 }
 
 const AnalysisCard = ({
@@ -21,36 +21,54 @@ const AnalysisCard = ({
   description,
   icon,
   path,
-  color = "bg-primary/10 text-primary",
+  color,
   disabled = false,
-  prompt, // Include prompt in prop destructuring
-  className,
+  prompt
 }: AnalysisCardProps) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    if (disabled) return;
+    
+    if (prompt) {
+      // Store the prompt in localStorage to be used in the upload page
+      localStorage.setItem('analysisPrompt', prompt);
+    }
+    
+    navigate(path);
+  };
+
   return (
-    <Card className={cn("overflow-hidden transition-all duration-300 hover:shadow-md border", disabled && "opacity-60", className)}>
-      <CardHeader className="pb-3">
-        <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center mb-3", color)}>
+    <Card 
+      className={cn(
+        "hover-card transition-all duration-300 hover:shadow-xl transform hover:translate-z-0 hover:scale-103 border border-gray-100 bg-white/90 backdrop-blur-sm",
+        disabled && "opacity-60 cursor-not-allowed"
+      )}
+    >
+      <CardHeader className="pb-2">
+        <div className={cn("mb-2 p-2 rounded-lg inline-flex", color)}>
           {icon}
         </div>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="hover-title">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        <p>Upload an image for AI-powered analysis</p>
+      <CardContent>
+        {disabled && (
+          <div className="flex items-center text-sm text-muted-foreground bg-muted/20 p-2 rounded-md">
+            <Lock className="h-4 w-4 mr-2" />
+            <span>Coming soon</span>
+          </div>
+        )}
       </CardContent>
       <CardFooter>
-        {disabled ? (
-          <Button variant="secondary" className="w-full" disabled>
-            Coming Soon
-          </Button>
-        ) : (
-          <Link to={path} className="w-full">
-            <Button className="w-full gap-2 justify-between">
-              Start Analysis
-              <ArrowRight size={16} />
-            </Button>
-          </Link>
-        )}
+        <Button 
+          onClick={handleCardClick} 
+          disabled={disabled}
+          className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl"
+          variant="gradient"
+        >
+          {disabled ? "Coming Soon" : "Start Analysis"}
+        </Button>
       </CardFooter>
     </Card>
   );
