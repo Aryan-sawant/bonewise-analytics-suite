@@ -12,7 +12,8 @@ import {
   CalendarDays,
   Spline,
   Skull,
-  Microscope
+  Microscope,
+  ArrowLeft
 } from 'lucide-react';
 
 const TaskSelector = () => {
@@ -134,11 +135,12 @@ const TaskSelector = () => {
       </style>
       
       <Button
-        variant="outline"
+        variant="gradient"
         onClick={() => navigate('/tasks')}
-        className="mb-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white text-blue-500 border-blue-500 hover:bg-blue-500/10"
+        className="mb-6 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
       >
-        ← Back to Dashboard
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Dashboard
       </Button>
 
       <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Select Analysis Type</h1>

@@ -69,6 +69,27 @@ const ProfilePage = () => {
     navigate('/');
   };
 
+  const handleConsultSpecialist = () => {
+    // Use the user's current location to search for bone specialists in Google Maps
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        // Create Google Maps URL with search query for orthopedic doctors near me
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me/@${latitude},${longitude},14z`;
+        // Open in a new tab
+        window.open(mapsUrl, '_blank');
+      }, () => {
+        // If geolocation fails, open with just the search term
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
+        window.open(mapsUrl, '_blank');
+      });
+    } else {
+      // Fallback if geolocation is not supported
+      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
+      window.open(mapsUrl, '_blank');
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -124,17 +145,28 @@ const ProfilePage = () => {
           Back to Dashboard
         </Button>
 
-        <Button
-          variant="gradient"
-          onClick={handleGoToHome}
-          className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
-        >
-          <Home className="mr-2 h-4 w-4" />
-          Home
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            variant="gradient"
+            onClick={handleGoToHome}
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Button>
+          
+          <Button
+            variant="gradient"
+            onClick={handleConsultSpecialist}
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
+          >
+            <User className="mr-2 h-4 w-4" />
+            Consult a Specialist
+          </Button>
+        </div>
       </div>
 
-      <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>Account Settings</h1>
+      <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`} style={{ color: 'black' }}>Account Settings</h1>
       <p className="text-muted-foreground mb-8">
         Manage your account details and preferences
       </p>
@@ -228,7 +260,7 @@ const ProfilePage = () => {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={loading || !name.trim()}
-                  className="w-full md:w-auto hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
                 </Button>

@@ -104,6 +104,48 @@
   .page-transition {
     @apply animate-fade-in-up;
   }
+
+  .hover-scale {
+    transition: transform 0.2s ease-out;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  .hover-card {
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+  }
+
+  .hover-card:hover {
+    transform: translateZ(5px) translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .hover-title {
+    transition: color 0.2s ease-out, text-decoration 0.2s ease-out;
+  }
+
+  .hover-title:hover {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .fade-in-title {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+
+  .fade-in-title.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .btn-gradient {
+    @apply hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white;
+  }
 }
 
 @layer utilities {

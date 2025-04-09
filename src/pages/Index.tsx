@@ -130,7 +130,7 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/tasks')} 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
                 >
                   Go to Dashboard
                 </Button> 
@@ -138,7 +138,7 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/auth?tab=signup')} 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
                 >
                   Sign Up for Free
                 </Button>
@@ -146,8 +146,8 @@ const Index = () => {
               {user ? (
                 <Button 
                   size="lg" 
-                  onClick={handleConsultSpecialist} 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                  onClick={handleConsultSpecialist}
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
                 >
                   <UserRound className="mr-2 h-5 w-5" />
                   Consult a Specialist
@@ -156,7 +156,7 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/auth')} 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300"
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
                 >
                   Log In
                 </Button>
@@ -225,7 +225,7 @@ const Index = () => {
         <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 animate-fade-in">
           <Button 
             size="lg" 
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300" 
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white" 
             onClick={() => navigate('/auth?tab=signup')}
           >
             Get Started
@@ -236,7 +236,7 @@ const Index = () => {
         <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 animate-fade-in">
           <Button 
             size="lg" 
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300" 
+            className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
             onClick={handleConsultSpecialist}
           >
             <UserRound className="mr-2 h-5 w-5" />
