@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -52,7 +53,7 @@ const AnalysisHistory = () => {
   const [titleFadeIn, setTitleFadeIn] = useState(false);
   const [contentFadeIn, setContentFadeIn] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  // Removed dateRangeOpen state as it's implicitly handled by filterOpen
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [shareNote, setShareNote] = useState('');
@@ -89,9 +90,11 @@ const AnalysisHistory = () => {
   useEffect(() => {
     // Trigger content fade-in when selectedAnalysis changes
     setContentFadeIn(false);
-    setTimeout(() => {
-      setContentFadeIn(true);
-    }, 100);
+    if (selectedAnalysis) {
+      setTimeout(() => {
+        setContentFadeIn(true);
+      }, 100);
+    }
   }, [selectedAnalysis]);
 
   useEffect(() => {
@@ -115,12 +118,17 @@ const AnalysisHistory = () => {
         throw error;
       }
 
-      setAnalyses(data || []);
-      setFilteredAnalyses(data || []);
+      const fetchedAnalyses = data || [];
+      setAnalyses(fetchedAnalyses);
+      setFilteredAnalyses(fetchedAnalyses); // Initially set filtered to all
 
-      if (data && data.length > 0) {
-        setSelectedAnalysis(data[0].id);
-        await fetchChatInteractions(data[0].id);
+      // Pre-fetch chat history for the first analysis if it exists
+      if (fetchedAnalyses.length > 0) {
+        const firstAnalysisId = fetchedAnalyses[0].id;
+        setSelectedAnalysis(firstAnalysisId);
+        await fetchChatInteractions(firstAnalysisId);
+      } else {
+        setSelectedAnalysis(null);
       }
     } catch (error) {
       console.error('Error fetching analyses:', error);
@@ -131,7 +139,12 @@ const AnalysisHistory = () => {
   };
 
   const fetchChatInteractions = async (analysisId: string) => {
-    if (!user) return;
+    if (!user || !analysisId) return; // Added check for analysisId
+
+    // Avoid refetching if already loaded
+    if (chatInteractions[analysisId]) {
+       return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -150,13 +163,14 @@ const AnalysisHistory = () => {
         [analysisId]: data || []
       }));
     } catch (error) {
-      console.error('Error fetching chat interactions:', error);
+      console.error(`Error fetching chat interactions for ${analysisId}:`, error);
+      // Optionally show a toast, but might be too noisy if many analyses fail
     }
   };
 
   const handleSelectAnalysis = async (analysisId: string) => {
     setSelectedAnalysis(analysisId);
-
+    // Fetch chat history if not already loaded
     if (!chatInteractions[analysisId]) {
       await fetchChatInteractions(analysisId);
     }
@@ -173,27 +187,41 @@ const AnalysisHistory = () => {
     }
 
     // Apply date range filters
+    // Ensure dates are compared correctly (start of day for start, end of day for end)
     if (filterOptions.dateRange.start) {
-      filtered = filtered.filter(analysis =>
-        new Date(analysis.created_at) >= (filterOptions.dateRange.start as Date)
-      );
+       const startDate = new Date(filterOptions.dateRange.start);
+       startDate.setHours(0, 0, 0, 0); // Set to beginning of the day
+       filtered = filtered.filter(analysis =>
+          new Date(analysis.created_at) >= startDate
+       );
     }
 
     if (filterOptions.dateRange.end) {
-      filtered = filtered.filter(analysis =>
-        new Date(analysis.created_at) <= (filterOptions.dateRange.end as Date)
-      );
+       const endDate = new Date(filterOptions.dateRange.end);
+       endDate.setHours(23, 59, 59, 999); // Set to end of the day
+       filtered = filtered.filter(analysis =>
+          new Date(analysis.created_at) <= endDate
+       );
     }
 
     setFilteredAnalyses(filtered);
 
     // Update selected analysis if necessary
-    if (filtered.length > 0 && (!selectedAnalysis || !filtered.find(a => a.id === selectedAnalysis))) {
-      setSelectedAnalysis(filtered[0].id);
-    } else if (filtered.length === 0) {
-      setSelectedAnalysis(null); // Clear selection if no items match filter
+    if (filtered.length > 0) {
+       // If current selection is no longer in the filtered list, select the first item
+       if (!selectedAnalysis || !filtered.some(a => a.id === selectedAnalysis)) {
+          setSelectedAnalysis(filtered[0].id);
+          // Fetch chat history for the newly selected analysis if needed
+          if (!chatInteractions[filtered[0].id]) {
+             fetchChatInteractions(filtered[0].id); // No need to await here
+          }
+       }
+    } else {
+       // If no items match filters, clear selection
+       setSelectedAnalysis(null);
     }
   };
+
 
   const handleFilterChange = (taskName: string) => {
     setFilterOptions(prev => {
@@ -213,6 +241,7 @@ const AnalysisHistory = () => {
       ...prev,
       dateRange: {
         ...prev.dateRange,
+        // Ensure null is set if value is empty, otherwise create Date object
         [type]: value ? new Date(value) : null
       }
     }));
@@ -226,141 +255,264 @@ const AnalysisHistory = () => {
         end: null
       }
     });
-    // Reset filtered analyses to all analyses
-    setFilteredAnalyses(analyses);
-    // Reselect the first analysis if available
-    if (analyses.length > 0) {
-      setSelectedAnalysis(analyses[0].id);
-    } else {
-      setSelectedAnalysis(null);
-    }
+    // Note: The useEffect hook listening to [filterOptions, analyses]
+    // will automatically call applyFilters() and reset the list view.
   };
 
   const handleExport = async () => {
-    if (!selectedAnalysis || !resultsRef.current) return;
+    if (!selectedAnalysis || !resultsRef.current) {
+        toast.warning('Please select an analysis to export.');
+        return;
+    }
+
+    const analysis = analyses.find(a => a.id === selectedAnalysis);
+    if (!analysis) {
+        toast.error('Selected analysis data not found.');
+        return;
+    }
+
+    toast.info('Generating PDF, please wait...', { duration: 5000 });
 
     try {
-      toast.info('Generating PDF...');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const contentElement = resultsRef.current;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15; // mm
 
-      const analysis = analyses.find(a => a.id === selectedAnalysis);
-      if (!analysis) return;
+        // --- Header ---
+        pdf.setFontSize(18);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(analysis.task_name, margin, margin + 5);
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const canvas = await html2canvas(resultsRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        pdf.setTextColor(100); // Gray color
+        pdf.text(`Analysis Date: ${new Date(analysis.created_at).toLocaleString()}`, margin, margin + 12);
 
-      // Add title
-      pdf.setFontSize(20);
-      pdf.text(analysis.task_name, 20, 20);
+        // --- Divider ---
+        pdf.setDrawColor(200);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, margin + 18, pdfWidth - margin, margin + 18);
 
-      // Add date
-      pdf.setFontSize(12);
-      pdf.text(`Date: ${new Date(analysis.created_at).toLocaleString()}`, 20, 30);
+        let currentY = margin + 25; // Starting Y position for content
 
-      // Add divider
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(20, 35, 190, 35);
+        // --- Image (if exists) ---
+        if (analysis.image_url) {
+            try {
+                const imgResponse = await fetch(analysis.image_url);
+                const blob = await imgResponse.blob();
+                const reader = new FileReader();
+                await new Promise<void>((resolve, reject) => {
+                    reader.onload = () => resolve();
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                const imgDataUrl = reader.result as string;
 
-      // Add results content (rendered from canvas)
-      const contentElement = resultsRef.current;
-      const pdfWidth = pdf.internal.pageSize.getWidth() - 40; // A4 width in mm minus margins
-      
-      // Render the HTML content using html2canvas
-      const canvasContent = await html2canvas(contentElement, { 
-        scale: 2, // Higher scale for better quality
-        useCORS: true // If images are external
-      });
-      const imgDataContent = canvasContent.toDataURL('image/png');
-      const imgPropsContent = pdf.getImageProperties(imgDataContent);
-      const pdfImageHeightContent = (imgPropsContent.height * pdfWidth) / imgPropsContent.width;
-      
-      let heightLeft = pdfImageHeightContent;
-      let position = 40; // Starting position below header/divider
+                const imgProps = pdf.getImageProperties(imgDataUrl);
+                const imgMaxW = pdfWidth - 2 * margin;
+                const imgMaxH = pdfHeight / 4; // Limit image height initially
+                const ratio = Math.min(imgMaxW / imgProps.width, imgMaxH / imgProps.height);
+                const imgW = imgProps.width * ratio;
+                const imgH = imgProps.height * ratio;
 
-      // Check if content fits on the first page
-      if (position + heightLeft < pdf.internal.pageSize.getHeight() - 20) { // Check against page height minus bottom margin
-           pdf.addImage(imgDataContent, 'PNG', 20, position, pdfWidth, heightLeft);
-      } else {
-          // Add content page by page if it doesn't fit
-           pdf.addImage(imgDataContent, 'PNG', 20, position, pdfWidth, heightLeft);
-           heightLeft -= (pdf.internal.pageSize.getHeight() - position - 20); // Subtract height of first part, consider margins
-           while (heightLeft > 0) {
-              position = -heightLeft; // Negative position relative to top of image
-              pdf.addPage();
-              pdf.addImage(imgDataContent, 'PNG', 20, 20, pdfWidth, pdfImageHeightContent, undefined, 'FAST'); // Add the whole image again, adjust y-position logic if needed for partial rendering
-              // Simpler approach for multi-page content might be needed depending on html2canvas/jspdf capabilities or splitting content before canvas rendering
-              // For now, this adds subsequent pages with the image potentially starting higher. A more robust solution might involve splitting the canvas or DOM before rendering.
-              heightLeft -= (pdf.internal.pageSize.getHeight() - 20 - 20); // Subtract height of subsequent pages (top/bottom margin)
-          }
-      }
+                if (currentY + imgH > pdfHeight - margin) { // Check if image fits
+                    pdf.addPage();
+                    currentY = margin;
+                }
+                pdf.addImage(imgDataUrl, 'PNG', margin, currentY, imgW, imgH);
+                currentY += imgH + 10; // Add spacing after image
+                 pdf.setDrawColor(220); // Light gray line after image
+                 pdf.setLineWidth(0.2);
+                 pdf.line(margin, currentY - 5, pdfWidth - margin, currentY - 5);
 
-      // Save PDF
-      pdf.save(`${analysis.task_name}_${new Date().toISOString().split('T')[0]}.pdf`);
 
-      toast.success('PDF exported successfully');
+            } catch (imgError) {
+                console.error("Error loading or adding image to PDF:", imgError);
+                toast.warning("Could not include image in PDF.");
+                // Add placeholder text if image fails
+                 pdf.setFontSize(9);
+                 pdf.setTextColor(150);
+                 pdf.text('[Analyzed image could not be loaded]', margin, currentY);
+                 currentY += 8;
+            }
+        }
+
+
+        // --- Results Text (using html2canvas for better formatting) ---
+        if (analysis.result_text) {
+             const canvas = await html2canvas(contentElement, {
+                 scale: 2, // Increase scale for better quality
+                 useCORS: true, // Important if images within results are from other domains
+                 logging: false, // Reduce console noise
+                 width: contentElement.scrollWidth, // Use scrollWidth for full content width
+                 height: contentElement.scrollHeight, // Use scrollHeight for full content height
+                 windowWidth: contentElement.scrollWidth,
+                 windowHeight: contentElement.scrollHeight,
+                 // Attempt to improve text rendering
+                 onclone: (document) => {
+                    // Potentially apply styles here if needed before rendering
+                 }
+             });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgProps = pdf.getImageProperties(imgData);
+            const contentWidth = pdfWidth - 2 * margin;
+            const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
+
+            let heightLeft = contentHeight;
+            let position = currentY;
+
+            // Add the first part
+            const pageHeightAvailable = pdfHeight - margin - position;
+            pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+            heightLeft -= pageHeightAvailable;
+
+            // Add new pages if needed
+            while (heightLeft > 0) {
+                position = -(contentHeight - heightLeft) // Calculate the negative Y offset for the image on the new page
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight); // Add image starting from top margin
+                heightLeft -= (pdfHeight - 2 * margin);
+            }
+
+        } else {
+             if (currentY > pdfHeight - margin - 10) { // Check if text fits
+                 pdf.addPage();
+                 currentY = margin;
+             }
+             pdf.setFontSize(10);
+             pdf.setTextColor(100);
+             pdf.text('No analysis results text available.', margin, currentY);
+        }
+
+
+        // --- Footer (Page Numbers) ---
+        const pageCount = (pdf.internal as any).getNumberOfPages(); // Access internal property
+        for (let i = 1; i <= pageCount; i++) {
+            pdf.setPage(i);
+            pdf.setFontSize(8);
+            pdf.setTextColor(150);
+            pdf.text(`Page ${i} of ${pageCount}`, pdfWidth / 2, pdfHeight - margin / 2, { align: 'center' });
+        }
+
+        // --- Save ---
+        pdf.save(`${analysis.task_name}_${new Date(analysis.created_at).toISOString().split('T')[0]}.pdf`);
+        toast.success('PDF generated successfully!');
+
     } catch (error) {
-      console.error('Error exporting PDF:', error);
-      toast.error('Failed to export PDF');
+        console.error('Error exporting PDF:', error);
+        toast.error('Failed to export PDF. See console for details.');
     }
-  };
+};
 
 
   const handleShare = async () => {
     if (!shareEmail || !selectedAnalysis) {
-      toast.error('Please enter a valid email address');
+      toast.error('Please enter a valid email address.');
       return;
     }
+    if (!/\S+@\S+\.\S+/.test(shareEmail)) {
+        toast.error('Invalid email format.');
+        return;
+    }
 
-    // In a real application, this would send an email with the analysis
-    // For now, we'll just show a toast
-    toast.success(`Analysis shared with ${shareEmail}`);
+    // --- Simulated Sharing ---
+    // In a real app: call backend API to send email with analysis link/data
+    console.log(`Sharing analysis ${selectedAnalysis} with ${shareEmail}. Note: ${shareNote}`);
+    toast.promise(
+        new Promise(resolve => setTimeout(resolve, 1500)), // Simulate network delay
+        {
+          loading: 'Sending share email...',
+          success: `Analysis shared with ${shareEmail}`,
+          error: 'Failed to share analysis',
+        }
+    );
+    // --- End Simulation ---
+
     setShareDialogOpen(false);
     setShareEmail('');
     setShareNote('');
   };
 
-  // Format results for display (same as before)
-  const formatResults = (resultsText: string | null) => {
-    if (!resultsText) return null;
+  // Enhanced Format results function
+ const formatResults = (resultsText: string | null): React.ReactNode => {
+     if (!resultsText) return <p className="text-muted-foreground">No results text available.</p>;
 
-    // Remove code blocks
-    const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
+     try {
+         // Normalize line breaks and remove potential excessive spacing
+         const normalizedText = resultsText.replace(/\r\n/g, '\n').replace(/ +\n/g, '\n').trim();
 
-    const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
-    return (
-      <div className="space-y-4 leading-relaxed">
-        {paragraphs.map((para, index) => {
-          // Improved heading detection (handles various markdown levels and common titles)
-          const headingMatch = para.match(/^(#{1,4}\s+)?(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion|Analysis Results)\s*[:\-*]?\s*(.*)/i);
-          if (headingMatch) {
-             // Use the captured group after the title word, or the word itself if nothing follows
-            const headingText = (headingMatch[3] || headingMatch[2]).trim();
-            // Basic styling based on heading level or default if no # used
-            const HeadingTag = `h${Math.min((headingMatch[1]?.match(/#/g)?.length || 0) + 2, 4)}` as keyof JSX.IntrinsicElements; // h2, h3, h4
-            return <HeadingTag key={index} className="text-lg font-semibold mt-5 first:mt-0 text-primary/90 border-b pb-1 mb-2">{headingText}</HeadingTag>;
-          }
+         // Remove markdown code blocks (``` ... ```)
+         const textWithoutCodeBlocks = normalizedText.replace(/```[\s\S]*?```/g, '[Code Block Removed]');
 
-          // Improved list item detection (handles *, -, •) and potential bolding within items
-           if (para.trim().match(/^([*\-•]\s+)/)) {
-              // Split based on list markers, preserving indentation/content
-              const listItems = para.split(/\n(?=[*\-•]\s+)/).map(item => item.trim().replace(/^[*\-•]\s+/, ''));
-              return (
-                  <ul key={index} className="list-disc pl-6 space-y-1.5 mt-2">
-                      {listItems.filter(Boolean).map((item, i) => (
-                          <li key={i} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: item.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') }} />
-                      ))}
-                  </ul>
-              );
-          }
+         // Split into logical blocks (paragraphs, lists, headings)
+         // This regex tries to split by double newlines, but also considers lines starting with # or list markers as potential new blocks.
+         const blocks = textWithoutCodeBlocks.split(/(\n\n+|\n(?=[*\-•#\d+\.\s]))/).filter(block => block && block.trim() !== '');
+
+         return (
+             <div className="space-y-3 leading-relaxed"> {/* Reduced space-y */}
+                 {blocks.map((block, index) => {
+                     const trimmedBlock = block.trim();
+
+                     // Headings (Markdown style: #, ##, ### etc.)
+                     const headingMatch = trimmedBlock.match(/^(#{1,5})\s+(.*)/);
+                     if (headingMatch) {
+                         const level = headingMatch[1].length;
+                         const text = headingMatch[2];
+                         const Tag = `h${level + 1}` as keyof JSX.IntrinsicElements; // h2, h3, h4...
+                         const textSize = ['text-xl', 'text-lg', 'text-md', 'text-md', 'text-md'][level -1] || 'text-base'; // Adjust sizes
+                         return <Tag key={index} className={`${textSize} font-semibold mt-4 mb-1 text-primary/90 border-b pb-1`}>{text}</Tag>;
+                     }
+
+                      // Specific keyword headings (Summary:, Findings:, etc.)
+                     const keywordHeadingMatch = trimmedBlock.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion|Analysis Results)\s*[:*]?(.*)/i);
+                     if (keywordHeadingMatch) {
+                         // Use group 2 if it exists (text after the keyword), otherwise use the keyword itself
+                         const text = (keywordHeadingMatch[2] && keywordHeadingMatch[2].trim()) ? keywordHeadingMatch[2].trim() : keywordHeadingMatch[1];
+                         return <h3 key={index} className="text-lg font-semibold mt-4 mb-1 text-primary/90 border-b pb-1">{text}</h3>;
+                     }
 
 
-          // Handle bold text within paragraphs
-          return <p key={index} className="text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: para.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') }} />;
-        })}
-      </div>
-    );
-  };
+                     // Unordered Lists (*, -, •)
+                     if (trimmedBlock.match(/^[*•-]\s+/)) {
+                         // Assume the whole block is a list if it starts with a marker
+                         const listItems = trimmedBlock.split('\n').map(line => line.trim().replace(/^[*•-]\s+/, ''));
+                         return (
+                             <ul key={index} className="list-disc pl-5 space-y-1">
+                                 {listItems.filter(item => item).map((item, i) => (
+                                      <li key={i} className="text-gray-700 dark:text-gray-300 text-sm" dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/__(.*?)__/g, '<em>$1</em>') }} />
+                                 ))}
+                             </ul>
+                         );
+                     }
 
+                      // Ordered Lists (1., 2., etc.) - Basic handling
+                     if (trimmedBlock.match(/^\d+\.\s+/)) {
+                         const listItems = trimmedBlock.split('\n').map(line => line.trim().replace(/^\d+\.\s+/, ''));
+                         return (
+                             <ol key={index} className="list-decimal pl-5 space-y-1">
+                                 {listItems.filter(item => item).map((item, i) => (
+                                     <li key={i} className="text-gray-700 dark:text-gray-300 text-sm" dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/__(.*?)__/g, '<em>$1</em>') }} />
+                                 ))}
+                             </ol>
+                         );
+                     }
+
+
+                     // Default: Paragraph
+                     // Apply bold/italic formatting within paragraphs
+                     return <p key={index} className="text-gray-700 dark:text-gray-300 text-sm" dangerouslySetInnerHTML={{ __html: trimmedBlock.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/__(.*?)__/g, '<em>$1</em>') }} />;
+                 })}
+             </div>
+         );
+     } catch (e) {
+         console.error("Error formatting results:", e);
+         // Fallback to plain text if formatting fails
+         return <pre className="whitespace-pre-wrap text-sm">{resultsText}</pre>;
+     }
+ };
 
   const getAnalysisById = (id: string | null) => {
     if (!id) return null;
@@ -376,19 +528,48 @@ const AnalysisHistory = () => {
         :root {
             --primary-rgb: 83, 109, 254; /* Example: Indigo-500 */
             --primary: #536dfe; /* Example: Indigo-500 */
+            /* Add other theme colors if needed */
+            --card-bg: #ffffff;
+            --card-bg-dark: #1f2937; /* gray-800 (example) */
+            --text-primary-light: #1f2937; /* gray-800 */
+            --text-primary-dark: #f9fafb; /* gray-50 */
+            --text-muted-light: #6b7280; /* gray-500 */
+            --text-muted-dark: #9ca3af; /* gray-400 */
+            --border-light: #e5e7eb; /* gray-200 */
+            --border-dark: #374151; /* gray-700 */
         }
+        html.dark {
+            --card-bg: var(--card-bg-dark);
+            --text-primary: var(--text-primary-dark);
+            --text-muted: var(--text-muted-dark);
+            --border-color: var(--border-dark);
+        }
+         html:not(.dark) {
+            --card-bg: var(--card-bg-light);
+             --text-primary: var(--text-primary-light);
+             --text-muted: var(--text-muted-light);
+             --border-color: var(--border-light);
+        }
+
+        /* General Styles */
+        body {
+             background-color: #f8fafc; /* Light gray background */
+        }
+        html.dark body {
+             background-color: #111827; /* Darker gray */
+        }
+
         .hover-scale {
           transition: transform 0.2s ease-out;
         }
-
         .hover-scale:hover {
           transform: scale(1.05);
         }
 
         .hover-card {
           transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+          background-color: var(--card-bg);
         }
-
         .hover-card:hover {
           transform: translateZ(5px) translateY(-3px);
           box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
@@ -397,43 +578,52 @@ const AnalysisHistory = () => {
         .hover-list-item {
           transition: all 0.2s ease-out;
           border-left: 3px solid transparent;
+          padding-left: 9px; /* Base padding */
         }
-
         .hover-list-item:hover {
           border-left-color: var(--primary);
           background-color: rgba(var(--primary-rgb), 0.05);
-          padding-left: 12px; /* Increased padding on hover */
-          transform: translateX(2px); /* Slight move right */
+          padding-left: 12px;
+          transform: translateX(2px);
         }
-
         .hover-list-item.active {
           border-left-color: var(--primary);
           background-color: rgba(var(--primary-rgb), 0.1);
-          padding-left: 12px; /* Consistent padding */
-          font-weight: 500; /* Medium weight for active item */
+          padding-left: 12px;
+          font-weight: 500;
         }
 
         .hover-tab-trigger {
-          transition: background-color 0.2s ease-out, color 0.2s ease-out;
+            transition: background-color 0.2s ease-out, color 0.2s ease-out, box-shadow 0.2s ease-out;
+            border-radius: 0.375rem; /* rounded-md */
+            flex: 1; /* Make triggers fill the space */
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.5rem 0; /* Adjust padding */
         }
-
-        /* Style for Shadcn TabsTrigger with hover */
         [data-state=inactive].hover-tab-trigger:hover {
-             background-color: rgba(var(--primary-rgb), 0.08);
-             color: var(--primary);
+            background-color: rgba(var(--primary-rgb), 0.08);
+            color: var(--primary);
         }
-         /* Ensure active tab has the right style */
         [data-state=active].hover-tab-trigger {
-             background-color: rgba(var(--primary-rgb), 0.1);
-             color: var(--primary);
-             font-weight: 500;
+            background-color: var(--primary); /* Solid primary bg for active */
+            color: white; /* White text for active */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-weight: 500;
+        }
+        /* Container for tabs list */
+        .tabs-list-container {
+            background-color: #e5e7eb; /* gray-200 */
+            padding: 0.25rem; /* p-1 */
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+        html.dark .tabs-list-container {
+             background-color: #374151; /* gray-700 */
         }
 
 
         .hover-image-card {
           transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
         }
-
         .hover-image-card:hover {
           transform: scale(1.02) translateZ(3px);
           box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
@@ -441,46 +631,17 @@ const AnalysisHistory = () => {
 
         .hover-message, .hover-ai-message {
           transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+          max-width: 85%; /* Ensure messages don't get too wide */
         }
-
         .hover-message:hover, .hover-ai-message:hover {
           transform: translateY(-2px) translateZ(2px);
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
-        .animate-gradient-bg {
-          background-size: 300%;
-          animation: gradient-animation 15s ease infinite;
-        }
-
-        @keyframes gradient-animation {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
-        .fade-in-title {
-          opacity: 0;
-          transform: translateY(-10px);
-          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-
-        .fade-in-title.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .fade-in-content {
-          opacity: 0;
-          transition: opacity 0.4s ease-out;
-        }
-
-        .fade-in-content.visible {
-          opacity: 1;
-        }
-        /* Custom scrollbar */
+        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background: rgba(var(--primary-rgb), 0.05);
@@ -493,406 +654,333 @@ const AnalysisHistory = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(var(--primary-rgb), 0.5);
         }
-        /* Prose adjustments for dark mode */
-        .dark .prose-invert {
-             --tw-prose-body: #d1d5db; /* gray-300 */
-             --tw-prose-headings: #f9fafb; /* gray-50 */
-             --tw-prose-lead: #e5e7eb; /* gray-200 */
-             --tw-prose-links: #93c5fd; /* blue-300 */
-             --tw-prose-bold: #f9fafb; /* gray-50 */
-             --tw-prose-counters: #9ca3af; /* gray-400 */
-             --tw-prose-bullets: #6b7280; /* gray-500 */
-             --tw-prose-hr: #4b5563; /* gray-600 */
-             --tw-prose-quotes: #d1d5db; /* gray-300 */
-             --tw-prose-quote-borders: #4b5563; /* gray-600 */
-             --tw-prose-captions: #9ca3af; /* gray-400 */
-             --tw-prose-code: #f3f4f6; /* gray-100 */
-             --tw-prose-pre-code: #e5e7eb; /* gray-200 */
-             --tw-prose-pre-bg: #1f2937; /* gray-800 */
-             --tw-prose-th-borders: #4b5563; /* gray-600 */
-             --tw-prose-td-borders: #374151; /* gray-700 */
-        }
-        .prose strong, .prose b { /* Ensure bold is distinctly visible */
-           color: inherit; /* Inherit color from parent */
-           font-weight: 600; /* Semibold */
-        }
-        .dark .prose-invert strong, .dark .prose-invert b {
-           color: var(--tw-prose-bold);
-        }
 
+         /* Prose adjustments */
+        .prose {
+            --tw-prose-body: var(--text-primary);
+            --tw-prose-headings: var(--text-primary);
+            --tw-prose-lead: var(--text-muted);
+            --tw-prose-links: var(--primary);
+            --tw-prose-bold: var(--text-primary);
+            --tw-prose-counters: var(--text-muted);
+            --tw-prose-bullets: var(--text-muted);
+            --tw-prose-hr: var(--border-color);
+            --tw-prose-quotes: var(--text-primary);
+            --tw-prose-quote-borders: var(--primary);
+            --tw-prose-captions: var(--text-muted);
+            --tw-prose-code: var(--text-primary);
+            --tw-prose-pre-code: var(--text-primary-dark); /* Usually light on dark bg */
+            --tw-prose-pre-bg: #111827; /* Dark bg for code */
+            --tw-prose-th-borders: var(--border-color);
+            --tw-prose-td-borders: var(--border-color);
+            font-size: 0.875rem; /* text-sm default */
+        }
+        .dark .prose {
+           --tw-prose-pre-code: var(--text-primary-light); /* Usually dark on light bg */
+            --tw-prose-pre-bg: #f3f4f6; /* Light bg for code */
+        }
+        .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+             color: var(--primary); /* Use primary color for headings */
+             font-weight: 600; /* Semibold */
+             margin-top: 1.25em;
+             margin-bottom: 0.5em;
+        }
+         .prose h2 { font-size: 1.25em; } /* Adjust heading sizes relative to base */
+         .prose h3 { font-size: 1.1em; }
+         .prose h4 { font-size: 1.0em; }
+         .prose strong, .prose b {
+            color: inherit; /* Inherit color */
+            font-weight: 600;
+        }
+         .prose ul, .prose ol { padding-left: 1.25rem; margin-top: 0.5em; margin-bottom: 0.75em;}
+         .prose li { margin-top: 0.2em; margin-bottom: 0.2em; }
+         .prose p { margin-top: 0.5em; margin-bottom: 0.75em;}
+
+         /* Fade Animations */
+        .fade-in-title {
+          opacity: 0;
+          transform: translateY(-10px);
+          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        .fade-in-title.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .fade-in-content {
+          opacity: 0;
+          transition: opacity 0.4s ease-out;
+        }
+        .fade-in-content.visible {
+          opacity: 1;
+        }
         `}
       </style>
       <div className="flex justify-between items-center mb-6">
-        <Button
-          variant="outline" // Changed variant for better contrast potentially
-          onClick={() => navigate('/tasks')}
-          className="hover-scale group transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl border-muted-foreground/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground" // Added group for icon animation
-        >
-          <svg
-            className="mr-1 h-4 w-4 transition-transform duration-200 group-hover:-translate-x-1" // Adjusted margin
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Dashboard
-        </Button>
-
-        <Button
-          variant="outline" // Changed variant
-          onClick={() => navigate('/')}
-           className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl border-muted-foreground/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-        >
-          <Home className="mr-2 h-4 w-4" />
-          Home
-        </Button>
+        {/* Navigation Buttons */}
+         <Button
+           variant="outline"
+           size="sm"
+           onClick={() => navigate('/tasks')}
+           className="hover-scale group transition-all duration-300 hover:shadow-sm active:scale-95 transform gap-1.5 rounded-md border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+         >
+           <svg className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+           Dashboard
+         </Button>
+         <Button
+           variant="outline"
+            size="sm"
+           onClick={() => navigate('/')}
+           className="hover-scale transition-all duration-300 hover:shadow-sm active:scale-95 transform gap-1.5 rounded-md border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+         >
+           <Home className="h-4 w-4" />
+           Home
+         </Button>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl mb-8 shadow-inner-soft">
-        <h1 className={`text-3xl font-bold mb-2 text-gray-800 dark:text-gray-100 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>Analysis History</h1>
-        <p className="text-muted-foreground">
-          View your past bone health analyses and chatbot interactions
-        </p>
-      </div>
+       {/* Page Title Section */}
+       <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/10 p-6 rounded-xl mb-8 shadow-sm border border-black/5 dark:border-white/5">
+           <h1 className={`text-2xl md:text-3xl font-bold mb-1 text-gray-800 dark:text-gray-100 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
+               Analysis History
+           </h1>
+           <p className="text-sm text-muted-foreground">
+               Review past analyses, results, and associated chat discussions.
+           </p>
+       </div>
 
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4"> {/* Added flex-wrap and gap */}
-        <div className="flex items-center gap-2 flex-wrap"> {/* Added flex-wrap */}
-          {/* Filter Popover */}
+
+      {/* Filter and Action Bar */}
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-3 px-1">
+        {/* Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
           <Popover open={filterOpen} onOpenChange={setFilterOpen}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Filter size={16} />
-                <span>Type</span>
-                {(filterOptions.taskTypes.length > 0 || filterOptions.dateRange.start || filterOptions.dateRange.end) && ( // Combined condition
-                  <span className="ml-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] text-primary-foreground font-bold">
-                    {filterOptions.taskTypes.length + (filterOptions.dateRange.start || filterOptions.dateRange.end ? 1 : 0)} {/* Show count */}
+              <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs">
+                <Filter size={14} />
+                Filter
+                {(filterOptions.taskTypes.length > 0 || filterOptions.dateRange.start || filterOptions.dateRange.end) && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary flex items-center justify-center text-[10px] font-semibold text-primary-foreground">
+                    {filterOptions.taskTypes.length + (filterOptions.dateRange.start || filterOptions.dateRange.end ? 1 : 0)}
                   </span>
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80" align="start">
-              {/* Task Type Filters */}
-              <div className="space-y-4 mb-4 pb-4 border-b">
-                 <div className="flex items-center justify-between">
-                   <h4 className="font-medium text-sm">Analysis Type</h4>
-                   {filterOptions.taskTypes.length > 0 && (
-                     <Button
-                       variant="ghost"
-                       size="sm"
-                       onClick={() => setFilterOptions(prev => ({ ...prev, taskTypes: [] }))}
-                       className="h-7 px-1.5 text-xs"
-                     >
-                       Clear types
-                     </Button>
-                   )}
-                 </div>
-                 <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-2">
-                   {uniqueTaskTypes.map(taskName => (
-                     <div key={taskName} className="flex items-center space-x-2">
-                       <Checkbox
-                         id={`filter-${taskName}`}
-                         checked={filterOptions.taskTypes.includes(taskName)}
-                         onCheckedChange={() => handleFilterChange(taskName)}
-                       />
-                       <Label htmlFor={`filter-${taskName}`} className="text-sm font-normal">{taskName}</Label>
-                     </div>
-                   ))}
-                 </div>
-              </div>
-              {/* Date Range Filters */}
-               <div className="space-y-4">
-                 <div className="flex items-center justify-between">
-                   <h4 className="font-medium text-sm">Date Range</h4>
-                   {(filterOptions.dateRange.start || filterOptions.dateRange.end) && (
-                     <Button
-                       variant="ghost"
-                       size="sm"
-                       onClick={() => setFilterOptions(prev => ({ ...prev, dateRange: { start: null, end: null } }))}
-                       className="h-7 px-1.5 text-xs"
-                     >
-                       Clear dates
-                     </Button>
-                   )}
-                 </div>
-                 <div className="space-y-2">
-                   <div className="grid grid-cols-1 gap-2"> {/* Changed to 1 col for better mobile */}
+            <PopoverContent className="w-72" align="start">
+                {/* Content from previous version's combined filter popover */}
+                <div className="space-y-4 mb-4 pb-4 border-b dark:border-gray-700">
+                   <div className="flex items-center justify-between">
+                     <h4 className="font-medium text-sm text-gray-800 dark:text-gray-200">Analysis Type</h4>
+                     {filterOptions.taskTypes.length > 0 && (
+                       <Button variant="ghost" size="sm" onClick={() => setFilterOptions(prev => ({ ...prev, taskTypes: [] }))} className="h-6 px-1 text-xs text-muted-foreground hover:text-primary">Clear</Button>
+                     )}
+                   </div>
+                   <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                     {uniqueTaskTypes.length > 0 ? uniqueTaskTypes.map(taskName => (
+                       <div key={taskName} className="flex items-center space-x-2">
+                         <Checkbox id={`filter-${taskName}`} checked={filterOptions.taskTypes.includes(taskName)} onCheckedChange={() => handleFilterChange(taskName)} className="h-3.5 w-3.5"/>
+                         <Label htmlFor={`filter-${taskName}`} className="text-xs font-normal text-gray-700 dark:text-gray-300 cursor-pointer">{taskName}</Label>
+                       </div>
+                     )) : <p className="text-xs text-muted-foreground">No types found.</p>}
+                   </div>
+                </div>
+                 <div className="space-y-3">
+                   <div className="flex items-center justify-between">
+                     <h4 className="font-medium text-sm text-gray-800 dark:text-gray-200">Date Range</h4>
+                     {(filterOptions.dateRange.start || filterOptions.dateRange.end) && (
+                       <Button variant="ghost" size="sm" onClick={() => setFilterOptions(prev => ({ ...prev, dateRange: { start: null, end: null } }))} className="h-6 px-1 text-xs text-muted-foreground hover:text-primary">Clear</Button>
+                     )}
+                   </div>
+                   <div className="space-y-2">
                      <div>
-                       <Label htmlFor="start-date" className="text-xs">Start Date</Label>
-                       <Input
-                         id="start-date"
-                         type="date"
-                         className="text-sm h-9"
-                         value={filterOptions.dateRange.start ? filterOptions.dateRange.start.toISOString().split('T')[0] : ''}
-                         onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                       />
+                       <Label htmlFor="start-date" className="text-xs font-medium text-gray-600 dark:text-gray-400">Start Date</Label>
+                       <Input id="start-date" type="date" className="text-xs h-8 mt-1" value={filterOptions.dateRange.start ? filterOptions.dateRange.start.toISOString().split('T')[0] : ''} onChange={(e) => handleDateRangeChange('start', e.target.value)} />
                      </div>
                      <div>
-                       <Label htmlFor="end-date" className="text-xs">End Date</Label>
-                       <Input
-                         id="end-date"
-                         type="date"
-                         className="text-sm h-9"
-                         value={filterOptions.dateRange.end ? filterOptions.dateRange.end.toISOString().split('T')[0] : ''}
-                         onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                       />
+                       <Label htmlFor="end-date" className="text-xs font-medium text-gray-600 dark:text-gray-400">End Date</Label>
+                       <Input id="end-date" type="date" className="text-xs h-8 mt-1" value={filterOptions.dateRange.end ? filterOptions.dateRange.end.toISOString().split('T')[0] : ''} onChange={(e) => handleDateRangeChange('end', e.target.value)} />
                      </div>
                    </div>
                  </div>
-               </div>
-              {/* Global Clear Button */}
-               {(filterOptions.taskTypes.length > 0 || filterOptions.dateRange.start || filterOptions.dateRange.end) && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="w-full mt-4 text-xs text-center"
-                  >
-                    Clear All Filters
-                  </Button>
-                )}
+                 {(filterOptions.taskTypes.length > 0 || filterOptions.dateRange.start || filterOptions.dateRange.end) && (
+                    <Button variant="link" size="sm" onClick={clearFilters} className="w-full mt-3 text-xs text-center text-primary hover:underline">Clear All Filters</Button>
+                  )}
             </PopoverContent>
           </Popover>
-
         </div>
-        <div className="flex items-center gap-2 flex-wrap"> {/* Added flex-wrap */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            disabled={!selectedAnalysisData}
-            onClick={handleExport}
-          >
-            <Download size={16} />
-            <span>Export PDF</span>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs" disabled={!selectedAnalysisData} onClick={handleExport}>
+            <Download size={14} /> Export PDF
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            disabled={!selectedAnalysisData}
-            onClick={() => setShareDialogOpen(true)}
-          >
-            <Share2 size={16} />
-            <span>Share</span>
+          <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs" disabled={!selectedAnalysisData} onClick={() => setShareDialogOpen(true)}>
+            <Share2 size={14} /> Share
           </Button>
         </div>
       </div>
 
+      {/* Main Content Area */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="relative">
-            <div className="h-16 w-16 rounded-full border-t-2 border-b-2 border-primary animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Bone className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-        </div>
+           <div className="relative">
+             <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary animate-spin"></div>
+             <div className="absolute inset-0 flex items-center justify-center">
+               <Bone className="h-5 w-5 text-primary animate-pulse" />
+             </div>
+           </div>
+         </div>
       ) : filteredAnalyses.length === 0 ? (
-        <Card className="border shadow-sm hover-card transition-all rounded-xl"> {/* Ensure rounded */}
-          <CardContent className="flex flex-col items-center justify-center py-12 px-6"> {/* Added padding */}
-            <Filter className="h-16 w-16 text-muted-foreground/50 mb-4" /> {/* Changed Icon */}
-            <h3 className="text-xl font-medium mb-2 text-center">No Matching Analyses Found</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-md">
+        <Card className="border shadow-sm hover-card transition-all rounded-xl border-dashed border-gray-300 dark:border-gray-700">
+          <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+            <Filter className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-medium mb-2 text-center text-gray-700 dark:text-gray-300">No Matching Analyses Found</h3>
+            <p className="text-sm text-muted-foreground mb-6 text-center max-w-sm">
               {analyses.length > 0 ?
                 'Adjust your filters or clear them to see all past analyses.' :
                 'You haven\'t performed any bone health analyses yet.'}
             </p>
             {analyses.length > 0 ? (
-              <Button
-                onClick={clearFilters}
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover-scale transition-all text-white rounded-lg" // Ensure text is white
-              >
-                <X className="mr-2 h-4 w-4" />
-                Clear Filters
+              <Button onClick={clearFilters} size="sm" className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover-scale transition-all text-white rounded-md text-xs px-4 py-1.5">
+                <X className="mr-1.5 h-3.5 w-3.5" /> Clear Filters
               </Button>
             ) : (
-              <Button
-                onClick={() => navigate('/tasks')} // Navigate to tasks page instead of specific analysis
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover-scale transition-all text-white rounded-lg" // Ensure text is white
-              >
-                <Bone className="mr-2 h-4 w-4" />
-                Start New Analysis
+              <Button onClick={() => navigate('/tasks')} size="sm" className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover-scale transition-all text-white rounded-md text-xs px-4 py-1.5">
+                <Bone className="mr-1.5 h-3.5 w-3.5" /> Start New Analysis
               </Button>
             )}
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"> {/* Reduced gap */}
           {/* Past Analyses List Card */}
-          <Card className="col-span-1 border rounded-xl shadow-sm overflow-hidden hover-card transition-all bg-white dark:bg-gray-850"> {/* Added bg */}
-             <CardHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-4 border-b dark:border-gray-700"> {/* Adjusted padding */}
-              <CardTitle className="flex items-center text-base font-semibold text-gray-700 dark:text-gray-200"> {/* Adjusted text size/color */}
-                <Clock className="h-4 w-4 mr-2 text-primary" />
-                Past Analyses {filteredAnalyses.length !== analyses.length && `(${filteredAnalyses.length} / ${analyses.length})`}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2"> {/* Adjusted padding */}
-              <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto pr-1 custom-scrollbar"> {/* Adjusted max-h and added scrollbar class */}
-                {filteredAnalyses.map((analysis) => (
-                  <div
-                    key={analysis.id}
-                    className={`p-3 rounded-md cursor-pointer transition-all hover-list-item ${ // rounded-md instead of lg
-                      selectedAnalysis === analysis.id ? 'active' : '' // Simplified active class logic
-                    }`}
-                    onClick={() => handleSelectAnalysis(analysis.id)}
-                  >
-                    <div className={`font-medium text-sm truncate ${selectedAnalysis === analysis.id ? 'text-primary' : 'text-gray-800 dark:text-gray-100'}`}> {/* Truncate long names */}
-                      {analysis.task_name}
-                    </div>
-                    <div className="text-xs mt-1 flex items-center text-muted-foreground">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {new Date(analysis.created_at).toLocaleDateString()} ·
-                      <Clock className="h-3 w-3 ml-1.5 mr-1" /> {/* Adjusted spacing */}
-                      {new Date(analysis.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {/* Simplified time */}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+           <Card className="col-span-1 border rounded-xl shadow-sm overflow-hidden hover-card transition-all">
+                {/* === MODIFIED HEADER 1 === */}
+                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 border-b border-blue-700/50 text-white">
+                  <CardTitle className="flex items-center text-base font-semibold"> {/* Title text color inherited */}
+                    <Clock className="h-4 w-4 mr-2 text-white/90" /> {/* Icon color adjusted */}
+                    Past Analyses {filteredAnalyses.length !== analyses.length && `(${filteredAnalyses.length} / ${analyses.length})`}
+                  </CardTitle>
+                </CardHeader>
+                {/* === END MODIFIED HEADER 1 === */}
+               <CardContent className="p-1.5"> {/* Reduced padding */}
+                 <div className="space-y-1 max-h-[calc(100vh-320px)] overflow-y-auto custom-scrollbar pr-1"> {/* Adjusted max-h */}
+                   {filteredAnalyses.map((analysis) => (
+                     <div
+                       key={analysis.id}
+                       className={`p-2.5 rounded-md cursor-pointer transition-all hover-list-item ${
+                         selectedAnalysis === analysis.id ? 'active' : ''
+                       }`}
+                       onClick={() => handleSelectAnalysis(analysis.id)}
+                     >
+                       <div className={`font-medium text-sm truncate ${selectedAnalysis === analysis.id ? 'text-primary' : 'text-gray-800 dark:text-gray-100'}`}>
+                         {analysis.task_name}
+                       </div>
+                       <div className="text-xs mt-1 flex items-center text-muted-foreground space-x-1.5"> {/* Added space-x */}
+                           <Calendar className="h-3 w-3" />
+                           <span>{new Date(analysis.created_at).toLocaleDateString()}</span>
+                           <span className="text-gray-300 dark:text-gray-600">·</span>
+                           <Clock className="h-3 w-3" />
+                           <span>{new Date(analysis.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               </CardContent>
+           </Card>
+
 
           {/* Analysis Details Card */}
-          <Card className="col-span-1 lg:col-span-2 border shadow-sm rounded-xl overflow-hidden hover-card transition-all bg-white dark:bg-gray-850"> {/* Added bg */}
-             <CardHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-4 border-b dark:border-gray-700"> {/* Adjusted padding */}
-              <CardTitle className="flex items-center text-base font-semibold text-gray-700 dark:text-gray-200"> {/* Adjusted text size/color */}
-                {selectedAnalysisData ? (
-                  <>
-                    <Bone className="h-4 w-4 mr-2 text-primary" />
-                    {selectedAnalysisData.task_name}
-                  </>
-                ) : (
-                  'Analysis Details'
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className={`pt-4 p-4 md:p-6 ${contentFadeIn ? 'fade-in-content visible' : 'fade-in-content'}`}> {/* Added padding */}
-              {selectedAnalysisData ? (
-                <Tabs defaultValue="results" className="w-full">
-                  <TabsList className="mb-4 grid w-full grid-cols-2 bg-muted/50 rounded-lg p-1"> {/* Grid layout for tabs */}
-                    <TabsTrigger
-                      value="results"
-                      className="hover-tab-trigger data-[state=active]:shadow-sm" // Added active shadow
-                    >
-                      Analysis Results
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="chat"
-                      className="hover-tab-trigger data-[state=active]:shadow-sm" // Added active shadow
-                    >
-                      Chat History
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="results" className="space-y-4 max-h-[calc(100vh-350px)] overflow-y-auto custom-scrollbar pr-2"> {/* Added max-h and scrollbar */}
-                     {selectedAnalysisData.image_url && (
-                      <div className="mb-6 border rounded-lg p-3 hover-image-card transition-all overflow-hidden bg-gray-50 dark:bg-gray-800">
-                        <h3 className="font-medium text-sm mb-2 flex items-center text-gray-700 dark:text-gray-300">
-                          <svg
-                            className="h-4 w-4 mr-2 text-primary/80"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          Analyzed Image
-                        </h3>
-                        <div className="flex justify-center">
-                          <img
-                            src={selectedAnalysisData.image_url}
-                            alt="Analyzed bone"
-                            className="max-h-60 md:max-h-72 object-contain rounded-md cursor-pointer transition-transform hover:scale-[1.02]" // Adjusted max-h
-                             onClick={() => window.open(selectedAnalysisData.image_url, '_blank')} // Open image in new tab
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {selectedAnalysisData.result_text ? (
-                      // Added ref here for PDF export
-                      <div ref={resultsRef} className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
-                        {formatResults(selectedAnalysisData.result_text)}
-                      </div>
+           <Card className="col-span-1 lg:col-span-2 border shadow-sm rounded-xl overflow-hidden hover-card transition-all">
+                 {/* === MODIFIED HEADER 2 === */}
+                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 border-b border-blue-700/50 text-white">
+                  <CardTitle className="flex items-center text-base font-semibold"> {/* Title text color inherited */}
+                    {selectedAnalysisData ? (
+                      <>
+                        <Bone className="h-4 w-4 mr-2 text-white/90" /> {/* Icon color adjusted */}
+                        {selectedAnalysisData.task_name}
+                      </>
                     ) : (
-                      <p className="text-muted-foreground text-center py-6">No analysis results available for this entry.</p> // Centered message
+                      'Analysis Details'
                     )}
+                  </CardTitle>
+                </CardHeader>
+                 {/* === END MODIFIED HEADER 2 === */}
+               <CardContent className={`pt-4 p-4 md:p-5 ${contentFadeIn ? 'fade-in-content visible' : 'fade-in-content'}`}> {/* Adjusted padding */}
+                 {selectedAnalysisData ? (
+                   <Tabs defaultValue="results" className="w-full">
+                      <TabsList className="mb-4 grid w-full grid-cols-2 tabs-list-container">
+                       <TabsTrigger value="results" className="hover-tab-trigger">
+                         Analysis Results
+                       </TabsTrigger>
+                       <TabsTrigger value="chat" className="hover-tab-trigger">
+                         Chat History
+                       </TabsTrigger>
+                     </TabsList>
 
-                  </TabsContent>
 
-                  <TabsContent value="chat" className="max-h-[calc(100vh-350px)] overflow-y-auto custom-scrollbar pr-2"> {/* Added max-h and scrollbar */}
-                    {chatInteractions[selectedAnalysisData.id]?.length > 0 ? (
-                      <div className="space-y-4">
-                        {chatInteractions[selectedAnalysisData.id].map((chat, index) => (
-                          <div key={chat.id || index} className="space-y-2"> {/* Fallback key */}
-                            <div className="flex justify-end group">
-                              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3 rounded-lg rounded-tr-none max-w-[85%] text-sm hover-message transition-all shadow-md">
-                                {chat.user_message}
-                                 <div className="text-xs text-blue-200 opacity-0 group-hover:opacity-100 transition-opacity mt-1 text-right">
-                                   {new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                     <TabsContent value="results" className="space-y-4 max-h-[calc(100vh-370px)] overflow-y-auto custom-scrollbar pr-2 -mr-1"> {/* Adjusted max-h */}
+                       {selectedAnalysisData.image_url && (
+                         <div className="mb-5 border rounded-lg p-3 hover-image-card transition-all overflow-hidden bg-gray-50 dark:bg-gray-800/50 shadow-sm">
+                           <h3 className="font-medium text-sm mb-2 flex items-center text-gray-700 dark:text-gray-300">
+                             <svg className="h-4 w-4 mr-1.5 text-primary/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                             Analyzed Image
+                           </h3>
+                           <div className="flex justify-center">
+                             <img src={selectedAnalysisData.image_url} alt="Analyzed bone" className="max-h-52 md:max-h-60 object-contain rounded-md cursor-pointer transition-transform hover:scale-[1.03]" onClick={() => window.open(selectedAnalysisData.image_url, '_blank')} />
+                           </div>
+                         </div>
+                       )}
+                       {/* Analysis Results Text */}
+                        <div ref={resultsRef} className="prose dark:prose-invert max-w-none">
+                         {formatResults(selectedAnalysisData.result_text)}
+                       </div>
+                     </TabsContent>
+
+
+                     <TabsContent value="chat" className="max-h-[calc(100vh-370px)] overflow-y-auto custom-scrollbar pr-2 -mr-1"> {/* Adjusted max-h */}
+                       {chatInteractions[selectedAnalysisData.id]?.length > 0 ? (
+                         <div className="space-y-4">
+                           {chatInteractions[selectedAnalysisData.id].map((chat) => (
+                             <div key={chat.id} className="space-y-2 text-sm">
+                               <div className="flex justify-end group">
+                                 <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-2.5 rounded-lg rounded-tr-none hover-message transition-all shadow-md relative">
+                                   {chat.user_message}
+                                   <div className="text-xs text-blue-200/80 pt-1 text-right">
+                                     {new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                   </div>
                                  </div>
-                              </div>
-                            </div>
-                            <div className="flex justify-start group">
-                              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg rounded-tl-none max-w-[85%] text-sm hover-ai-message transition-all shadow-md text-gray-800 dark:text-gray-100">
-                                {chat.ai_response}
-                                 <div className="text-xs text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity mt-1 text-left">
-                                    {new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                               </div>
+                               <div className="flex justify-start group">
+                                 <div className="bg-gray-100 dark:bg-gray-700 p-2.5 rounded-lg rounded-tl-none hover-ai-message transition-all shadow-md relative text-gray-800 dark:text-gray-100">
+                                   {chat.ai_response}
+                                    <div className="text-xs text-gray-400 dark:text-gray-500 pt-1 text-left">
+                                     {new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                   </div>
                                  </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-                          <svg
-                            className="h-8 w-8 text-gray-400 dark:text-gray-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                            />
-                          </svg>
-                        </div>
-                        <p className="text-muted-foreground mb-4">No chat interactions recorded for this analysis.</p> {/* Added margin */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-4 hover-scale transition-all"
-                          onClick={() => navigate(`/analysis/${selectedAnalysisData.task_id}?analysisId=${selectedAnalysisData.id}`)} // Pass analysisId too if needed
-                        >
-                          Discuss Results
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              ) : (
-                <div className="flex justify-center items-center h-64 text-muted-foreground">
-                  Select an analysis from the list to view details
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       ) : (
+                          <div className="text-center py-10 px-4">
+                           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 mb-3">
+                             <svg className="h-6 w-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                           </div>
+                           <p className="text-sm text-muted-foreground mb-4">No chat interactions recorded for this analysis.</p>
+                           <Button variant="outline" size="sm" className="mt-2 hover-scale transition-all text-xs px-3 py-1 h-auto" onClick={() => navigate(`/analysis/${selectedAnalysisData.task_id}?analysisId=${selectedAnalysisData.id}`)}>
+                             Discuss Results <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                           </Button>
+                         </div>
+                       )}
+                     </TabsContent>
+                   </Tabs>
+                 ) : (
+                   <div className="flex justify-center items-center h-64 text-muted-foreground text-sm">
+                     Select an analysis from the list to view details.
+                   </div>
+                 )}
+               </CardContent>
+           </Card>
+
         </div>
       )}
 
@@ -900,46 +988,30 @@ const AnalysisHistory = () => {
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Share Analysis Results</DialogTitle>
-             {/* Optional: Add description */}
-             {/* <DialogDescription>Enter the recipient's email and an optional note.</DialogDescription> */}
+            <DialogTitle className="text-lg">Share Analysis Results</DialogTitle>
+            {/* <DialogDescription>Enter recipient details below.</DialogDescription> */}
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-right">Email address</Label> {/* Added class for potential alignment */}
-              <Input
-                id="email"
-                type="email"
-                placeholder="recipient@example.com"
-                value={shareEmail}
-                onChange={(e) => setShareEmail(e.target.value)}
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium">Email address</Label>
+              <Input id="email" type="email" placeholder="recipient@example.com" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} className="h-9 text-sm"/>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="note" className="text-right">Add a note (optional)</Label> {/* Added class */}
-              <Input // Changed to Textarea for potentially longer notes
-                id="note"
-                placeholder="Optional message..."
-                value={shareNote}
-                onChange={(e) => setShareNote(e.target.value)}
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="note" className="text-xs font-medium">Add a note (optional)</Label>
+               <Textarea // Use Textarea instead of Input
+                 id="note"
+                 placeholder="Include a brief message..."
+                 value={shareNote}
+                 onChange={(e) => setShareNote(e.target.value)}
+                 className="text-sm min-h-[60px]" // Basic styling for textarea
+                 rows={3}
+               />
             </div>
           </div>
-          <DialogFooter className="sm:justify-end"> {/* Adjusted footer justification */}
-            <Button
-              type="button" // Explicit type
-              variant="outline"
-              onClick={() => setShareDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button" // Explicit type
-              onClick={handleShare}
-              disabled={!shareEmail} // Disable if no email
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white" // Ensure text color
-            >
-              Share
+          <DialogFooter className="sm:justify-end gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setShareDialogOpen(false)}>Cancel</Button>
+            <Button type="button" size="sm" onClick={handleShare} disabled={!shareEmail || !/\S+@\S+\.\S+/.test(shareEmail)} className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:opacity-90 disabled:opacity-50">
+              Share Analysis
             </Button>
           </DialogFooter>
         </DialogContent>
