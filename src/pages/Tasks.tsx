@@ -44,7 +44,8 @@ const Tasks = () => {
     const fetchTasks = async () => {
       if (!user) return;
       try {
-        setLoading(true);
+        // Keep setLoading true initially if fetching both tasks and activities
+        // setLoading(true);
         const { data, error } = await supabase
           .from('tasks')
           .select('*')
@@ -59,12 +60,13 @@ const Tasks = () => {
         console.error('Error fetching tasks:', error);
         toast.error('Failed to load tasks');
       } finally {
-        setLoading(false);
+        // setLoading(false); // Set loading false after both fetches complete (in fetchRecentActivities)
       }
     };
 
     const fetchRecentActivities = async () => {
       if (!user) return;
+      setLoading(true); // Set loading true here before fetches start
       try {
         const { data: analysesData, error: analysesError } = await supabase
           .from('analyses')
@@ -73,19 +75,17 @@ const Tasks = () => {
           .order('created_at', { ascending: false })
           .limit(5);
 
-        // Use analyses if available and non-empty
         if (!analysesError && analysesData && analysesData.length > 0) {
             const activities: RecentActivity[] = analysesData.map(analysis => ({
                 id: analysis.id,
-                title: analysis.task_name, // Use task_name for title
+                title: analysis.task_name,
                 created_at: analysis.created_at,
             }));
             setRecentActivities(activities);
-            // Don't fetch tasks if analyses were found
-            return;
+            return; // Return early if analyses found
         }
 
-        // Fallback to tasks if no analyses found or error occurred
+        // Fallback to tasks only if analyses fetch failed or returned empty
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('id, title, created_at')
@@ -94,42 +94,32 @@ const Tasks = () => {
           .limit(5);
 
         if (tasksError) {
-          // Log task error only if analysis didn't already have an error
-          if(analysesError) console.error('Also error fetching tasks:', tasksError);
-          else throw tasksError;
+           if(analysesError) console.error('Also error fetching tasks:', tasksError);
+           else throw tasksError; // Throw only if analysis didn't fail
         }
 
         const taskActivities: RecentActivity[] = (tasksData || []).map(task => ({
           id: task.id,
           title: task.title,
-          created_at: task.created_at || new Date().toISOString(), // Ensure created_at exists
+          created_at: task.created_at || new Date().toISOString(),
         }));
-
         setRecentActivities(taskActivities);
 
       } catch (error) {
         console.error('Error fetching recent activities:', error);
-        // Optionally show a toast notification for recent activities error
-        // toast.error('Failed to load recent activities');
+      } finally {
+          setLoading(false); // Set loading false after all attempts
       }
     };
 
-
-    fetchTasks();
-    fetchRecentActivities();
+    fetchTasks(); // Fetch tasks regardless
+    fetchRecentActivities(); // Fetch activities and handle loading state
 
     setTimeout(() => {
       setTitleFadeIn(true);
     }, 100);
   }, [user]);
 
-  const handleCreateTask = () => {
-    navigate('/tasks'); // Assuming '/tasks' is where you create tasks
-  };
-
-  const handleViewTask = (taskId: string) => {
-    navigate(`/task-details/${taskId}`);
-  };
 
   const handleLogout = async () => {
     try {
@@ -141,19 +131,11 @@ const Tasks = () => {
     }
   };
 
-  const filteredTasks = activeTab === 'completed'
-    ? tasks.filter(task => task.completed)
-    : activeTab === 'pending'
-      ? tasks.filter(task => !task.completed)
-      : tasks;
-
   if (!user) {
-    return null; // Or a loading spinner/redirect component
+    return null;
   }
 
   return (
-    // Removed AuroraBackground, assuming you want the standard page bg
-    // <AuroraBackground>
       <div className="container mx-auto px-4 py-12">
         <style>
         {`
@@ -178,11 +160,12 @@ const Tasks = () => {
           transition: color 0.2s ease-out, text-decoration 0.2s ease-out;
         }
 
-        .hover-title:hover {
-          color: var(--primary); /* Use primary color on hover */
+        /* Keep hover-title effect subtle if needed, or remove if card hover is enough */
+        /* .hover-title:hover {
+          color: var(--primary);
           text-decoration: underline;
           text-underline-offset: 3px;
-        }
+        } */
 
         .fade-in-title {
           opacity: 0;
@@ -195,7 +178,6 @@ const Tasks = () => {
           transform: translateY(0);
         }
 
-        /* Add animation styles if needed */
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
@@ -207,16 +189,14 @@ const Tasks = () => {
         `}
         </style>
 
-        {/* --- MODIFIED TITLE SECTION --- */}
+        {/* --- Title Section --- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-          {/* Apply the background styling here */}
-          <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl flex-grow"> {/* Added flex-grow */}
-            <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>Dashboard</h1> {/* Removed inline style, added mb-2 */}
+          <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl flex-grow">
+            <h1 className={`text-3xl font-bold mb-2 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>Dashboard</h1>
             <p className="text-muted-foreground">Manage your tasks and bone health analyses</p>
           </div>
 
-          {/* Buttons remain on the right */}
-          <div className="flex flex-col sm:flex-row gap-3"> {/* Adjusted button layout responsiveness */}
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="gradient"
               onClick={() => navigate('/')}
@@ -245,45 +225,50 @@ const Tasks = () => {
             </Button>
           </div>
         </div>
-        {/* --- END OF MODIFIED TITLE SECTION --- */}
+        {/* --- END OF Title Section --- */}
 
 
-        {/* Rest of the component remains the same */}
+        {/* --- Cards Section --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Card 1: Bone Health Analysis */}
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
+          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col"> {/* Added flex flex-col */}
             <CardHeader>
-              <CardTitle className="text-xl font-semibold hover-title">Bone Health Analysis</CardTitle>
+              <CardTitle className="text-xl font-semibold">Bone Health Analysis</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow"> {/* Added flex-grow */}
               <p className="text-white/90 mb-4 text-base font-bold">
                 Access AI-powered bone health analysis tools
               </p>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/bone-analysis')}>
-                Start Analysis <ArrowRight className="ml-2 h-4 w-4" />
+              {/* --- MODIFIED BUTTON --- */}
+              <Button
+                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white hover:bg-gray-100 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-600"
+                onClick={() => navigate('/bone-analysis')}
+              >
+                 {/* Keep icon inside span if needed, or directly in button */}
+                Start Analysis <ArrowRight className="ml-2 h-4 w-4 inline" /> {/* Added inline */}
               </Button>
             </CardFooter>
           </Card>
 
           {/* Card 2: Recent Activities */}
-           <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
+           <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col"> {/* Added flex flex-col */}
             <CardHeader>
-              <CardTitle className="text-xl font-semibold hover-title">Recent Activities</CardTitle>
+              <CardTitle className="text-xl font-semibold">Recent Activities</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow"> {/* Added flex-grow */}
               <p className="text-white/90 mb-4">
                 {loading ? 'Loading activities...' :
                  recentActivities.length > 0
-                  ? `You have ${recentActivities.length} recent activities:`
+                  ? `Latest Activities:` // Changed text slightly
                   : 'No recent activities found.'}
               </p>
               {!loading && recentActivities.length > 0 && (
-                <div className="space-y-2 max-h-32 overflow-y-auto pr-2"> {/* Added padding-right for scrollbar */}
+                <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
                   {recentActivities.map((activity) => (
-                    <div key={activity.id} className="text-sm bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20 cursor-pointer" onClick={() => navigate('/analysis-history')}> {/* Made clickable */}
-                      <p className="font-medium text-white truncate">{activity.title}</p> {/* Added truncate */}
+                    <div key={activity.id} className="text-sm bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20 cursor-pointer" onClick={() => navigate('/analysis-history')}>
+                      <p className="font-medium text-white truncate">{activity.title}</p>
                       <p className="text-xs text-white/80">
                         {new Date(activity.created_at).toLocaleString()}
                       </p>
@@ -291,51 +276,56 @@ const Tasks = () => {
                   ))}
                 </div>
               )}
+               {!loading && recentActivities.length === 0 && ( // Show message when loaded but empty
+                   <p className="text-white/70 text-sm">Perform an analysis to see history here.</p>
+               )}
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/analysis-history')}>
-                <History className="mr-2 h-4 w-4" />
+              {/* --- MODIFIED BUTTON --- */}
+              <Button
+                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white hover:bg-gray-100 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-600"
+                onClick={() => navigate('/analysis-history')}
+              >
+                <History className="mr-2 h-4 w-4 inline" /> {/* Added inline */}
                 View All History
               </Button>
             </CardFooter>
           </Card>
 
           {/* Card 3: My Account */}
-          <Card className="bg-gradient-to-br from-purple-600 to-pink-600 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in">
+          <Card className="bg-gradient-to-br from-purple-600 to-pink-600 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col"> {/* Added flex flex-col */}
             <CardHeader>
-              <CardTitle className="text-xl font-semibold hover-title">My Account</CardTitle>
+              <CardTitle className="text-xl font-semibold">My Account</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-white/90 mb-4 truncate"> {/* Added truncate */}
-                 {user.userType === 'doctor' ? 'Doctor Account' : 'User Account'}: {user.email}
+            <CardContent className="flex-grow"> {/* Added flex-grow */}
+              <p className="text-white/90 mb-4 truncate">
+                 {user.email}
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
-                  <User className="h-4 w-4 flex-shrink-0" /> {/* Prevent shrinking */}
-                  <span className="text-sm truncate">Profile: {user.name || 'Not set'}</span> {/* Added truncate */}
+                  <User className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-sm truncate">Profile: {user.name || 'Not set'}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg transition-all duration-200 hover:bg-white/20">
-                   <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${user.userType === 'doctor' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'}`}> {/* Added badge style */}
+                   <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${user.userType === 'doctor' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'}`}>
                     {user.userType}
                   </span>
-                  {/* Removed the text "Account type:" to avoid redundancy with the badge */}
                 </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 text-white hover:bg-white/30" onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
+              {/* --- MODIFIED BUTTON --- */}
+              <Button
+                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white hover:bg-gray-100 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-600"
+                onClick={() => navigate('/profile')}
+              >
+                <User className="mr-2 h-4 w-4 inline" /> {/* Added inline */}
                 Account Settings
               </Button>
             </CardFooter>
           </Card>
         </div>
-
-        {/* --- Removed the Tasks section as it seemed unrelated to the dashboard focus --- */}
-        {/* If you need the tasks list back, it can be added here */}
-
       </div>
-    // </AuroraBackground> // Closing tag removed if AuroraBackground is commented out
   );
 };
 
