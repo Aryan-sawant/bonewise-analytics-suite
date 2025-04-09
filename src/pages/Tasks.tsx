@@ -2,21 +2,24 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bone, PlusCircle, ArrowRight, Home, User, History, LogOut } from 'lucide-react';
+// Removed unused Tabs imports
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bone, ArrowRight, Home, User, History, LogOut } from 'lucide-react'; // Removed unused PlusCircle
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AuroraBackground } from "@/components/ui/aurora-background";
+// Removed AuroraBackground import if not used
+// import { AuroraBackground } from "@/components/ui/aurora-background";
 
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  completed: boolean | null;
-  deadline: string | null;
-  created_at: string | null;
-}
+// Removed unused Task interface if tasks list is not displayed
+// interface Task {
+//   id: string;
+//   title: string;
+//   description: string | null;
+//   completed: boolean | null;
+//   deadline: string | null;
+//   created_at: string | null;
+// }
 
 interface RecentActivity {
   id: string;
@@ -27,10 +30,12 @@ interface RecentActivity {
 const Tasks = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  // Removed tasks state if not used
+  // const [tasks, setTasks] = useState<Task[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>('all');
+  // Removed activeTab state if not used
+  // const [activeTab, setActiveTab] = useState<string>('all');
   const [titleFadeIn, setTitleFadeIn] = useState(false);
 
   useEffect(() => {
@@ -41,32 +46,12 @@ const Tasks = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      if (!user) return;
-      try {
-        // Keep setLoading true initially if fetching both tasks and activities
-        // setLoading(true);
-        const { data, error } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-        setTasks(data || []);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        toast.error('Failed to load tasks');
-      } finally {
-        // setLoading(false); // Set loading false after both fetches complete (in fetchRecentActivities)
-      }
-    };
+    // Removed fetchTasks if task list isn't displayed
+    // const fetchTasks = async () => { ... };
 
     const fetchRecentActivities = async () => {
       if (!user) return;
-      setLoading(true); // Set loading true here before fetches start
+      setLoading(true);
       try {
         const { data: analysesData, error: analysesError } = await supabase
           .from('analyses')
@@ -82,10 +67,9 @@ const Tasks = () => {
                 created_at: analysis.created_at,
             }));
             setRecentActivities(activities);
-            return; // Return early if analyses found
+            return;
         }
 
-        // Fallback to tasks only if analyses fetch failed or returned empty
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('id, title, created_at')
@@ -95,7 +79,7 @@ const Tasks = () => {
 
         if (tasksError) {
            if(analysesError) console.error('Also error fetching tasks:', tasksError);
-           else throw tasksError; // Throw only if analysis didn't fail
+           else throw tasksError;
         }
 
         const taskActivities: RecentActivity[] = (tasksData || []).map(task => ({
@@ -108,12 +92,12 @@ const Tasks = () => {
       } catch (error) {
         console.error('Error fetching recent activities:', error);
       } finally {
-          setLoading(false); // Set loading false after all attempts
+          setLoading(false);
       }
     };
 
-    fetchTasks(); // Fetch tasks regardless
-    fetchRecentActivities(); // Fetch activities and handle loading state
+    // fetchTasks(); // Removed if not needed
+    fetchRecentActivities();
 
     setTimeout(() => {
       setTitleFadeIn(true);
@@ -131,6 +115,9 @@ const Tasks = () => {
     }
   };
 
+  // Removed filteredTasks if not needed
+  // const filteredTasks = ...;
+
   if (!user) {
     return null;
   }
@@ -139,53 +126,16 @@ const Tasks = () => {
       <div className="container mx-auto px-4 py-12">
         <style>
         {`
-        .hover-scale {
-          transition: transform 0.2s ease-out;
-        }
-
-        .hover-scale:hover {
-          transform: scale(1.05);
-        }
-
-        .hover-card {
-          transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
-        }
-
-        .hover-card:hover {
-          transform: translateZ(5px) translateY(-3px);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .hover-title {
-          transition: color 0.2s ease-out, text-decoration 0.2s ease-out;
-        }
-
-        /* Keep hover-title effect subtle if needed, or remove if card hover is enough */
-        /* .hover-title:hover {
-          color: var(--primary);
-          text-decoration: underline;
-          text-underline-offset: 3px;
-        } */
-
-        .fade-in-title {
-          opacity: 0;
-          transform: translateY(-10px);
-          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-
-        .fade-in-title.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        /* Styles remain the same */
+        .hover-scale { transition: transform 0.2s ease-out; }
+        .hover-scale:hover { transform: scale(1.05); }
+        .hover-card { transition: transform 0.3s ease-out, box-shadow 0.3s ease-out; }
+        .hover-card:hover { transform: translateZ(5px) translateY(-3px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+        .hover-title { transition: color 0.2s ease-out, text-decoration 0.2s ease-out; }
+        .fade-in-title { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+        .fade-in-title.visible { opacity: 1; transform: translateY(0); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         `}
         </style>
 
@@ -197,6 +147,7 @@ const Tasks = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
+             {/* Top Buttons remain the same */}
             <Button
               variant="gradient"
               onClick={() => navigate('/')}
@@ -205,7 +156,6 @@ const Tasks = () => {
               <Home className="mr-2 h-4 w-4" />
               Home
             </Button>
-
             <Button
               onClick={() => navigate('/bone-analysis')}
               variant="gradient"
@@ -214,7 +164,6 @@ const Tasks = () => {
               <Bone className="mr-2 h-4 w-4" />
               Bone Analysis
             </Button>
-
             <Button
               variant="gradient"
               onClick={handleLogout}
@@ -231,11 +180,11 @@ const Tasks = () => {
         {/* --- Cards Section --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Card 1: Bone Health Analysis */}
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col"> {/* Added flex flex-col */}
+          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl font-semibold">Bone Health Analysis</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow"> {/* Added flex-grow */}
+            <CardContent className="flex-grow">
               <p className="text-white/90 mb-4 text-base font-bold">
                 Access AI-powered bone health analysis tools
               </p>
@@ -243,25 +192,24 @@ const Tasks = () => {
             <CardFooter>
               {/* --- MODIFIED BUTTON --- */}
               <Button
-                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white hover:bg-gray-100 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-600"
+                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 hover:bg-white/30 text-indigo-700 font-semibold" // Solid text color
                 onClick={() => navigate('/bone-analysis')}
               >
-                 {/* Keep icon inside span if needed, or directly in button */}
-                Start Analysis <ArrowRight className="ml-2 h-4 w-4 inline" /> {/* Added inline */}
+                Start Analysis <ArrowRight className="ml-2 h-4 w-4 inline" />
               </Button>
             </CardFooter>
           </Card>
 
           {/* Card 2: Recent Activities */}
-           <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col"> {/* Added flex flex-col */}
+           <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl font-semibold">Recent Activities</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow"> {/* Added flex-grow */}
-              <p className="text-white/90 mb-4">
+            <CardContent className="flex-grow">
+               <p className="text-white/90 mb-4">
                 {loading ? 'Loading activities...' :
                  recentActivities.length > 0
-                  ? `Latest Activities:` // Changed text slightly
+                  ? `Latest Activities:`
                   : 'No recent activities found.'}
               </p>
               {!loading && recentActivities.length > 0 && (
@@ -276,28 +224,28 @@ const Tasks = () => {
                   ))}
                 </div>
               )}
-               {!loading && recentActivities.length === 0 && ( // Show message when loaded but empty
+               {!loading && recentActivities.length === 0 && (
                    <p className="text-white/70 text-sm">Perform an analysis to see history here.</p>
                )}
             </CardContent>
             <CardFooter>
               {/* --- MODIFIED BUTTON --- */}
               <Button
-                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white hover:bg-gray-100 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-600"
+                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 hover:bg-white/30 text-indigo-700 font-semibold" // Solid text color
                 onClick={() => navigate('/analysis-history')}
               >
-                <History className="mr-2 h-4 w-4 inline" /> {/* Added inline */}
+                <History className="mr-2 h-4 w-4 inline" />
                 View All History
               </Button>
             </CardFooter>
           </Card>
 
           {/* Card 3: My Account */}
-          <Card className="bg-gradient-to-br from-purple-600 to-pink-600 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col"> {/* Added flex flex-col */}
+          <Card className="bg-gradient-to-br from-purple-600 to-pink-600 text-white transition-all duration-300 hover-card hover:shadow-xl transform hover:translate-z-0 hover:scale-103 rounded-xl border-none animate-fade-in flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl font-semibold">My Account</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow"> {/* Added flex-grow */}
+            <CardContent className="flex-grow">
               <p className="text-white/90 mb-4 truncate">
                  {user.email}
               </p>
@@ -316,10 +264,10 @@ const Tasks = () => {
             <CardFooter>
               {/* --- MODIFIED BUTTON --- */}
               <Button
-                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white hover:bg-gray-100 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-600"
+                className="w-full hover-scale transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 rounded-xl bg-white/20 hover:bg-white/30 text-indigo-700 font-semibold" // Solid text color
                 onClick={() => navigate('/profile')}
               >
-                <User className="mr-2 h-4 w-4 inline" /> {/* Added inline */}
+                <User className="mr-2 h-4 w-4 inline" />
                 Account Settings
               </Button>
             </CardFooter>
