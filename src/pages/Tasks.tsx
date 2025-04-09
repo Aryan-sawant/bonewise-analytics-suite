@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bone, PlusCircle, ArrowRight, Home, User, History, LogOut, FileChart, Search, Calendar, Settings } from 'lucide-react';
+import { Bone, PlusCircle, ArrowRight, Home, User, History, LogOut, FileText, Search, Calendar, Settings } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
