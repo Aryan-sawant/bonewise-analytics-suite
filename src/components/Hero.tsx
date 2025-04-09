@@ -171,7 +171,7 @@ const Hero = () => {
             animationDelay: '0.3s'
           }}>
             <Link to="/auth?tab=signup">
-              <Button size="lg" className="gap-2 px-4 md:px-6 w-full sm:w-auto transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:translate-z-0 hover:scale-105 text-sm md:text-base">
+              <Button size="lg" variant="gradient" className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl">
                 Get Started
                 <ArrowRight size={16} />
               </Button>
