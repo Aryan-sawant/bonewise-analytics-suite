@@ -44,6 +44,7 @@ serve(async (req) => {
     console.log("Email subject:", subject);
     console.log("Attachments:", attachments ? "Yes (count: " + attachments.length + ")" : "No");
     
+    // Prepare email options
     const emailOptions = {
       from: "Bone Health Analysis <no-reply@bonehealth.ai>",
       to: [to],

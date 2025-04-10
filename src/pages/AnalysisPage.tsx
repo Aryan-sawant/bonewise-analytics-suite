@@ -150,28 +150,37 @@ const AnalysisPage = () => {
             const taskTitle = TASK_TITLES[taskId] || 'Bone Analysis';
             const analysisDate = new Date().toLocaleString();
             
+            // Add title
             pdf.setFontSize(16);
             pdf.text(taskTitle, 20, 20);
             
+            // Add date
             pdf.setFontSize(12);
             pdf.text(`Analysis Date: ${analysisDate}`, 20, 30);
             
+            // Add user info if available
             if (user) {
                 pdf.text(`User: ${user.email || 'Anonymous'}`, 20, 40);
             }
             
+            // Add image if available
             if (storedImageUrl || imageUrl) {
                 pdf.addPage();
                 pdf.text('Medical Image', 20, 20);
                 
                 try {
                     const img = new Image();
+                    img.crossOrigin = "Anonymous";
                     img.src = storedImageUrl || imageUrl;
-                    await new Promise<void>((resolve) => {
+                    
+                    // Wait for image to load
+                    await new Promise<void>((resolve, reject) => {
                         img.onload = () => resolve();
-                        img.onerror = () => resolve();
+                        img.onerror = () => reject(new Error("Failed to load image"));
+                        setTimeout(() => reject(new Error("Image load timeout")), 10000);
                     });
                     
+                    // Calculate dimensions to fit in PDF
                     const pageWidth = pdf.internal.pageSize.getWidth();
                     const maxWidth = pageWidth - 40;
                     
@@ -183,8 +192,11 @@ const AnalysisPage = () => {
                         imgWidth = img.width * (imgHeight / img.height);
                     }
                     
+                    // Center the image
                     const xOffset = (pageWidth - imgWidth) / 2;
-                    pdf.addImage(img.src, 'JPEG', xOffset, 40, imgWidth, imgHeight);
+                    
+                    // Add image to PDF
+                    pdf.addImage(img, 'JPEG', xOffset, 40, imgWidth, imgHeight);
                 }
                 catch (imgError) {
                     console.error("Could not add image to PDF:", imgError);
@@ -192,21 +204,34 @@ const AnalysisPage = () => {
                 }
             }
             
+            // Add analysis results
             if (results) {
                 pdf.addPage();
                 pdf.text('Analysis Results', 20, 20);
                 
-                const resultsText = results.replace(/\r\n/g, '\n').replace(/ +\n/g, '\n').trim();
-                const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
+                // Clean up the results text
+                const resultsText = results
+                    .replace(/\r\n/g, '\n')
+                    .replace(/ +\n/g, '\n')
+                    .replace(/<\/?b>/g, '')
+                    .replace(/<\/?strong>/g, '')
+                    .replace(/<\/?i>/g, '')
+                    .replace(/<\/?em>/g, '')
+                    .replace(/<\/?p>/g, '')
+                    .replace(/<br\s*\/?>/g, '\n')
+                    .replace(/&nbsp;/g, ' ')
+                    .trim();
                 
-                const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
+                const paragraphs = resultsText.split(/\n\n+/);
                 
                 let yPos = 40;
+                
                 paragraphs.forEach(paragraph => {
                     const trimmed = paragraph.trim();
                     if (!trimmed) return;
                     
                     if (trimmed.startsWith('#')) {
+                        // This is a heading
                         const headingText = trimmed.replace(/^#+\s+/, '');
                         pdf.setFontSize(14);
                         
@@ -218,6 +243,7 @@ const AnalysisPage = () => {
                         pdf.text(headingText, 20, yPos);
                         yPos += 10;
                     } else {
+                        // This is regular content
                         pdf.setFontSize(10);
                         const contentWidth = pdf.internal.pageSize.getWidth() - 40;
                         const lines = pdf.splitTextToSize(trimmed, contentWidth);
@@ -237,6 +263,7 @@ const AnalysisPage = () => {
                 });
             }
             
+            // Add page numbers
             const pageCount = pdf.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 pdf.setPage(i);
@@ -244,6 +271,7 @@ const AnalysisPage = () => {
                 pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 30, pdf.internal.pageSize.getHeight() - 10);
             }
             
+            // Save the PDF
             const date = new Date().toISOString().split('T')[0];
             const cleanTitle = taskTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             pdf.save(`${cleanTitle}_${date}.pdf`);

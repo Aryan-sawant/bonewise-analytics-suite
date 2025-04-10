@@ -5,7 +5,6 @@ import { MessageCircle, Download, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,25 +91,29 @@ const ResultsDisplay = ({
         
         try {
           const img = new Image();
+          img.crossOrigin = "Anonymous";
           img.src = imageUrl;
-          await new Promise<void>((resolve) => {
+          
+          await new Promise<void>((resolve, reject) => {
             img.onload = () => resolve();
-            img.onerror = () => resolve();
+            img.onerror = () => reject(new Error("Failed to load image"));
+            setTimeout(() => reject(new Error("Image load timeout")), 10000);
           });
           
           const pageWidth = pdf.internal.pageSize.getWidth();
           const maxWidth = pageWidth - 40;
           
           let imgWidth = Math.min(img.width, maxWidth);
-          let imgHeight = img.height * (imgWidth / img.width);
+          let imgHeight = img.height * (imgWidth / img.height);
           
           if (imgHeight > 200) {
             imgHeight = 200;
-            imgWidth = img.width * (imgHeight / img.height);
+            imgWidth = img.width * (imgHeight / img.width);
           }
           
           const xOffset = (pageWidth - imgWidth) / 2;
-          pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
+          
+          pdf.addImage(img, 'JPEG', xOffset, 30, imgWidth, imgHeight);
         } catch (imgErr) {
           console.error("Image error:", imgErr);
           pdf.text("Image could not be loaded", 20, 40);
@@ -121,6 +124,7 @@ const ResultsDisplay = ({
       pdf.text("Analysis Results", 20, 20);
       
       let yPosition = 40;
+      
       results.forEach(result => {
         pdf.setFontSize(14);
         pdf.text(result.title, 20, yPosition);
@@ -128,8 +132,17 @@ const ResultsDisplay = ({
         
         pdf.setFontSize(10);
         
+        const cleanContent = result.content
+          .replace(/<\/?b>/g, '')
+          .replace(/<\/?strong>/g, '')
+          .replace(/<\/?i>/g, '')
+          .replace(/<\/?em>/g, '')
+          .replace(/<\/?p>/g, '')
+          .replace(/<br\s*\/?>/g, '\n')
+          .replace(/&nbsp;/g, ' ');
+        
         const contentWidth = pdf.internal.pageSize.getWidth() - 40;
-        const contentLines = pdf.splitTextToSize(result.content, contentWidth);
+        const contentLines = pdf.splitTextToSize(cleanContent, contentWidth);
         
         contentLines.forEach(line => {
           if (yPosition > pdf.internal.pageSize.getHeight() - 20) {
@@ -182,10 +195,13 @@ const ResultsDisplay = ({
         
         try {
           const img = new Image();
+          img.crossOrigin = "Anonymous";
           img.src = imageUrl;
-          await new Promise<void>((resolve) => {
+          
+          await new Promise<void>((resolve, reject) => {
             img.onload = () => resolve();
-            img.onerror = () => resolve();
+            img.onerror = () => reject(new Error("Failed to load image"));
+            setTimeout(() => reject(new Error("Image load timeout")), 10000);
           });
           
           const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -199,9 +215,11 @@ const ResultsDisplay = ({
           }
           
           const xOffset = (pdfWidth - imgWidth) / 2;
-          pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
+          
+          pdf.addImage(img, 'JPEG', xOffset, 30, imgWidth, imgHeight);
         } catch (imgErr) {
           console.error("Image error:", imgErr);
+          pdf.text("Image could not be loaded", 20, 40);
         }
       }
       
@@ -209,6 +227,7 @@ const ResultsDisplay = ({
       pdf.text("Analysis Results", 20, 20);
       
       let yPosition = 40;
+      
       results.forEach(result => {
         pdf.setFontSize(14);
         pdf.text(result.title, 20, yPosition);
@@ -216,8 +235,18 @@ const ResultsDisplay = ({
         
         pdf.setFontSize(10);
         
+        const cleanContent = result.content
+          .replace(/<\/?b>/g, '')
+          .replace(/<\/?strong>/g, '')
+          .replace(/<\/?i>/g, '')
+          .replace(/<\/?em>/g, '')
+          .replace(/<\/?p>/g, '')
+          .replace(/<br\s*\/?>/g, '\n')
+          .replace(/&nbsp;/g, ' ');
+        
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const contentLines = pdf.splitTextToSize(result.content, pdfWidth - 40);
+        const contentLines = pdf.splitTextToSize(cleanContent, pdfWidth - 40);
+        
         contentLines.forEach(line => {
           if (yPosition > pdf.internal.pageSize.getHeight() - 20) {
             pdf.addPage();
@@ -270,10 +299,10 @@ const ResultsDisplay = ({
           <div className="w-full flex justify-between items-center">
             <span className="text-xs text-muted-foreground">{timestamp}</span>
             <div className="flex gap-2">
-              <Button variant="ghost" size="icon" onClick={handleDownload}>
+              <Button variant="ghost" size="icon" onClick={handleDownload} className="download-btn">
                 <Download size={18} />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setShareDialogOpen(true)}>
+              <Button variant="ghost" size="icon" onClick={() => setShareDialogOpen(true)} className="share-btn">
                 <Share2 size={18} />
               </Button>
             </div>

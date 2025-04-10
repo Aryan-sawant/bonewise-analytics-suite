@@ -53,32 +53,27 @@ serve(async (req) => {
     const date = new Date().toISOString().split("T")[0];
     const fileName = `${analysisType.replace(/\s+/g, "_").toLowerCase()}_report_${date}.pdf`;
 
-    // Simplified HTML email template
+    // Simple HTML email template
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${subject}</title>
       </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background-color: #4f46e5; padding: 20px; border-radius: 8px 8px 0 0; color: white;">
-          <h2>Bone Health Analysis Results</h2>
+      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #4f46e5; padding: 15px; color: white; border-radius: 5px;">
+          <h2>${analysisType} Results</h2>
         </div>
-        <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-          <p>Analysis results for <strong>${analysisType}</strong> completed on ${timestamp} have been shared with you.</p>
-          
+        <div style="padding: 15px; border: 1px solid #e5e7eb; border-radius: 5px; margin-top: 10px;">
+          <p>Analysis completed on ${timestamp}</p>
           <p>${message}</p>
-          
-          <p>The analysis results are attached to this email as a PDF document.</p>
-          
-          <p><strong>Note:</strong> This AI-powered analysis is for informational purposes only and is not a substitute for professional medical advice.</p>
+          <p>The analysis results are attached as a PDF.</p>
         </div>
-        <div style="margin-top: 30px; font-size: 12px; color: #6b7280; text-align: center;">
-          <p>This is an automated message. Please do not reply to this email.</p>
-          <p>© ${new Date().getFullYear()} Bone Health Analysis AI</p>
-        </div>
+        <p style="font-size: 12px; color: #6b7280; text-align: center; margin-top: 20px;">
+          This is an automated message from Bone Health Analysis AI.<br>
+          For informational purposes only, not a substitute for professional medical advice.
+        </p>
       </body>
       </html>
     `;
