@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { isDoctor } from "@/types/auth";
 
 const Result = () => {
   const location = useLocation();
@@ -164,7 +166,7 @@ const Result = () => {
               <Share2 size={16} />
               Share
             </Button>
-            {user && user.userType !== 'doctor' && resultData && (
+            {user && !isDoctor(user) && resultData && (
               <Button 
                 variant="gradient" 
                 className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"

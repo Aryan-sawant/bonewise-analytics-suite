@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User, LogOut, Menu, X, Bone, UserRound } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { isDoctor } from "@/types/auth";
 
 const NavBar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -117,15 +119,17 @@ const NavBar = () => {
                 <LogOut size={16} />
                 <span>Logout</span>
               </Button>
-              <Button 
-                variant="gradient" 
-                size="sm" 
-                className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl" 
-                onClick={handleConsultSpecialist}
-              >
-                <UserRound size={16} />
-                <span>Consult a Specialist</span>
-              </Button>
+              {!isDoctor(user) && (
+                <Button 
+                  variant="gradient" 
+                  size="sm" 
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl" 
+                  onClick={handleConsultSpecialist}
+                >
+                  <UserRound size={16} />
+                  <span>Consult a Specialist</span>
+                </Button>
+              )}
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
                 <User size={18} />
               </div>
@@ -196,7 +200,7 @@ const NavBar = () => {
                   <LogOut size={16} />
                   <span>Logout</span>
                 </Button>
-                {user.userType !== 'doctor' && (
+                {!isDoctor(user) && (
                   <Button 
                     variant="gradient" 
                     className="w-full justify-start gap-2 rounded-xl hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105" 

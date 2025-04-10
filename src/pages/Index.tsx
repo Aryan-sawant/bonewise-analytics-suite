@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthContext } from '@/contexts/AuthContext';
 import { NavBarDemo } from '@/components/ui/navbar-demo';
 import { UserRound } from 'lucide-react';
+import { isDoctor } from "@/types/auth";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -143,7 +144,7 @@ const Index = () => {
                   Sign Up for Free
                 </Button>
               }
-              {user ? (
+              {user && !isDoctor(user) ? (
                 <Button 
                   size="lg" 
                   onClick={handleConsultSpecialist}
@@ -152,7 +153,7 @@ const Index = () => {
                   <UserRound className="mr-2 h-5 w-5" />
                   Consult a Specialist
                 </Button>
-              ) : (
+              ) : !user ? (
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/auth')} 
@@ -160,7 +161,7 @@ const Index = () => {
                 >
                   Log In
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </section>
@@ -232,7 +233,7 @@ const Index = () => {
           </Button>
         </div>
       }
-      {isScrolled && user && 
+      {isScrolled && user && !isDoctor(user) && 
         <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 animate-fade-in">
           <Button 
             size="lg" 

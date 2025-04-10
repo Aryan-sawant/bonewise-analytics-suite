@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { isDoctor } from "@/types/auth";
 
 const TASK_TITLES: Record<string, string> = { 
     'fracture-detection': 'Bone Fracture Detection',
@@ -169,15 +170,17 @@ const AnalysisPage = () => {
                 pdf.text('Medical Image', 20, 20);
                 
                 try {
+                    const imgSrc = storedImageUrl || imageUrl || '';
                     const img = new Image();
                     img.crossOrigin = "Anonymous";
-                    img.src = storedImageUrl || imageUrl;
+                    img.src = imgSrc;
                     
                     // Wait for image to load
-                    await new Promise<void>((resolve, reject) => {
-                        img.onload = () => resolve();
+                    await new Promise((resolve, reject) => {
+                        img.onload = () => resolve(true);
                         img.onerror = () => reject(new Error("Failed to load image"));
-                        setTimeout(() => reject(new Error("Image load timeout")), 10000);
+                        // Set timeout to prevent hanging
+                        setTimeout(() => resolve(false), 10000);
                     });
                     
                     // Calculate dimensions to fit in PDF
@@ -187,9 +190,9 @@ const AnalysisPage = () => {
                     let imgWidth = Math.min(img.width, maxWidth);
                     let imgHeight = img.height * (imgWidth / img.width);
                     
-                    if (imgHeight > 200) {
-                        imgHeight = 200;
-                        imgWidth = img.width * (imgHeight / img.height);
+                    if (imgHeight > 150) {
+                        imgHeight = 150;
+                        imgWidth = img.width * (imgHeight / img.width);
                     }
                     
                     // Center the image
@@ -210,7 +213,7 @@ const AnalysisPage = () => {
                 pdf.text('Analysis Results', 20, 20);
                 
                 // Clean up the results text
-                const resultsText = results
+                const cleanResults = results
                     .replace(/\r\n/g, '\n')
                     .replace(/ +\n/g, '\n')
                     .replace(/<\/?b>/g, '')
@@ -222,19 +225,23 @@ const AnalysisPage = () => {
                     .replace(/&nbsp;/g, ' ')
                     .trim();
                 
-                const paragraphs = resultsText.split(/\n\n+/);
+                // Split text into paragraphs based on double newlines
+                const paragraphs = cleanResults.split(/\n\n+/);
                 
-                let yPos = 40;
+                let yPos = 40; // Starting position after the title
                 
-                paragraphs.forEach(paragraph => {
+                for (const paragraph of paragraphs) {
                     const trimmed = paragraph.trim();
-                    if (!trimmed) return;
+                    if (!trimmed) continue;
                     
+                    // Handle headings
                     if (trimmed.startsWith('#')) {
-                        // This is a heading
+                        // Extract heading text without the # symbols
                         const headingText = trimmed.replace(/^#+\s+/, '');
                         pdf.setFontSize(14);
+                        pdf.setFont('helvetica', 'bold');
                         
+                        // Check if we need a new page
                         if (yPos > pdf.internal.pageSize.getHeight() - 20) {
                             pdf.addPage();
                             yPos = 20;
@@ -242,13 +249,21 @@ const AnalysisPage = () => {
                         
                         pdf.text(headingText, 20, yPos);
                         yPos += 10;
+                        pdf.setFont('helvetica', 'normal');
                     } else {
                         // This is regular content
                         pdf.setFontSize(10);
+                        pdf.setFont('helvetica', 'normal');
+                        
+                        // Calculate available width for text
                         const contentWidth = pdf.internal.pageSize.getWidth() - 40;
+                        
+                        // Split the text to fit the width
                         const lines = pdf.splitTextToSize(trimmed, contentWidth);
                         
-                        lines.forEach(line => {
+                        // Add each line to the PDF
+                        for (const line of lines) {
+                            // Check if we need a new page
                             if (yPos > pdf.internal.pageSize.getHeight() - 20) {
                                 pdf.addPage();
                                 yPos = 20;
@@ -256,11 +271,12 @@ const AnalysisPage = () => {
                             
                             pdf.text(line, 20, yPos);
                             yPos += 6;
-                        });
+                        }
                     }
                     
+                    // Add some space after each paragraph
                     yPos += 8;
-                });
+                }
             }
             
             // Add page numbers
@@ -383,7 +399,7 @@ const AnalysisPage = () => {
                 {results && (
                     <motion.div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
                         <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg w-full sm:w-auto text-xs sm:text-sm" size="sm" />
-                        {user.userType !== 'doctor' && (
+                        {user && !isDoctor(user) && (
                             <Button variant="gradient" size="sm" onClick={() => setShowConsultDialog(true)} className="hover-scale rounded-xl text-xs sm:text-sm">
                                 <UserRound className="mr-1.5 h-4 w-4" /> Consult a Specialist Near You
                             </Button>
