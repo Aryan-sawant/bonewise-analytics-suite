@@ -9,6 +9,7 @@ import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ResultsDisplayProps {
   imageUrl: string;
@@ -309,11 +310,9 @@ const ResultsDisplay = ({
       
       // Similar PDF generation as handleDownload but simplified
       pdf.setFontSize(18);
-      pdf.setTextColor(0, 0, 0);
       pdf.text(analysisType, 20, 20);
       
       pdf.setFontSize(12);
-      pdf.setTextColor(0, 0, 0);
       pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
       
       // Add image if available
@@ -328,12 +327,12 @@ const ResultsDisplay = ({
         });
         
         // Calculate dimensions
-        const pdfPageWidth = pdf.internal.pageSize.getWidth();
-        const maxImgWidth = pdfPageWidth - 40;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const maxImgWidth = pdfWidth - 40;
         let imgWidth = Math.min(img.width, maxImgWidth);
         let imgHeight = img.height * (imgWidth / img.width);
         
-        const xOffset = (pdfPageWidth - imgWidth) / 2;
+        const xOffset = (pdfWidth - imgWidth) / 2;
         pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
       }
       
@@ -346,15 +345,14 @@ const ResultsDisplay = ({
       results.forEach(result => {
         // Add title
         pdf.setFontSize(14);
-        pdf.setTextColor(0, 0, 0);
         pdf.text(result.title, 20, yPosition);
         yPosition += 10;
         
         // Add content with word wrapping
         pdf.setFontSize(10);
         
-        const pdfPageWidth = pdf.internal.pageSize.getWidth();
-        const contentLines = pdf.splitTextToSize(result.content, pdfPageWidth - 40);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const contentLines = pdf.splitTextToSize(result.content, pdfWidth - 40);
         contentLines.forEach(line => {
           // Check if we need a new page
           if (yPosition > pdf.internal.pageSize.getHeight() - 20) {
