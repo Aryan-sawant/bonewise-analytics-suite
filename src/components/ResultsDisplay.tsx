@@ -1,14 +1,17 @@
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { MessageCircle, Download, Share2 } from 'lucide-react';
+import { MessageCircle, Download, Share2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { isDoctor } from "@/types/auth";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface ResultsDisplayProps {
   imageUrl: string;
@@ -35,6 +38,7 @@ const ResultsDisplay = ({
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [shareNote, setShareNote] = useState('');
+  const { user } = useAuthContext();
   
   const resultsRef = useRef<HTMLDivElement>(null);
   
@@ -86,42 +90,70 @@ const ResultsDisplay = ({
       pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
       
       if (imageUrl) {
-        pdf.addPage();
-        pdf.text("Analyzed Image", 20, 20);
+        let yPosition = 40;
         
         try {
           const img = new Image();
           img.crossOrigin = "Anonymous";
-          img.src = imageUrl;
           
           await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error("Failed to load image"));
-            setTimeout(() => reject(new Error("Image load timeout")), 10000);
+            img.onload = () => {
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const maxWidth = pageWidth - 40;
+              
+              let imgWidth = Math.min(maxWidth, img.width);
+              let imgHeight = img.height * (imgWidth / img.height);
+              
+              if (imgHeight > 150) {
+                imgHeight = 150;
+                imgWidth = img.width * (imgHeight / img.width);
+              }
+              
+              try {
+                pdf.addImage(img, 'JPEG', 20, yPosition, imgWidth, imgHeight);
+                yPosition += imgHeight + 20;
+                resolve();
+              } catch (err) {
+                console.error("Error adding image to PDF:", err);
+                pdf.text("Failed to add image to PDF", 20, yPosition);
+                yPosition += 10;
+                resolve();
+              }
+            };
+            
+            img.onerror = () => {
+              console.error("Image failed to load");
+              pdf.text("Image could not be loaded", 20, yPosition);
+              yPosition += 10;
+              resolve();
+            };
+            
+            img.src = imageUrl;
+            
+            setTimeout(() => {
+              if (!img.complete) {
+                pdf.text("Image loading timed out", 20, yPosition);
+                yPosition += 10;
+                resolve();
+              }
+            }, 5000);
           });
           
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const maxWidth = pageWidth - 40;
+          pdf.addPage();
+          pdf.text("Analysis Results", 20, 20);
+          yPosition = 40;
           
-          let imgWidth = Math.min(img.width, maxWidth);
-          let imgHeight = img.height * (imgWidth / img.height);
-          
-          if (imgHeight > 200) {
-            imgHeight = 200;
-            imgWidth = img.width * (imgHeight / img.width);
-          }
-          
-          const xOffset = (pageWidth - imgWidth) / 2;
-          
-          pdf.addImage(img, 'JPEG', xOffset, 30, imgWidth, imgHeight);
         } catch (imgErr) {
           console.error("Image error:", imgErr);
-          pdf.text("Image could not be loaded", 20, 40);
+          pdf.text("Error processing image", 20, 40);
+          
+          pdf.addPage();
+          pdf.text("Analysis Results", 20, 20);
         }
+      } else {
+        pdf.addPage();
+        pdf.text("Analysis Results", 20, 20);
       }
-      
-      pdf.addPage();
-      pdf.text("Analysis Results", 20, 20);
       
       let yPosition = 40;
       
@@ -168,6 +200,22 @@ const ResultsDisplay = ({
     }
   };
   
+  const handleConsultSpecialist = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me/@${latitude},${longitude},14z`;
+        window.open(mapsUrl, '_blank');
+      }, () => {
+        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
+        window.open(mapsUrl, '_blank');
+      });
+    } else {
+      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
+      window.open(mapsUrl, '_blank');
+    }
+  };
+  
   const handleShare = async () => {
     if (!shareEmail) {
       toast.error('Please enter a valid email address');
@@ -190,41 +238,70 @@ const ResultsDisplay = ({
       pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
       
       if (imageUrl) {
-        pdf.addPage();
-        pdf.text("Analyzed Image", 20, 20);
+        let yPosition = 40;
         
         try {
           const img = new Image();
           img.crossOrigin = "Anonymous";
-          img.src = imageUrl;
           
           await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error("Failed to load image"));
-            setTimeout(() => reject(new Error("Image load timeout")), 10000);
+            img.onload = () => {
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const maxWidth = pageWidth - 40;
+              
+              let imgWidth = Math.min(maxWidth, img.width);
+              let imgHeight = img.height * (imgWidth / img.height);
+              
+              if (imgHeight > 150) {
+                imgHeight = 150;
+                imgWidth = img.width * (imgHeight / img.width);
+              }
+              
+              try {
+                pdf.addImage(img, 'JPEG', 20, yPosition, imgWidth, imgHeight);
+                yPosition += imgHeight + 20;
+                resolve();
+              } catch (err) {
+                console.error("Error adding image to PDF:", err);
+                pdf.text("Failed to add image to PDF", 20, yPosition);
+                yPosition += 10;
+                resolve();
+              }
+            };
+            
+            img.onerror = () => {
+              console.error("Image failed to load");
+              pdf.text("Image could not be loaded", 20, yPosition);
+              yPosition += 10;
+              resolve();
+            };
+            
+            img.src = imageUrl;
+            
+            setTimeout(() => {
+              if (!img.complete) {
+                pdf.text("Image loading timed out", 20, yPosition);
+                yPosition += 10;
+                resolve();
+              }
+            }, 5000);
           });
           
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const maxImgWidth = pdfWidth - 40;
-          let imgWidth = Math.min(img.width, maxImgWidth);
-          let imgHeight = img.height * (imgWidth / img.width);
+          pdf.addPage();
+          pdf.text("Analysis Results", 20, 20);
+          yPosition = 40;
           
-          if (imgHeight > 200) {
-            imgHeight = 200;
-            imgWidth = img.width * (imgHeight / img.height);
-          }
-          
-          const xOffset = (pdfWidth - imgWidth) / 2;
-          
-          pdf.addImage(img, 'JPEG', xOffset, 30, imgWidth, imgHeight);
         } catch (imgErr) {
           console.error("Image error:", imgErr);
-          pdf.text("Image could not be loaded", 20, 40);
+          pdf.text("Error processing image", 20, 40);
+          
+          pdf.addPage();
+          pdf.text("Analysis Results", 20, 20);
         }
+      } else {
+        pdf.addPage();
+        pdf.text("Analysis Results", 20, 20);
       }
-      
-      pdf.addPage();
-      pdf.text("Analysis Results", 20, 20);
       
       let yPosition = 40;
       
@@ -244,8 +321,8 @@ const ResultsDisplay = ({
           .replace(/<br\s*\/?>/g, '\n')
           .replace(/&nbsp;/g, ' ');
         
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const contentLines = pdf.splitTextToSize(cleanContent, pdfWidth - 40);
+        const contentWidth = pdf.internal.pageSize.getWidth() - 40;
+        const contentLines = pdf.splitTextToSize(cleanContent, contentWidth);
         
         contentLines.forEach(line => {
           if (yPosition > pdf.internal.pageSize.getHeight() - 20) {
@@ -293,6 +370,7 @@ const ResultsDisplay = ({
             src={imageUrl} 
             alt="Analyzed medical image" 
             className="h-full w-full object-cover" 
+            crossOrigin="anonymous"
           />
         </div>
         <CardFooter className="p-4 border-t bg-muted/10">
@@ -331,15 +409,28 @@ const ResultsDisplay = ({
           <span className="text-xs text-muted-foreground">
             AI analysis is not a substitute for professional medical advice
           </span>
-          <Button 
-            onClick={toggleChat}
-            variant="outline" 
-            size="sm" 
-            className="gap-2"
-          >
-            <MessageCircle size={16} />
-            Ask about results
-          </Button>
+          <div className="flex gap-2">
+            {user && !isDoctor(user) && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={handleConsultSpecialist}
+              >
+                <UserRound size={16} />
+                <span>Consult a Specialist</span>
+              </Button>
+            )}
+            <Button 
+              onClick={toggleChat}
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+            >
+              <MessageCircle size={16} />
+              Ask about results
+            </Button>
+          </div>
         </CardFooter>
       </Card>
       
