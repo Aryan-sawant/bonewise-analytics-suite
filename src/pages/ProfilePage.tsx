@@ -32,63 +32,61 @@ const ProfilePage = () => {
     }, 100);
   }, [user, navigate]);
 
-  // --- Functions (handleSaveProfile, handleGoToDashboard, handleGoToHome, handleConsultSpecialist) remain the same ---
-    const handleSaveProfile = async () => {
-        if (!user || !name.trim()) {
-            toast.error('Name cannot be empty.');
-            return;
-        }
+  const handleSaveProfile = async () => {
+      if (!user || !name.trim()) {
+          toast.error('Name cannot be empty.');
+          return;
+      }
 
-        setLoading(true);
-        try {
-        const { data, error } = await supabase
-            .from('profiles')
-            .update({ name: name.trim() })
-            .eq('id', user.id)
-            .select();
+      setLoading(true);
+      try {
+      const { data, error } = await supabase
+          .from('profiles')
+          .update({ name: name.trim() })
+          .eq('id', user.id)
+          .select();
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data && data.length > 0) {
-            toast.success('Profile updated successfully!');
-            window.location.reload();
-        } else {
-            toast.warn('No changes detected or profile not found.');
-        }
-        } catch (error: any) {
-        console.error('Error updating profile:', error);
-        toast.error(`Failed to update profile: ${error.message || 'Unknown error'}`);
-        } finally {
-        setLoading(false);
-        }
-    };
+      if (data && data.length > 0) {
+          toast.success('Profile updated successfully!');
+          window.location.reload();
+      } else {
+          toast.warning('No changes detected or profile not found.');
+      }
+      } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error(`Failed to update profile: ${error.message || 'Unknown error'}`);
+      } finally {
+      setLoading(false);
+      }
+  };
 
-    const handleGoToDashboard = () => {
-        navigate('/tasks');
-    };
+  const handleGoToDashboard = () => {
+      navigate('/tasks');
+  };
 
-    const handleGoToHome = () => {
-        navigate('/');
-    };
+  const handleGoToHome = () => {
+      navigate('/');
+  };
 
-    const handleConsultSpecialist = () => {
-        if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-            const { latitude, longitude } = position.coords;
-            const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me/@${latitude},${longitude},14z`;
-            window.open(mapsUrl, '_blank');
-        }, () => {
-            const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
-            window.open(mapsUrl, '_blank');
-            toast.info("Could not get location. Searching nationwide.");
-        });
-        } else {
-        const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
-        window.open(mapsUrl, '_blank');
-        toast.info("Geolocation not supported. Searching nationwide.");
-        }
-    };
-  // --- End of Functions ---
+  const handleConsultSpecialist = () => {
+      if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude, longitude } = position.coords;
+          const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me/@${latitude},${longitude},14z`;
+          window.open(mapsUrl, '_blank');
+      }, () => {
+          const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
+          window.open(mapsUrl, '_blank');
+          toast.info("Could not get location. Searching nationwide.");
+      });
+      } else {
+      const mapsUrl = `https://www.google.com/maps/search/orthopedic+doctor+near+me`;
+      window.open(mapsUrl, '_blank');
+      toast.info("Geolocation not supported. Searching nationwide.");
+      }
+  };
 
   if (!user) return null;
 
@@ -110,7 +108,6 @@ const ProfilePage = () => {
         `}
       </style>
 
-      {/* --- Top Navigation Buttons --- */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-3">
         <Button
           variant="gradient"
@@ -124,7 +121,7 @@ const ProfilePage = () => {
           <Button
             variant="gradient"
             onClick={handleGoToHome}
-            className="flex-1 sm:flex-none hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl" // This is the target style
+            className="flex-1 sm:flex-none hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
           >
             <Home className="mr-2 h-4 w-4" />
             Home
@@ -132,7 +129,6 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* --- Page Title Block --- */}
       <div className={`bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl mb-8 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
         <h1 className="text-3xl font-bold mb-2">
           Account Settings
@@ -142,15 +138,12 @@ const ProfilePage = () => {
         </p>
       </div>
 
-      {/* --- Profile Content Grid --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* --- Left Card: Profile Summary --- */}
         <div className="md:col-span-1 animate-fade-in">
-           <Card className="border shadow-md sticky top-20 hover-card transition-transform rounded-xl bg-white/90 backdrop-blur-sm overflow-hidden"> {/* Added overflow-hidden */}
-            {/* Apply gradient style here */}
-            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-xl"> {/* <<<< MODIFIED STYLE */}
-               <CardTitle className="flex items-center text-primary-foreground"> {/* Ensured text color */}
-                <User className="mr-2 h-5 w-5" /> {/* Removed explicit color */}
+           <Card className="border shadow-md sticky top-20 hover-card transition-transform rounded-xl bg-white/90 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-xl">
+               <CardTitle className="flex items-center text-primary-foreground">
+                <User className="mr-2 h-5 w-5" />
                 Profile Summary
               </CardTitle>
             </CardHeader>
@@ -182,12 +175,10 @@ const ProfilePage = () => {
           </Card>
         </div>
 
-        {/* --- Right Card: Personal Information Form --- */}
         <div className="md:col-span-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-           <Card className="border shadow-md hover-card transition-transform rounded-xl bg-white/90 backdrop-blur-sm overflow-hidden"> {/* Added overflow-hidden */}
-            {/* Apply gradient style here */}
-            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-xl"> {/* <<<< MODIFIED STYLE */}
-              <CardTitle className="text-primary-foreground">Personal Information</CardTitle> {/* Ensured text color */}
+           <Card className="border shadow-md hover-card transition-transform rounded-xl bg-white/90 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-xl">
+              <CardTitle className="text-primary-foreground">Personal Information</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-6">
@@ -222,7 +213,7 @@ const ProfilePage = () => {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={loading || !name.trim() || name.trim() === user.name}
-                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" // Keep save button gradient
+                  className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
                 </Button>

@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -329,12 +328,12 @@ const ResultsDisplay = ({
         });
         
         // Calculate dimensions
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const maxImgWidth = pageWidth - 40;
+        const pdfPageWidth = pdf.internal.pageSize.getWidth();
+        const maxImgWidth = pdfPageWidth - 40;
         let imgWidth = Math.min(img.width, maxImgWidth);
         let imgHeight = img.height * (imgWidth / img.width);
         
-        const xOffset = (pageWidth - imgWidth) / 2;
+        const xOffset = (pdfPageWidth - imgWidth) / 2;
         pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
       }
       
@@ -354,7 +353,8 @@ const ResultsDisplay = ({
         // Add content with word wrapping
         pdf.setFontSize(10);
         
-        const contentLines = pdf.splitTextToSize(result.content, pageWidth - 40);
+        const pdfPageWidth = pdf.internal.pageSize.getWidth();
+        const contentLines = pdf.splitTextToSize(result.content, pdfPageWidth - 40);
         contentLines.forEach(line => {
           // Check if we need a new page
           if (yPosition > pdf.internal.pageSize.getHeight() - 20) {
@@ -372,23 +372,19 @@ const ResultsDisplay = ({
       // Generate base64 PDF
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
-      // Now send the email with PDF attachment via Supabase function
-      const { data, error } = await fetch('/api/share-results', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Now send the email with PDF attachment via Supabase function directly
+      const { data, error } = await supabase.functions.invoke("share-results", {
+        body: {
           to: shareEmail,
           subject: `${analysisType} Analysis Results`,
           pdfBase64,
           message: shareNote || `Here are the analysis results for ${analysisType}`,
           analysisType,
           timestamp
-        }),
-      }).then(res => res.json());
+        },
+      });
       
-      if (error) throw new Error(error);
+      if (error) throw new Error(error.message);
       
       toast.success(`Analysis results shared with ${shareEmail}`, { id: toastId });
       setShareDialogOpen(false);

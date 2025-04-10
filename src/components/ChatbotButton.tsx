@@ -13,6 +13,7 @@ interface ChatbotButtonProps {
   taskTitle: string;
   analysisId: string;
   className?: string;
+  size?: "default" | "sm" | "lg" | "icon"; // Add the size prop to interface
 }
 
 interface ChatMessage {
@@ -21,7 +22,7 @@ interface ChatMessage {
   isLoading?: boolean;
 }
 
-const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitle, analysisId, className }) => {
+const ChatbotButton: React.FC<ChatbotButtonProps> = ({ analysisContext, taskTitle, analysisId, className, size = "default" }) => {
   const { user } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
