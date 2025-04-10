@@ -140,210 +140,118 @@ const AnalysisPage = () => {
 
         const toastId = toast.loading('Generating PDF, please wait...');
 
-        const elementsToAdjust = elementToRender.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div, strong, em');
-        const originalStyles: {el: HTMLElement, color: string, bg: string}[] = [];
-        
-        elementsToAdjust.forEach(el => {
-            const htmlEl = el as HTMLElement;
-            originalStyles.push({
-                el: htmlEl, 
-                color: htmlEl.style.color,
-                bg: htmlEl.style.backgroundColor
-            });
-            htmlEl.style.color = '#000000';
-            htmlEl.style.backgroundColor = 'transparent';
-        });
-
         try {
             const pdf = new jsPDF({ 
                 orientation: 'portrait', 
                 unit: 'mm', 
-                format: 'a4',
-                compress: true
+                format: 'a4'
             });
 
             const taskTitle = TASK_TITLES[taskId] || 'Bone Analysis';
             const analysisDate = new Date().toLocaleString();
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
             
-            pdf.setFillColor(235, 245, 255); // Light blue background
-            pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-            
-            pdf.setDrawColor(59, 130, 246); // Blue
-            pdf.setLineWidth(0.5);
-            pdf.line(20, 40, pageWidth - 20, 40);
-            
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(24);
-            pdf.setTextColor(30, 64, 175); // Indigo
-            pdf.text(taskTitle, 20, 30);
-            
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(14);
-            pdf.setTextColor(55, 65, 81); // Gray
-            pdf.text('Medical Analysis Report', 20, 50);
+            pdf.setFontSize(16);
+            pdf.text(taskTitle, 20, 20);
             
             pdf.setFontSize(12);
-            pdf.text(`Analysis Date: ${analysisDate}`, 20, 65);
+            pdf.text(`Analysis Date: ${analysisDate}`, 20, 30);
             
             if (user) {
-                pdf.text(`User: ${user.email || 'Anonymous'}`, 20, 75);
+                pdf.text(`User: ${user.email || 'Anonymous'}`, 20, 40);
             }
-            
-            pdf.setFontSize(10);
-            pdf.setTextColor(156, 163, 175); // Gray
-            pdf.text('AI-powered bone health analysis | For informational purposes only', 20, pageHeight - 20);
             
             if (storedImageUrl || imageUrl) {
                 pdf.addPage();
-                
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(16);
-                pdf.setTextColor(30, 64, 175); // Indigo
                 pdf.text('Medical Image', 20, 20);
-                
-                pdf.setDrawColor(59, 130, 246); // Blue
-                pdf.setLineWidth(0.3);
-                pdf.line(20, 25, 80, 25);
-                
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(10);
-                pdf.setTextColor(55, 65, 81); // Gray
-                pdf.text('The following image was analyzed using AI technology', 20, 35);
                 
                 try {
                     const img = new Image();
                     img.src = storedImageUrl || imageUrl;
                     await new Promise<void>((resolve) => {
                         img.onload = () => resolve();
+                        img.onerror = () => resolve();
                     });
                     
-                    const maxImgWidth = pageWidth - 40;
-                    const maxImgHeight = pageHeight - 80;
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const maxWidth = pageWidth - 40;
                     
-                    let imgWidth = img.width;
-                    let imgHeight = img.height;
+                    let imgWidth = Math.min(img.width, maxWidth);
+                    let imgHeight = img.height * (imgWidth / img.width);
                     
-                    if (imgWidth > maxImgWidth) {
-                        const ratio = maxImgWidth / imgWidth;
-                        imgWidth = maxImgWidth;
-                        imgHeight = imgHeight * ratio;
-                    }
-                    
-                    if (imgHeight > maxImgHeight) {
-                        const ratio = maxImgHeight / imgHeight;
-                        imgHeight = maxImgHeight;
-                        imgWidth = imgWidth * ratio;
+                    if (imgHeight > 200) {
+                        imgHeight = 200;
+                        imgWidth = img.width * (imgHeight / img.height);
                     }
                     
                     const xOffset = (pageWidth - imgWidth) / 2;
-                    pdf.addImage(img.src, 'JPEG', xOffset, 50, imgWidth, imgHeight);
-                    
-                    pdf.setFontSize(9);
-                    pdf.setTextColor(107, 114, 128); // Gray
-                    pdf.text('Image used for analysis', pageWidth / 2, 50 + imgHeight + 10, { align: 'center' });
+                    pdf.addImage(img.src, 'JPEG', xOffset, 40, imgWidth, imgHeight);
                 }
                 catch (imgError) {
                     console.error("Could not add image to PDF:", imgError);
-                    pdf.setTextColor(255, 0, 0); // Red
-                    pdf.text("Error loading image", 20, 60);
+                    pdf.text("Error loading image", 20, 40);
                 }
             }
             
-            pdf.addPage();
-            
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(16);
-            pdf.setTextColor(30, 64, 175); // Indigo
-            pdf.text('Analysis Results', 20, 20);
-            
-            pdf.setDrawColor(59, 130, 246); // Blue
-            pdf.setLineWidth(0.3);
-            pdf.line(20, 25, 100, 25);
-            
-            const canvas = await html2canvas(elementToRender, {
-                scale: 2, // Higher resolution
-                backgroundColor: '#ffffff',
-                logging: false,
-                useCORS: true,
-                allowTaint: true,
-                width: elementToRender.scrollWidth,
-                height: elementToRender.scrollHeight
-            });
-            
-            const imgData = canvas.toDataURL('image/png', 0.95);
-            
-            const contentWidth = pageWidth - 40;
-            const contentHeight = canvas.height * contentWidth / canvas.width;
-            
-            let remainingHeight = contentHeight;
-            let currentPage = 0;
-            
-            while (remainingHeight > 0) {
-                const yPos = currentPage === 0 ? 35 : 20;
-                const availableHeight = pageHeight - yPos - 20;
+            if (results) {
+                pdf.addPage();
+                pdf.text('Analysis Results', 20, 20);
                 
-                const portionHeight = Math.min(remainingHeight, availableHeight);
-                const ratio = canvas.height / contentHeight;
-                const sourceHeight = portionHeight * ratio;
-                const sourceY = (contentHeight - remainingHeight) * ratio;
+                const resultsText = results.replace(/\r\n/g, '\n').replace(/ +\n/g, '\n').trim();
+                const textWithoutCodeBlocks = resultsText.replace(/```[\s\S]*?```/g, '');
                 
-                pdf.addImage(
-                    imgData,
-                    'PNG',
-                    20,
-                    yPos,
-                    contentWidth,
-                    portionHeight,
-                    '',
-                    'FAST',
-                    0,
-                    sourceY,
-                    canvas.width,
-                    sourceHeight
-                );
+                const paragraphs = textWithoutCodeBlocks.split(/\n\n+/);
                 
-                remainingHeight -= portionHeight;
-                
-                if (remainingHeight > 0) {
-                    pdf.addPage();
-                    currentPage++;
+                let yPos = 40;
+                paragraphs.forEach(paragraph => {
+                    const trimmed = paragraph.trim();
+                    if (!trimmed) return;
                     
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setFontSize(12);
-                    pdf.setTextColor(30, 64, 175); // Indigo
-                    pdf.text('Analysis Results (continued)', 20, 15);
-                }
+                    if (trimmed.startsWith('#')) {
+                        const headingText = trimmed.replace(/^#+\s+/, '');
+                        pdf.setFontSize(14);
+                        
+                        if (yPos > pdf.internal.pageSize.getHeight() - 20) {
+                            pdf.addPage();
+                            yPos = 20;
+                        }
+                        
+                        pdf.text(headingText, 20, yPos);
+                        yPos += 10;
+                    } else {
+                        pdf.setFontSize(10);
+                        const contentWidth = pdf.internal.pageSize.getWidth() - 40;
+                        const lines = pdf.splitTextToSize(trimmed, contentWidth);
+                        
+                        lines.forEach(line => {
+                            if (yPos > pdf.internal.pageSize.getHeight() - 20) {
+                                pdf.addPage();
+                                yPos = 20;
+                            }
+                            
+                            pdf.text(line, 20, yPos);
+                            yPos += 6;
+                        });
+                    }
+                    
+                    yPos += 8;
+                });
             }
             
             const pageCount = pdf.getNumberOfPages();
-            
             for (let i = 1; i <= pageCount; i++) {
                 pdf.setPage(i);
-                
-                if (i > 1) {
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(8);
-                    pdf.setTextColor(107, 114, 128); // Gray
-                    pdf.text(`Page ${i-1} of ${pageCount-1}`, pageWidth - 25, pageHeight - 10);
-                    pdf.text('AI-powered bone health analysis | For informational purposes only', 20, pageHeight - 10);
-                }
+                pdf.setFontSize(8);
+                pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 30, pdf.internal.pageSize.getHeight() - 10);
             }
             
             const date = new Date().toISOString().split('T')[0];
             const cleanTitle = taskTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            pdf.save(`${cleanTitle}_report_${date}.pdf`);
+            pdf.save(`${cleanTitle}_${date}.pdf`);
             
             toast.success('PDF downloaded successfully!', { id: toastId });
         } catch (error) {
             console.error('Error generating PDF:', error);
-            toast.error('Failed to generate PDF. See console for details.', { id: toastId });
-        } finally {
-            originalStyles.forEach(({el, color, bg}) => {
-                el.style.color = color;
-                el.style.backgroundColor = bg;
-            });
+            toast.error('Failed to generate PDF', { id: toastId });
         }
     };
 

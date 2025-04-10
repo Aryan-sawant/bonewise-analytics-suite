@@ -26,6 +26,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Share results function invoked");
+    
     // Create a Supabase client
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -37,6 +39,7 @@ serve(async (req) => {
 
     // Validate the email address
     if (!to || !to.includes("@")) {
+      console.error("Invalid email address:", to);
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         {
@@ -50,7 +53,7 @@ serve(async (req) => {
     const date = new Date().toISOString().split("T")[0];
     const fileName = `${analysisType.replace(/\s+/g, "_").toLowerCase()}_report_${date}.pdf`;
 
-    // HTML email template
+    // Simplified HTML email template
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -58,19 +61,12 @@ serve(async (req) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${subject}</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(to right, #3b82f6, #4f46e5); padding: 20px; border-radius: 8px 8px 0 0; color: white; }
-          .content { padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-          .footer { margin-top: 30px; font-size: 12px; color: #6b7280; text-align: center; }
-          .button { display: inline-block; background: linear-gradient(to right, #3b82f6, #4f46e5); color: white; text-decoration: none; padding: 10px 20px; border-radius: 4px; margin-top: 20px; }
-        </style>
       </head>
-      <body>
-        <div class="header">
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #4f46e5; padding: 20px; border-radius: 8px 8px 0 0; color: white;">
           <h2>Bone Health Analysis Results</h2>
         </div>
-        <div class="content">
+        <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
           <p>Analysis results for <strong>${analysisType}</strong> completed on ${timestamp} have been shared with you.</p>
           
           <p>${message}</p>
@@ -79,7 +75,7 @@ serve(async (req) => {
           
           <p><strong>Note:</strong> This AI-powered analysis is for informational purposes only and is not a substitute for professional medical advice.</p>
         </div>
-        <div class="footer">
+        <div style="margin-top: 30px; font-size: 12px; color: #6b7280; text-align: center;">
           <p>This is an automated message. Please do not reply to this email.</p>
           <p>© ${new Date().getFullYear()} Bone Health Analysis AI</p>
         </div>
@@ -87,8 +83,11 @@ serve(async (req) => {
       </html>
     `;
 
+    console.log("Sending email to:", to);
+    console.log("PDF attachment size:", pdfBase64.length);
+
     // Send the email
-    const { error } = await supabaseClient.functions.invoke("send-email", {
+    const { data, error } = await supabaseClient.functions.invoke("send-email", {
       body: {
         to,
         subject,
@@ -105,22 +104,11 @@ serve(async (req) => {
     });
 
     if (error) {
+      console.error("Error invoking send-email:", error);
       throw error;
     }
 
-    // Store record of shared analysis in the database (optional)
-    const { error: dbError } = await supabaseClient
-      .from("shared_analyses")
-      .insert({
-        recipient_email: to,
-        analysis_type: analysisType,
-        shared_at: new Date().toISOString(),
-      });
-
-    if (dbError) {
-      console.error("Error logging share action:", dbError);
-      // Continue anyway, this is not critical
-    }
+    console.log("Email sent successfully:", data);
 
     return new Response(
       JSON.stringify({ success: true, message: "Analysis results shared successfully" }),

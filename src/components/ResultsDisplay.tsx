@@ -80,211 +80,75 @@ const ResultsDisplay = ({
         compress: true
       });
       
-      // Add cover page with branding and title
-      pdf.setFillColor(235, 245, 255);
-      pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
+      pdf.setFontSize(16);
+      pdf.text(analysisType, 20, 20);
       
-      pdf.setDrawColor(59, 130, 246);
-      pdf.setLineWidth(0.5);
-      pdf.line(20, 40, pdf.internal.pageSize.getWidth() - 20, 40);
-      
-      // Title and subtitle on cover
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(24);
-      pdf.setTextColor(30, 64, 175);
-      pdf.text(analysisType, 20, 30);
-      
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(14);
-      pdf.setTextColor(55, 65, 81);
-      pdf.text('Medical Analysis Report', 20, 50);
-      
-      // Date and time
       pdf.setFontSize(12);
-      pdf.text(`Analysis Date: ${timestamp}`, 20, 65);
+      pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
       
-      // Footer on cover
-      pdf.setFontSize(10);
-      pdf.setTextColor(156, 163, 175);
-      pdf.text('AI-powered bone health analysis | For informational purposes only', 20, pdf.internal.pageSize.getHeight() - 20);
-      
-      // Add image page
       if (imageUrl) {
         pdf.addPage();
+        pdf.text("Analyzed Image", 20, 20);
         
-        // Page header
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(16);
-        pdf.setTextColor(30, 64, 175);
-        pdf.text('Medical Image', 20, 20);
+        try {
+          const img = new Image();
+          img.src = imageUrl;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+          
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const maxWidth = pageWidth - 40;
+          
+          let imgWidth = Math.min(img.width, maxWidth);
+          let imgHeight = img.height * (imgWidth / img.width);
+          
+          if (imgHeight > 200) {
+            imgHeight = 200;
+            imgWidth = img.width * (imgHeight / img.height);
+          }
+          
+          const xOffset = (pageWidth - imgWidth) / 2;
+          pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
+        } catch (imgErr) {
+          console.error("Image error:", imgErr);
+          pdf.text("Image could not be loaded", 20, 40);
+        }
+      }
+      
+      pdf.addPage();
+      pdf.text("Analysis Results", 20, 20);
+      
+      let yPosition = 40;
+      results.forEach(result => {
+        pdf.setFontSize(14);
+        pdf.text(result.title, 20, yPosition);
+        yPosition += 10;
         
-        pdf.setDrawColor(59, 130, 246);
-        pdf.setLineWidth(0.3);
-        pdf.line(20, 25, 80, 25);
-        
-        pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
-        pdf.setTextColor(55, 65, 81);
-        pdf.text('The following image was analyzed using AI technology', 20, 35);
         
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise<void>((resolve) => {
-          img.onload = () => resolve();
+        const contentWidth = pdf.internal.pageSize.getWidth() - 40;
+        const contentLines = pdf.splitTextToSize(result.content, contentWidth);
+        
+        contentLines.forEach(line => {
+          if (yPosition > pdf.internal.pageSize.getHeight() - 20) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+          
+          pdf.text(line, 20, yPosition);
+          yPosition += 6;
         });
         
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        
-        const maxImgWidth = pageWidth - 40;
-        const maxImgHeight = pageHeight - 80;
-        
-        let imgWidth = img.width;
-        let imgHeight = img.height;
-        
-        if (imgWidth > maxImgWidth) {
-          const ratio = maxImgWidth / imgWidth;
-          imgWidth = maxImgWidth;
-          imgHeight = imgHeight * ratio;
-        }
-        
-        if (imgHeight > maxImgHeight) {
-          const ratio = maxImgHeight / imgHeight;
-          imgHeight = maxImgHeight;
-          imgWidth = imgWidth * ratio;
-        }
-        
-        const xOffset = (pageWidth - imgWidth) / 2;
-        
-        pdf.addImage(imageUrl, 'JPEG', xOffset, 50, imgWidth, imgHeight);
-        
-        // Caption under image
-        pdf.setFontSize(9);
-        pdf.setTextColor(107, 114, 128);
-        pdf.text('Image used for analysis', pageWidth / 2, 50 + imgHeight + 10, { align: 'center' });
-      }
-      
-      // Add results content using HTML rendering
-      pdf.addPage();
-      
-      // Create a clone with proper styling for PDF
-      const tempContainer = document.createElement('div');
-      tempContainer.style.width = '700px';
-      tempContainer.style.padding = '20px';
-      tempContainer.style.backgroundColor = '#ffffff';
-      tempContainer.style.fontFamily = 'Arial, Helvetica, sans-serif';
-      tempContainer.style.color = '#000000';
-      
-      const resultsClone = resultsRef.current.cloneNode(true) as HTMLDivElement;
-      
-      // Ensure all text is black for PDF
-      const allTextElements = resultsClone.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div');
-      allTextElements.forEach(el => {
-        (el as HTMLElement).style.color = '#000000';
-        (el as HTMLElement).style.opacity = '1';
-        (el as HTMLElement).style.fontWeight = (el as HTMLElement).tagName.startsWith('H') ? 'bold' : 'normal';
+        yPosition += 10;
       });
       
-      tempContainer.appendChild(resultsClone);
-      document.body.appendChild(tempContainer);
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      
-      // Results page header
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(16);
-      pdf.setTextColor(30, 64, 175);
-      pdf.text('Analysis Results', 20, 20);
-      
-      pdf.setDrawColor(59, 130, 246);
-      pdf.setLineWidth(0.3);
-      pdf.line(20, 25, 100, 25);
-      
-      // Capture HTML and add to PDF
-      const canvas = await html2canvas(tempContainer, { 
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      });
-      
-      document.body.removeChild(tempContainer);
-      
-      const imgData = canvas.toDataURL('image/png');
-      
-      const contentWidth = pdf.internal.pageSize.getWidth() - 40;
-      const contentHeight = canvas.height * contentWidth / canvas.width;
-      
-      // Handle multi-page content if needed
-      const maxContentHeightPerPage = pdf.internal.pageSize.getHeight() - 60; // Leave margin for header/footer
-      let remainingContentHeight = contentHeight;
-      let currentContentOffset = 0;
-      
-      // First page of results starts lower due to header
-      let yPosition = 35;
-      
-      while (remainingContentHeight > 0) {
-        const contentHeightForCurrentPage = Math.min(remainingContentHeight, maxContentHeightPerPage - yPosition + 35);
-        
-        // Calculate source and destination heights
-        const srcHeight = canvas.height * (contentHeightForCurrentPage / contentHeight);
-        
-        pdf.addImage(
-          imgData,
-          'PNG',
-          20,
-          yPosition,
-          contentWidth,
-          contentHeightForCurrentPage,
-          '',
-          'FAST',
-          0,
-          currentContentOffset * (canvas.height / contentHeight),
-          canvas.width,
-          srcHeight
-        );
-        
-        remainingContentHeight -= contentHeightForCurrentPage;
-        currentContentOffset += contentHeightForCurrentPage;
-        
-        if (remainingContentHeight > 0) {
-          pdf.addPage();
-          yPosition = 35; // Reset Y position for new pages
-          
-          // Add header to continuation pages
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(16);
-          pdf.setTextColor(30, 64, 175);
-          pdf.text('Analysis Results (continued)', 20, 20);
-          
-          pdf.setDrawColor(59, 130, 246);
-          pdf.setLineWidth(0.3);
-          pdf.line(20, 25, 120, 25);
-        }
-      }
-      
-      // Add page numbers and consistent footer to all pages
-      const pageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
-        
-        // Skip footer on cover page
-        if (i > 1) {
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(8);
-          pdf.setTextColor(156, 163, 175);
-          pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 25, pdf.internal.pageSize.getHeight() - 10);
-          pdf.text('AI-powered bone health analysis | For informational purposes only', 20, pdf.internal.pageSize.getHeight() - 10);
-        }
-      }
-      
-      // Save with descriptive filename
       const cleanTitle = analysisType.replace(/\s+/g, '_').toLowerCase();
       const date = new Date().toISOString().split('T')[0];
-      pdf.save(`${cleanTitle}_report_${date}.pdf`);
+      pdf.save(`${cleanTitle}_${date}.pdf`);
       
-      toast.success('PDF report downloaded successfully');
+      toast.success('PDF downloaded');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF');
@@ -300,77 +164,75 @@ const ResultsDisplay = ({
     const toastId = toast.loading(`Sharing results with ${shareEmail}...`);
     
     try {
-      // First, create a PDF to attach to the email
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4',
-        compress: true
+        format: 'a4'
       });
       
-      // Similar PDF generation as handleDownload but simplified
-      pdf.setFontSize(18);
+      pdf.setFontSize(16);
       pdf.text(analysisType, 20, 20);
       
       pdf.setFontSize(12);
       pdf.text(`Analysis Date: ${timestamp}`, 20, 30);
       
-      // Add image if available
       if (imageUrl) {
         pdf.addPage();
-        pdf.text('Analyzed Image', 20, 20);
+        pdf.text("Analyzed Image", 20, 20);
         
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-        });
-        
-        // Calculate dimensions
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const maxImgWidth = pdfWidth - 40;
-        let imgWidth = Math.min(img.width, maxImgWidth);
-        let imgHeight = img.height * (imgWidth / img.width);
-        
-        const xOffset = (pdfWidth - imgWidth) / 2;
-        pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
+        try {
+          const img = new Image();
+          img.src = imageUrl;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+          
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const maxImgWidth = pdfWidth - 40;
+          let imgWidth = Math.min(img.width, maxImgWidth);
+          let imgHeight = img.height * (imgWidth / img.width);
+          
+          if (imgHeight > 200) {
+            imgHeight = 200;
+            imgWidth = img.width * (imgHeight / img.height);
+          }
+          
+          const xOffset = (pdfWidth - imgWidth) / 2;
+          pdf.addImage(imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
+        } catch (imgErr) {
+          console.error("Image error:", imgErr);
+        }
       }
       
-      // Add results
       pdf.addPage();
-      pdf.text('Analysis Results', 20, 20);
+      pdf.text("Analysis Results", 20, 20);
       
-      // Convert results to simple text
       let yPosition = 40;
       results.forEach(result => {
-        // Add title
         pdf.setFontSize(14);
         pdf.text(result.title, 20, yPosition);
         yPosition += 10;
         
-        // Add content with word wrapping
         pdf.setFontSize(10);
         
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const contentLines = pdf.splitTextToSize(result.content, pdfWidth - 40);
         contentLines.forEach(line => {
-          // Check if we need a new page
           if (yPosition > pdf.internal.pageSize.getHeight() - 20) {
             pdf.addPage();
-            yPosition = 30;
+            yPosition = 20;
           }
           
           pdf.text(line, 20, yPosition);
           yPosition += 6;
         });
         
-        yPosition += 10; // Add space between sections
+        yPosition += 10;
       });
       
-      // Generate base64 PDF
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
-      // Now send the email with PDF attachment via Supabase function directly
       const { data, error } = await supabase.functions.invoke("share-results", {
         body: {
           to: shareEmail,
@@ -384,7 +246,7 @@ const ResultsDisplay = ({
       
       if (error) throw new Error(error.message);
       
-      toast.success(`Analysis results shared with ${shareEmail}`, { id: toastId });
+      toast.success(`Results shared with ${shareEmail}`, { id: toastId });
       setShareDialogOpen(false);
       setShareEmail('');
       setShareNote('');

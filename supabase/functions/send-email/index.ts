@@ -17,11 +17,20 @@ serve(async (req) => {
   }
   
   try {
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    console.log("Send email function invoked");
+    
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY is not set");
+      throw new Error("Email service configuration missing");
+    }
+    
+    const resend = new Resend(resendApiKey);
     
     const { to, subject, html, text, attachments } = await req.json();
     
     if (!to || !to.includes("@")) {
+      console.error("Invalid recipient email:", to);
       return new Response(
         JSON.stringify({ error: "Invalid recipient email" }),
         {
@@ -30,6 +39,10 @@ serve(async (req) => {
         }
       );
     }
+    
+    console.log("Preparing to send email to:", to);
+    console.log("Email subject:", subject);
+    console.log("Attachments:", attachments ? "Yes (count: " + attachments.length + ")" : "No");
     
     const emailOptions = {
       from: "Bone Health Analysis <no-reply@bonehealth.ai>",
@@ -40,11 +53,15 @@ serve(async (req) => {
       attachments: attachments || []
     };
     
+    console.log("Sending email via Resend API");
     const { data, error } = await resend.emails.send(emailOptions);
     
     if (error) {
+      console.error("Resend API error:", error);
       throw error;
     }
+    
+    console.log("Email sent successfully:", data);
     
     return new Response(
       JSON.stringify({ success: true, data }),
