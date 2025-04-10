@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -6,8 +5,6 @@ import { ArrowLeft, Home, Download, Share2, UserRound } from 'lucide-react';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,172 +91,6 @@ const Result = () => {
     return () => clearTimeout(simulateLoading);
   }, [analysisType, imageId]);
   
-  const handleDownload = async () => {
-    if (!resultData || !resultsRef.current) return;
-    
-    try {
-      toast.info('Generating PDF report...');
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
-      pdf.setFontSize(18);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(resultData.analysisType, 20, 20);
-      
-      pdf.setFontSize(12);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`Analysis Date: ${resultData.timestamp}`, 20, 30);
-      
-      pdf.setDrawColor(100, 100, 100);
-      pdf.line(20, 35, 190, 35);
-      
-      const tempContainer = document.createElement('div');
-      tempContainer.style.width = '700px';
-      tempContainer.style.padding = '20px';
-      tempContainer.style.backgroundColor = '#ffffff';
-      tempContainer.style.fontFamily = 'Arial, sans-serif';
-      tempContainer.style.color = '#000000';
-      
-      const resultsClone = resultsRef.current.cloneNode(true) as HTMLDivElement;
-      
-      const allTextElements = resultsClone.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div');
-      allTextElements.forEach(el => {
-        (el as HTMLElement).style.color = '#000000';
-        (el as HTMLElement).style.opacity = '1';
-        (el as HTMLElement).style.fontWeight = (el as HTMLElement).tagName.startsWith('H') ? 'bold' : 'normal';
-      });
-      
-      tempContainer.appendChild(resultsClone);
-      
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      document.body.appendChild(tempContainer);
-      
-      if (resultData.imageUrl) {
-        pdf.addPage();
-        pdf.setFontSize(14);
-        pdf.setTextColor(0, 0, 0);
-        pdf.text('Analyzed Image', 20, 20);
-        
-        const img = new Image();
-        img.src = resultData.imageUrl;
-        await new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-        });
-        
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        
-        const maxImgWidth = pageWidth - 40;
-        const maxImgHeight = pageHeight - 50;
-        
-        let imgWidth = img.width;
-        let imgHeight = img.height;
-        
-        if (imgWidth > maxImgWidth) {
-          const ratio = maxImgWidth / imgWidth;
-          imgWidth = maxImgWidth;
-          imgHeight = imgHeight * ratio;
-        }
-        
-        if (imgHeight > maxImgHeight) {
-          const ratio = maxImgHeight / imgHeight;
-          imgHeight = maxImgHeight;
-          imgWidth = imgWidth * ratio;
-        }
-        
-        const xOffset = (pageWidth - imgWidth) / 2;
-        
-        pdf.addImage(resultData.imageUrl, 'JPEG', xOffset, 30, imgWidth, imgHeight);
-      }
-      
-      pdf.addPage();
-      pdf.setFontSize(16);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Analysis Results', 20, 20);
-      
-      const canvas = await html2canvas(tempContainer, { 
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      });
-      
-      document.body.removeChild(tempContainer);
-      
-      const imgData = canvas.toDataURL('image/png');
-      
-      const contentWidth = pdf.internal.pageSize.getWidth() - 40;
-      const contentHeight = canvas.height * contentWidth / canvas.width;
-      
-      const totalPageCount = Math.ceil(contentHeight / pdf.internal.pageSize.getHeight());
-      
-      const imgPageHeight = canvas.height / totalPageCount;
-      const pdfPageHeight = contentHeight / totalPageCount;
-      
-      for (let i = 0; i < totalPageCount; i++) {
-        if (i > 0) pdf.addPage();
-        
-        const sy = imgPageHeight * i;
-        const sHeight = Math.min(imgPageHeight, canvas.height - sy);
-        
-        const pdfImgHeight = Math.min(pdfPageHeight, contentHeight - (pdfPageHeight * i));
-        
-        const tmpCanvas = document.createElement('canvas');
-        tmpCanvas.width = canvas.width;
-        tmpCanvas.height = sHeight;
-        const ctx = tmpCanvas.getContext('2d');
-        
-        if (ctx) {
-          ctx.drawImage(
-            canvas, 
-            0, sy, canvas.width, sHeight, 
-            0, 0, tmpCanvas.width, tmpCanvas.height
-          );
-          
-          const pageImgData = tmpCanvas.toDataURL('image/png');
-          
-          const yPosition = i === 0 ? 30 : 20;
-          pdf.addImage(pageImgData, 'PNG', 20, yPosition, contentWidth, pdfImgHeight);
-        }
-      }
-      
-      const finalPageCount = pdf.getNumberOfPages();
-      for (let i = 1; i <= finalPageCount; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(10);
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`Page ${i} of ${finalPageCount}`, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 10);
-        pdf.text('AI-powered bone health analysis', 20, pdf.internal.pageSize.getHeight() - 10);
-      }
-      
-      pdf.save(`${resultData.analysisType.replace(/\s+/g, '_')}_Report.pdf`);
-      
-      toast.success('PDF downloaded successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
-    }
-  };
-  
-  const handleShare = () => {
-    if (!shareEmail) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-    
-    toast.success(`Analysis results shared with ${shareEmail}`);
-    setShareDialogOpen(false);
-    setShareEmail('');
-    setShareNote('');
-  };
-  
   const handleConsultSpecialist = () => {
     let specialistType = "orthopedic doctor"; // Default specialist
     
@@ -318,7 +149,7 @@ const Result = () => {
             <Button 
               variant="gradient" 
               className="hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
-              onClick={handleDownload}
+              onClick={() => resultsRef.current?.querySelector('.download-btn')?.dispatchEvent(new MouseEvent('click'))}
               disabled={loading || !resultData}
             >
               <Download size={16} />
@@ -409,7 +240,7 @@ const Result = () => {
               Cancel
             </Button>
             <Button 
-              onClick={handleShare} 
+              onClick={() => resultsRef.current?.querySelector('.share-btn')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))} 
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover-scale transition-all duration-300 hover:shadow-md active:scale-95 transform hover:translate-z-0 hover:scale-105 gap-2 rounded-xl"
             >
               Share

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Removed CardDescription import
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,10 +19,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas'; // Ensure html2canvas is imported
+import html2canvas from 'html2canvas';
 
-// --- Constants (TASK_TITLES, TASK_GUIDANCE, TASK_SPECIALISTS) ---
-const TASK_TITLES: Record<string, string> = { /* ... same as before ... */
+const TASK_TITLES: Record<string, string> = { 
     'fracture-detection': 'Bone Fracture Detection',
     'bone-marrow': 'Bone Marrow Cell Classification',
     'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
@@ -32,7 +31,7 @@ const TASK_TITLES: Record<string, string> = { /* ... same as before ... */
     'bone-tumor': 'Bone Tumor/Cancer Detection',
     'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
 };
-const TASK_GUIDANCE: Record<string, string> = { /* ... same as before ... */
+const TASK_GUIDANCE: Record<string, string> = { 
     'fracture-detection': 'Upload an X-ray image of the bone area. The image should clearly show the suspected fracture area.',
     'bone-marrow': 'Upload a microscope image of the bone marrow sample.',
     'osteoarthritis': 'Upload an X-ray or MRI image of the knee joint.',
@@ -42,20 +41,18 @@ const TASK_GUIDANCE: Record<string, string> = { /* ... same as before ... */
     'bone-tumor': 'Upload an X-ray, MRI, or CT scan showing the suspected area.',
     'bone-infection': 'Upload an X-ray, MRI, or bone scan showing the affected area.'
 };
-const TASK_SPECIALISTS: Record<string, string> = { /* ... same as before ... */
+const TASK_SPECIALISTS: Record<string, string> = { 
     'fracture-detection': 'Orthopedic Surgeon',
     'bone-marrow': 'Hematologist',
     'osteoarthritis': 'Rheumatologist',
-    'osteoporosis': 'Endocrinologist', // or Rheumatologist
+    'osteoporosis': 'Endocrinologist',
     'bone-age': 'Pediatric Endocrinologist',
-    'spine-fracture': 'Spine Surgeon', // Orthopedic or Neurosurgeon
+    'spine-fracture': 'Spine Surgeon',
     'bone-tumor': 'Orthopedic Oncologist',
-    'bone-infection': 'Orthopedic Surgeon', // In collaboration with Infectious Disease Specialist
+    'bone-infection': 'Orthopedic Surgeon',
 };
-// --- End of Constants ---
 
 const AnalysisPage = () => {
-    // --- State and Refs (same as before) ---
     const { taskId } = useParams<{ taskId: string }>();
     const navigate = useNavigate();
     const { user } = useAuthContext();
@@ -75,24 +72,24 @@ const AnalysisPage = () => {
     const [titleFadeIn, setTitleFadeIn] = useState(false);
     const [showConsultDialog, setShowConsultDialog] = useState(false);
 
-    // --- useEffect hooks (same as before) ---
     useEffect(() => {
         if (!user) { navigate('/auth'); return; }
         setTimeout(() => setTitleFadeIn(true), 100);
     }, [user, navigate]);
+    
     useEffect(() => {
         if (taskId && !TASK_TITLES[taskId]) { toast.error('Invalid analysis task'); navigate('/tasks'); }
     }, [taskId, navigate]);
-
-    // --- handleImageUpload, handleAnalyze, proceedToConsultation, image modal/zoom handlers (same as before) ---
-    const handleImageUpload = (file: File) => { /* ... same as before ... */
+    
+    const handleImageUpload = (file: File) => { 
         setImage(file); const objectURL = URL.createObjectURL(file); setImageUrl(objectURL);
         setResults(null); setError(null); setAnalysisId(null); setStoredImageUrl(null);
         setIsImageModalOpen(false); setIsImageModalMaximized(false); setZoomLevel(1); setShowConsultDialog(false);
         const reader = new FileReader(); reader.onloadend = () => { setImageBase64(reader.result as string); }; reader.readAsDataURL(file);
         return () => URL.revokeObjectURL(objectURL);
     };
-    const handleAnalyze = async () => { /* ... same as before ... */
+    
+    const handleAnalyze = async () => { 
         if (!image || !imageBase64 || !taskId || !user) { toast.error('Please upload an image first'); return; }
         setAnalyzing(true); setError(null); setResults(null); setShowConsultDialog(false);
         const toastId = toast.loading('Analyzing image, please wait...');
@@ -109,21 +106,22 @@ const AnalysisPage = () => {
             toast.error(`Analysis failed: ${errorMessage}`, { id: toastId });
         } finally { setAnalyzing(false); }
     };
-    const proceedToConsultation = () => { /* ... same as before ... */
+    
+    const proceedToConsultation = () => { 
         if (!taskId) return; const specialistType = TASK_SPECIALISTS[taskId] || 'medical specialist';
         const searchTerm = encodeURIComponent(`${specialistType} near me`); const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${searchTerm}`;
         if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( () => { window.open(mapsUrl, '_blank'); }, () => { window.open(mapsUrl, '_blank'); toast.info("Could not get precise location. Searching based on 'near me'."); }, { timeout: 5000 } ); }
         else { window.open(mapsUrl, '_blank'); toast.info("Geolocation not supported. Searching based on 'near me'."); }
         setShowConsultDialog(false);
     };
+    
     const openImageModal = () => setIsImageModalOpen(true);
     const closeImageModal = () => { setIsImageModalOpen(false); setIsImageModalMaximized(false); setZoomLevel(1); };
     const toggleImageModalMaximize = () => setIsImageModalMaximized(!isImageModalMaximized);
     const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
     const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
-
-    // --- formatResults (same as previous working version) ---
-    const formatResults = (resultsText: string | null): React.ReactNode => { /* ... same as the previous correctly working version ... */
+    
+    const formatResults = (resultsText: string | null): React.ReactNode => { 
         if (!resultsText) return <p className="text-muted-foreground">No results text available.</p>;
         try {
             const normalizedText = resultsText.replace(/\r\n/g, '\n').replace(/ +\n/g, '\n').trim();
@@ -133,164 +131,222 @@ const AnalysisPage = () => {
         } catch (e) { console.error("Error formatting results:", e); return <pre className="whitespace-pre-wrap text-sm">{resultsText}</pre>; }
     };
 
-
-    // --- PDF Download Function using html2canvas ---
     const handleDownloadResults = async () => {
-        const elementToRender = resultsRef.current; // Target the results container
-        if (!results || !elementToRender) {
+        const elementToRender = resultsRef.current;
+        if (!results || !elementToRender || !taskId) {
             toast.warning('No results available to download.');
             return;
         }
 
         const toastId = toast.loading('Generating PDF, please wait...');
 
-        // Temporarily force black text color for PDF rendering
-        const originalColor = elementToRender.style.color;
-        elementToRender.style.color = '#000000';
+        const elementsToAdjust = elementToRender.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div, strong, em');
+        const originalStyles: {el: HTMLElement, color: string, bg: string}[] = [];
+        
+        elementsToAdjust.forEach(el => {
+            const htmlEl = el as HTMLElement;
+            originalStyles.push({
+                el: htmlEl, 
+                color: htmlEl.style.color,
+                bg: htmlEl.style.backgroundColor
+            });
+            htmlEl.style.color = '#000000';
+            htmlEl.style.backgroundColor = 'transparent';
+        });
 
         try {
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-            const taskTitle = TASK_TITLES[taskId || ''] || 'Bone Analysis';
-            const analysisDate = new Date().toLocaleString();
-            const userEmail = user?.email || 'N/A';
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const margin = 15; // mm
-            const contentStartY = margin + 15; // Y position where content starts below header
-            const contentEndY = pageHeight - margin - 5; // Y position where content ends above footer
-            const availablePageHeight = contentEndY - contentStartY;
-
-            // --- Helper Function for Headers/Footers ---
-            const addHeaderFooter = (doc: jsPDF, pageNum: number, pageCount: number) => {
-                // Add header/footer logic (same as previous version)
-                doc.setFontSize(9); doc.setTextColor(120);
-                const headerY = margin - 7; const footerY = pageHeight - margin + 7;
-                doc.text(taskTitle, margin, headerY); doc.text(`User: ${userEmail}`, pageWidth - margin, headerY, { align: 'right' });
-                doc.setDrawColor(200); doc.setLineWidth(0.2); doc.line(margin, margin - 2, pageWidth - margin, margin - 2);
-                doc.line(margin, pageHeight - margin + 2, pageWidth - margin, pageHeight - margin + 2);
-                doc.text(`Page ${pageNum} of ${pageCount}`, pageWidth / 2, footerY, { align: 'center' });
-                doc.text(`Generated: ${analysisDate}`, margin, footerY); doc.text('AI Analysis - Informational Only', pageWidth - margin, footerY, { align: 'right' });
-            };
-
-            // --- 1. Cover Page ---
-             pdf.setFontSize(22); pdf.setTextColor(0); pdf.text(taskTitle, pageWidth / 2, pageHeight / 2 - 30, { align: 'center' }); pdf.setFontSize(16); pdf.text(`Analysis Report`, pageWidth / 2, pageHeight / 2 - 15, { align: 'center' }); pdf.setFontSize(11); pdf.setTextColor(80); pdf.text(`User: ${userEmail}`, pageWidth / 2, pageHeight / 2 + 5, { align: 'center' }); pdf.text(`Date: ${analysisDate}`, pageWidth / 2, pageHeight / 2 + 12, { align: 'center' }); pdf.setFontSize(10); pdf.setTextColor(150); pdf.text('Powered by AI - For Informational Purposes Only', pageWidth / 2, pageHeight - 30, { align: 'center' });
-
-            let pageCount = 1; // Start counting content pages
-
-            // --- 2. Image Page ---
-            const imgSrc = storedImageUrl || imageUrl;
-            if (imgSrc) {
-                pageCount++;
-                pdf.addPage();
-                pdf.setFontSize(14); pdf.setTextColor(0);
-                pdf.text('Analyzed Image', margin, contentStartY - 5); // Title
-                try {
-                    const imgResponse = await fetch(imgSrc);
-                    if (!imgResponse.ok) throw new Error(`Image fetch failed: ${imgResponse.statusText}`);
-                    const blob = await imgResponse.blob();
-                    const reader = new FileReader();
-                    const dataUrl = await new Promise<string>((resolve, reject) => {
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-
-                    const imgProps = pdf.getImageProperties(dataUrl);
-                    const imgMaxW = pageWidth - 2 * margin;
-                    const imgMaxH = availablePageHeight - 10; // Max height within content area
-                    const ratio = Math.min(imgMaxW / imgProps.width, imgMaxH / imgProps.height);
-                    const imgW = imgProps.width * ratio; const imgH = imgProps.height * ratio;
-                    const xOffset = (pageWidth - imgW) / 2; const yOffset = contentStartY + 5; // Below title
-
-                    pdf.addImage(dataUrl, imgProps.fileType, xOffset, yOffset, imgW, imgH);
-                } catch (imgError) {
-                    console.error("PDF Export: Could not load or add image:", imgError);
-                    toast.warning("PDF Export: Could not include image.", { id: toastId });
-                    pdf.setFontSize(10); pdf.setTextColor(150);
-                    pdf.text('[Error: Analyzed image could not be embedded]', margin, contentStartY + 10);
-                }
-            }
-
-            // --- 3. Results Pages using html2canvas ---
-            pageCount++; // Increment for the first results page
-            pdf.addPage();
-            pdf.setFontSize(14); pdf.setTextColor(0);
-            pdf.text('Analysis Results', margin, contentStartY - 5); // Title
-
-            const canvas = await html2canvas(elementToRender, {
-                scale: 2, // Good scale for resolution
-                logging: false,
-                useCORS: true, // Important if any external resources were hypothetically in results
-                width: elementToRender.scrollWidth, // Capture full width
-                height: elementToRender.scrollHeight, // Capture full scrollable height
-                 backgroundColor: '#ffffff', // Explicit white background for canvas
-                 scrollY: -window.scrollY, // Ensure it captures from the top
-                 scrollX: -window.scrollX
+            const pdf = new jsPDF({ 
+                orientation: 'portrait', 
+                unit: 'mm', 
+                format: 'a4',
+                compress: true
             });
 
-            const imgData = canvas.toDataURL('image/png', 0.95); // Quality factor for PNG
-            const imgProps = pdf.getImageProperties(imgData);
-
-            const pdfImageWidth = pageWidth - 2 * margin;
-            // Calculate the image height in the PDF based on aspect ratio
-            const pdfImageHeight = (imgProps.height * pdfImageWidth) / imgProps.width;
-
-            let heightLeft = pdfImageHeight;
-            let position = contentStartY; // Initial Y position on the first results page
-
-            // Add the first chunk of the image
-            pdf.addImage(imgData, 'PNG', margin, position, pdfImageWidth, Math.min(availablePageHeight, heightLeft));
-            heightLeft -= availablePageHeight;
-
-            // Add subsequent pages if the image height exceeds the available space
-            while (heightLeft > 0) {
-                pageCount++; // Increment page count for each new page added
-                // Calculate the y position on the source canvas for the next chunk
-                // The offset is the total height minus the remaining height.
-                const sourceYOffset = pdfImageHeight - heightLeft;
-
-                pdf.addPage(); // Add a new page
-                // Add the next chunk of the image, starting from the top content area
-                pdf.addImage(imgData, 'PNG', margin, contentStartY, pdfImageWidth, Math.min(availablePageHeight, heightLeft),
-                             // The following parameters define the clipping/source area on the canvas:
-                             undefined, // alias (not needed)
-                             'FAST', // compression
-                             0, // rotation (none)
-                             0, // x offset on source canvas (0)
-                             sourceYOffset / (pdfImageHeight / imgProps.height) // Calculate the Y offset on the original high-res canvas
-                            );
-                heightLeft -= availablePageHeight;
+            const taskTitle = TASK_TITLES[taskId] || 'Bone Analysis';
+            const analysisDate = new Date().toLocaleString();
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            
+            pdf.setFillColor(235, 245, 255); // Light blue background
+            pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+            
+            pdf.setDrawColor(59, 130, 246); // Blue
+            pdf.setLineWidth(0.5);
+            pdf.line(20, 40, pageWidth - 20, 40);
+            
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(24);
+            pdf.setTextColor(30, 64, 175); // Indigo
+            pdf.text(taskTitle, 20, 30);
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(14);
+            pdf.setTextColor(55, 65, 81); // Gray
+            pdf.text('Medical Analysis Report', 20, 50);
+            
+            pdf.setFontSize(12);
+            pdf.text(`Analysis Date: ${analysisDate}`, 20, 65);
+            
+            if (user) {
+                pdf.text(`User: ${user.email || 'Anonymous'}`, 20, 75);
             }
-
-            // --- Add Headers/Footers to all pages ---
-            const totalPages = pageCount; // Total number of pages including cover
-            for (let i = 1; i <= totalPages; i++) {
-                pdf.setPage(i);
-                // Add header/footer only to content pages (skip cover page i=1)
-                if (i > 1) {
-                    addHeaderFooter(pdf, i - 1, totalPages - 1); // Page numbers relative to content pages
+            
+            pdf.setFontSize(10);
+            pdf.setTextColor(156, 163, 175); // Gray
+            pdf.text('AI-powered bone health analysis | For informational purposes only', 20, pageHeight - 20);
+            
+            if (storedImageUrl || imageUrl) {
+                pdf.addPage();
+                
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(16);
+                pdf.setTextColor(30, 64, 175); // Indigo
+                pdf.text('Medical Image', 20, 20);
+                
+                pdf.setDrawColor(59, 130, 246); // Blue
+                pdf.setLineWidth(0.3);
+                pdf.line(20, 25, 80, 25);
+                
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(10);
+                pdf.setTextColor(55, 65, 81); // Gray
+                pdf.text('The following image was analyzed using AI technology', 20, 35);
+                
+                try {
+                    const img = new Image();
+                    img.src = storedImageUrl || imageUrl;
+                    await new Promise<void>((resolve) => {
+                        img.onload = () => resolve();
+                    });
+                    
+                    const maxImgWidth = pageWidth - 40;
+                    const maxImgHeight = pageHeight - 80;
+                    
+                    let imgWidth = img.width;
+                    let imgHeight = img.height;
+                    
+                    if (imgWidth > maxImgWidth) {
+                        const ratio = maxImgWidth / imgWidth;
+                        imgWidth = maxImgWidth;
+                        imgHeight = imgHeight * ratio;
+                    }
+                    
+                    if (imgHeight > maxImgHeight) {
+                        const ratio = maxImgHeight / imgHeight;
+                        imgHeight = maxImgHeight;
+                        imgWidth = imgWidth * ratio;
+                    }
+                    
+                    const xOffset = (pageWidth - imgWidth) / 2;
+                    pdf.addImage(img.src, 'JPEG', xOffset, 50, imgWidth, imgHeight);
+                    
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(107, 114, 128); // Gray
+                    pdf.text('Image used for analysis', pageWidth / 2, 50 + imgHeight + 10, { align: 'center' });
+                }
+                catch (imgError) {
+                    console.error("Could not add image to PDF:", imgError);
+                    pdf.setTextColor(255, 0, 0); // Red
+                    pdf.text("Error loading image", 20, 60);
                 }
             }
-
-            // --- Save ---
-            const fileName = `${taskTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report_${new Date().toISOString().split('T')[0]}.pdf`;
-            pdf.save(fileName);
+            
+            pdf.addPage();
+            
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(16);
+            pdf.setTextColor(30, 64, 175); // Indigo
+            pdf.text('Analysis Results', 20, 20);
+            
+            pdf.setDrawColor(59, 130, 246); // Blue
+            pdf.setLineWidth(0.3);
+            pdf.line(20, 25, 100, 25);
+            
+            const canvas = await html2canvas(elementToRender, {
+                scale: 2, // Higher resolution
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true,
+                allowTaint: true,
+                width: elementToRender.scrollWidth,
+                height: elementToRender.scrollHeight
+            });
+            
+            const imgData = canvas.toDataURL('image/png', 0.95);
+            
+            const contentWidth = pageWidth - 40;
+            const contentHeight = canvas.height * contentWidth / canvas.width;
+            
+            let remainingHeight = contentHeight;
+            let currentPage = 0;
+            
+            while (remainingHeight > 0) {
+                const yPos = currentPage === 0 ? 35 : 20;
+                const availableHeight = pageHeight - yPos - 20;
+                
+                const portionHeight = Math.min(remainingHeight, availableHeight);
+                const ratio = canvas.height / contentHeight;
+                const sourceHeight = portionHeight * ratio;
+                const sourceY = (contentHeight - remainingHeight) * ratio;
+                
+                pdf.addImage(
+                    imgData,
+                    'PNG',
+                    20,
+                    yPos,
+                    contentWidth,
+                    portionHeight,
+                    '',
+                    'FAST',
+                    0,
+                    sourceY,
+                    canvas.width,
+                    sourceHeight
+                );
+                
+                remainingHeight -= portionHeight;
+                
+                if (remainingHeight > 0) {
+                    pdf.addPage();
+                    currentPage++;
+                    
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(30, 64, 175); // Indigo
+                    pdf.text('Analysis Results (continued)', 20, 15);
+                }
+            }
+            
+            const pageCount = pdf.getNumberOfPages();
+            
+            for (let i = 1; i <= pageCount; i++) {
+                pdf.setPage(i);
+                
+                if (i > 1) {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(107, 114, 128); // Gray
+                    pdf.text(`Page ${i-1} of ${pageCount-1}`, pageWidth - 25, pageHeight - 10);
+                    pdf.text('AI-powered bone health analysis | For informational purposes only', 20, pageHeight - 10);
+                }
+            }
+            
+            const date = new Date().toISOString().split('T')[0];
+            const cleanTitle = taskTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            pdf.save(`${cleanTitle}_report_${date}.pdf`);
+            
             toast.success('PDF downloaded successfully!', { id: toastId });
-
         } catch (error) {
             console.error('Error generating PDF:', error);
             toast.error('Failed to generate PDF. See console for details.', { id: toastId });
         } finally {
-             // Reset text color regardless of success or failure
-            if (elementToRender) {
-                elementToRender.style.color = originalColor || '';
-            }
+            originalStyles.forEach(({el, color, bg}) => {
+                el.style.color = color;
+                el.style.backgroundColor = bg;
+            });
         }
     };
 
-
-    // --- Component Render (JSX remains largely the same) ---
     if (!taskId || !user) return null;
     const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
     const taskGuidance = TASK_GUIDANCE[taskId] || 'Please upload an appropriate medical image for analysis.';
@@ -301,14 +357,12 @@ const AnalysisPage = () => {
         <AuroraBackground showRadialGradient={true}>
             <div className="container mx-auto px-4 py-12 ">
                 <style>{`
-                    /* Basic styles */
                     .hover-scale { transition: transform 0.2s ease-out; }
                     .hover-scale:hover { transform: scale(1.05); }
                     .fade-in-title { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
                     .fade-in-title.visible { opacity: 1; transform: translateY(0); }
                     .animate-fade-in { animation: fadeInAnimation 0.5s ease-out forwards; }
                     @keyframes fadeInAnimation { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-                    /* Ensure prose text color is inheritable for PDF Capture */
                     .analysis-results-content p,
                     .analysis-results-content li,
                     .analysis-results-content h1,
@@ -330,21 +384,17 @@ const AnalysisPage = () => {
                     html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
                 `}</style>
 
-                {/* Navigation */}
                 <motion.div className="flex justify-between items-center mb-6" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                     <Button variant="gradient" onClick={() => navigate('/bone-analysis')} className="hover-scale rounded-xl text-xs sm:text-sm" size="sm"> <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Tasks </Button>
                     <Button variant="gradient" onClick={() => navigate('/')} className="hover-scale rounded-xl text-xs sm:text-sm" size="sm"> <Home className="mr-1.5 h-4 w-4" /> Home </Button>
                 </motion.div>
 
-                {/* Title */}
                 <div className={`bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-xl mb-8 shadow-sm border border-black/5 dark:border-white/5 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
                     <h1 className="text-2xl sm:text-3xl font-bold mb-1">{taskTitle}</h1>
                     <p className="text-sm text-muted-foreground">{user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}</p>
                 </div>
 
-                {/* Main Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Upload Card */}
                     <motion.div variants={fadeIn} initial="hidden" animate="visible" className="animate-fade-in">
                         <Card className="border transition-all duration-300 hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden">
                             <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg p-4">
@@ -363,7 +413,6 @@ const AnalysisPage = () => {
                         </Card>
                     </motion.div>
 
-                    {/* Results Card */}
                     <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className={`animate-fade-in ${isResultsMaximized ? 'fixed inset-0 z-50 overflow-hidden bg-background' : ''}`}>
                         <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full w-full rounded-none shadow-none border-none' : 'hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden'}`}>
                             <CardHeader className={`flex flex-row items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground ${isResultsMaximized ? 'sticky top-0 z-10' : 'rounded-t-lg'}`}>
@@ -373,9 +422,7 @@ const AnalysisPage = () => {
                                     <Button variant="ghost" size="icon" title={isResultsMaximized ? "Minimize" : "Maximize"} onClick={() => setIsResultsMaximized(!isResultsMaximized)} className="hover-scale rounded-md text-white hover:bg-white/20 w-8 h-8"> {isResultsMaximized ? <Minimize size={18} /> : <Maximize size={18} />} </Button>
                                 </div>
                             </CardHeader>
-                            {/* CardContent now ONLY contains the results div */}
                             <CardContent className={`p-5 ${isResultsMaximized ? 'h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar' : 'min-h-[200px] max-h-[60vh] overflow-y-auto custom-scrollbar'} ${isResultsMaximized ? 'bg-background' : 'bg-white/95 dark:bg-gray-900/90 rounded-b-lg'}`}>
-                                {/* The results container that will be captured by html2canvas */}
                                 <div ref={resultsRef}>
                                     {results ? (
                                         <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none animate-fade-in text-gray-800 dark:text-gray-200">
@@ -397,7 +444,6 @@ const AnalysisPage = () => {
                     </motion.div>
                 </div>
 
-                {/* Post-Analysis Buttons */}
                 {results && (
                     <motion.div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
                         <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg w-full sm:w-auto text-xs sm:text-sm" size="sm" />
@@ -409,9 +455,7 @@ const AnalysisPage = () => {
                     </motion.div>
                 )}
 
-                {/* Dialogs and Modals (Consult Specialist, Image Viewer) */}
                 <Dialog open={showConsultDialog} onOpenChange={setShowConsultDialog}>
-                    {/* Dialog Content (same as before) */}
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader> <DialogTitle className="flex items-center gap-2 text-lg"><UserRound className="h-5 w-5 text-primary" />Find a Specialist?</DialogTitle> <DialogDescription className="pt-2 text-sm"> This will open Google Maps to search for a <strong className="text-primary">{specialistType}</strong> near you. <br /><br /> <span className="text-xs text-muted-foreground"> Disclaimer: This search is for informational purposes only and does not constitute a medical referral or endorsement. Always consult with a qualified healthcare provider for medical advice. </span> </DialogDescription> </DialogHeader>
                         <DialogFooter className="mt-4 sm:justify-end gap-2"> <Button type="button" size="sm" variant="outline" onClick={() => setShowConsultDialog(false)}>Cancel</Button> <Button type="button" size="sm" onClick={proceedToConsultation} className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white"> <ExternalLink className="mr-1.5 h-4 w-4" /> Proceed to Maps </Button> </DialogFooter>
@@ -419,7 +463,6 @@ const AnalysisPage = () => {
                 </Dialog>
 
                 {isImageModalOpen && imageUrl && (
-                    /* Image Modal JSX (same as before) */
                     <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300 ${isImageModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}> <motion.div className={`relative bg-white dark:bg-gray-900 shadow-2xl rounded-lg overflow-hidden flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl w-full max-h-[90vh]'}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 25 }} > <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0"> <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploaded Image</h3> <div className="flex items-center space-x-1"> <Button variant="ghost" size="icon" onClick={handleZoomIn} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomIn size={18} /></Button> <Button variant="ghost" size="icon" onClick={handleZoomOut} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomOut size={18} /></Button> <Button variant="ghost" size="icon" onClick={toggleImageModalMaximize} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8">{isImageModalMaximized ? <Minimize size={18} /> : <Maximize size={18} />}</Button> <Button variant="ghost" size="icon" onClick={closeImageModal} className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 w-8 h-8"><CloseIcon size={20} /></Button> </div> </div> <div className="flex-grow p-4 overflow-auto flex items-center justify-center"> <img src={imageUrl} alt="Uploaded for analysis" className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out block" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }} /> </div> </motion.div> </div>
                 )}
             </div>
