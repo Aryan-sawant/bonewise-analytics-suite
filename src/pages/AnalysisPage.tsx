@@ -19,10 +19,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// html2canvas removed as we will use jsPDF's text rendering
 import { isDoctor } from "@/types/auth";
 
-const TASK_TITLES: Record<string, string> = { 
+const TASK_TITLES: Record<string, string> = {
     'fracture-detection': 'Bone Fracture Detection',
     'bone-marrow': 'Bone Marrow Cell Classification',
     'osteoarthritis': 'Knee Joint Osteoarthritis Detection',
@@ -32,7 +32,7 @@ const TASK_TITLES: Record<string, string> = {
     'bone-tumor': 'Bone Tumor/Cancer Detection',
     'bone-infection': 'Bone Infection (Osteomyelitis) Detection'
 };
-const TASK_GUIDANCE: Record<string, string> = { 
+const TASK_GUIDANCE: Record<string, string> = {
     'fracture-detection': 'Upload an X-ray image of the bone area. The image should clearly show the suspected fracture area.',
     'bone-marrow': 'Upload a microscope image of the bone marrow sample.',
     'osteoarthritis': 'Upload an X-ray or MRI image of the knee joint.',
@@ -42,7 +42,7 @@ const TASK_GUIDANCE: Record<string, string> = {
     'bone-tumor': 'Upload an X-ray, MRI, or CT scan showing the suspected area.',
     'bone-infection': 'Upload an X-ray, MRI, or bone scan showing the affected area.'
 };
-const TASK_SPECIALISTS: Record<string, string> = { 
+const TASK_SPECIALISTS: Record<string, string> = {
     'fracture-detection': 'Orthopedic Surgeon',
     'bone-marrow': 'Hematologist',
     'osteoarthritis': 'Rheumatologist',
@@ -58,13 +58,13 @@ const AnalysisPage = () => {
     const navigate = useNavigate();
     const { user } = useAuthContext();
     const [image, setImage] = useState<File | null>(null);
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageUrl, setImageUrl] = useState<string | null>(null); // Local blob URL for preview
     const [imageBase64, setImageBase64] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
     const [results, setResults] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [analysisId, setAnalysisId] = useState<string | null>(null);
-    const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null);
+    const [storedImageUrl, setStoredImageUrl] = useState<string | null>(null); // URL from Supabase storage after analysis
     const [isResultsMaximized, setIsResultsMaximized] = useState(false);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [isImageModalMaximized, setIsImageModalMaximized] = useState(false);
@@ -76,21 +76,37 @@ const AnalysisPage = () => {
     useEffect(() => {
         if (!user) { navigate('/auth'); return; }
         setTimeout(() => setTitleFadeIn(true), 100);
-    }, [user, navigate]);
-    
+        // Cleanup local object URL when component unmounts or imageUrl changes
+        return () => {
+            if (imageUrl && imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(imageUrl);
+            }
+        };
+    }, [user, navigate]); // Removed imageUrl from dependency array to avoid premature revoke
+
     useEffect(() => {
         if (taskId && !TASK_TITLES[taskId]) { toast.error('Invalid analysis task'); navigate('/tasks'); }
     }, [taskId, navigate]);
-    
-    const handleImageUpload = (file: File) => { 
-        setImage(file); const objectURL = URL.createObjectURL(file); setImageUrl(objectURL);
+
+    const handleImageUpload = (file: File) => {
+        // Revoke previous object URL if exists
+        if (imageUrl && imageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(imageUrl);
+        }
+
+        setImage(file);
+        const newObjectURL = URL.createObjectURL(file);
+        setImageUrl(newObjectURL); // Use new object URL for preview
+
         setResults(null); setError(null); setAnalysisId(null); setStoredImageUrl(null);
         setIsImageModalOpen(false); setIsImageModalMaximized(false); setZoomLevel(1); setShowConsultDialog(false);
-        const reader = new FileReader(); reader.onloadend = () => { setImageBase64(reader.result as string); }; reader.readAsDataURL(file);
-        return () => URL.revokeObjectURL(objectURL);
+
+        const reader = new FileReader();
+        reader.onloadend = () => { setImageBase64(reader.result as string); };
+        reader.readAsDataURL(file);
     };
-    
-    const handleAnalyze = async () => { 
+
+    const handleAnalyze = async () => {
         if (!image || !imageBase64 || !taskId || !user) { toast.error('Please upload an image first'); return; }
         setAnalyzing(true); setError(null); setResults(null); setShowConsultDialog(false);
         const toastId = toast.loading('Analyzing image, please wait...');
@@ -99,7 +115,10 @@ const AnalysisPage = () => {
             if (functionError) throw new Error(`Analysis service failed: ${functionError.message}`);
             if (data?.error) throw new Error(data.error);
             if (!data?.analysis) throw new Error('Analysis service did not return valid results.');
-            setResults(data.analysis); setAnalysisId(data.analysisId || null); setStoredImageUrl(data.imageUrl || null);
+            setResults(data.analysis);
+            setAnalysisId(data.analysisId || null);
+            // IMPORTANT: Store the image URL returned from the backend (likely Supabase Storage URL)
+            setStoredImageUrl(data.imageUrl || null);
             toast.success('Analysis complete!', { id: toastId });
         } catch (error) {
             console.error('Analysis error:', error); const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -107,197 +126,217 @@ const AnalysisPage = () => {
             toast.error(`Analysis failed: ${errorMessage}`, { id: toastId });
         } finally { setAnalyzing(false); }
     };
-    
-    const proceedToConsultation = () => { 
+
+    const proceedToConsultation = () => {
         if (!taskId) return; const specialistType = TASK_SPECIALISTS[taskId] || 'medical specialist';
         const searchTerm = encodeURIComponent(`${specialistType} near me`); const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${searchTerm}`;
         if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( () => { window.open(mapsUrl, '_blank'); }, () => { window.open(mapsUrl, '_blank'); toast.info("Could not get precise location. Searching based on 'near me'."); }, { timeout: 5000 } ); }
         else { window.open(mapsUrl, '_blank'); toast.info("Geolocation not supported. Searching based on 'near me'."); }
         setShowConsultDialog(false);
     };
-    
+
     const openImageModal = () => setIsImageModalOpen(true);
     const closeImageModal = () => { setIsImageModalOpen(false); setIsImageModalMaximized(false); setZoomLevel(1); };
     const toggleImageModalMaximize = () => setIsImageModalMaximized(!isImageModalMaximized);
     const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
     const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
-    
-    const formatResults = (resultsText: string | null): React.ReactNode => { 
+
+    const formatResults = (resultsText: string | null): React.ReactNode => {
         if (!resultsText) return <p className="text-muted-foreground">No results text available.</p>;
         try {
             const normalizedText = resultsText.replace(/\r\n/g, '\n').replace(/ +\n/g, '\n').trim();
             const textWithoutCodeBlocks = normalizedText.replace(/```[\s\S]*?```/g, '[Code Block Removed]');
+            // Split more carefully, preserving paragraph breaks and list/heading indicators
             const blocks = textWithoutCodeBlocks.split(/(\n\n+|\n(?=[*\-•#])|\n(?=\d+\. ))/).filter(block => block && block.trim() !== '');
+
             return ( <div className="analysis-results-content space-y-3 leading-relaxed"> {blocks.map((block, index) => { const trimmedBlock = block.trim(); const headingMatch = trimmedBlock.match(/^(#{1,5})\s+(.*)/); if (headingMatch) { const level = headingMatch[1].length; const text = headingMatch[2]; const Tag = `h${level + 1}` as keyof JSX.IntrinsicElements; const textSize = ['text-xl', 'text-lg', 'text-base font-semibold', 'text-base', 'text-sm font-medium'][level -1] || 'text-sm'; return <Tag key={index} className={`${textSize} font-semibold mt-4 mb-1 text-primary border-b border-primary/30 pb-1`}>{text}</Tag>; } const keywordHeadingMatch = trimmedBlock.match(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion|Analysis Results)\s*[:*]?(.*)/i); if (keywordHeadingMatch) { const keyword = keywordHeadingMatch[1]; const textAfterKeyword = keywordHeadingMatch[2]?.trim(); return (<div key={index} className="mt-4 mb-2"><h3 className="text-lg font-semibold text-primary border-b border-primary/30 pb-1 inline-block">{keyword}:</h3>{textAfterKeyword && <span className="ml-2 text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={{ __html: textAfterKeyword.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/__(.*?)__/g, '<em>$1</em>') }} />}</div>); } if (trimmedBlock.match(/^[*•-]\s+/)) { const listItems = trimmedBlock.split('\n').map(line => line.trim().replace(/^[*•-]\s+/, '')); return ( <ul key={index} className="list-disc pl-5 space-y-1.5 text-sm"> {listItems.filter(item => item).map((item, i) => ( <li key={i} className="text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/__(.*?)__/g, '<em>$1</em>') }} /> ))} </ul> ); } if (trimmedBlock.match(/^\d+\.\s+/)) { const listItems = trimmedBlock.split('\n').map(line => line.trim().replace(/^\d+\.\s+/, '')); return ( <ol key={index} className="list-decimal pl-5 space-y-1.5 text-sm"> {listItems.filter(item => item).map((item, i) => ( <li key={i} className="text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/__(.*?)__/g, '<em>$1</em>') }} /> ))} </ol> ); } if (!trimmedBlock) return null; return <p key={index} className="text-gray-700 dark:text-gray-300 text-sm" dangerouslySetInnerHTML={{ __html: trimmedBlock.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/__(.*?)__/g, '<em>$1</em>') }} />; })} </div> );
         } catch (e) { console.error("Error formatting results:", e); return <pre className="whitespace-pre-wrap text-sm">{resultsText}</pre>; }
     };
 
     const handleDownloadResults = async () => {
-        const elementToRender = resultsRef.current;
-        if (!results || !elementToRender || !taskId) {
+        if (!results || !taskId) {
             toast.warning('No results available to download.');
             return;
         }
 
         const toastId = toast.loading('Generating PDF, please wait...');
+        // Use storedImageUrl if available (persistent), otherwise fall back to local imageUrl
+        const imageSrcForPdf = storedImageUrl || imageUrl;
 
         try {
-            const pdf = new jsPDF({ 
-                orientation: 'portrait', 
-                unit: 'mm', 
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
                 format: 'a4'
             });
 
             const taskTitle = TASK_TITLES[taskId] || 'Bone Analysis';
             const analysisDate = new Date().toLocaleString();
-            
-            // Add title
-            pdf.setFontSize(16);
-            pdf.text(taskTitle, 20, 20);
-            
-            // Add date
-            pdf.setFontSize(12);
-            pdf.text(`Analysis Date: ${analysisDate}`, 20, 30);
-            
-            // Add user info if available
+            const margin = 20;
+            const contentWidth = pdf.internal.pageSize.getWidth() - 2 * margin;
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            let yPos = margin; // Start position
+
+            // --- Helper function to add text and handle page breaks ---
+            const addText = (text: string, size: number, style: 'normal' | 'bold' | 'italic' = 'normal', spacing = 5) => {
+                pdf.setFontSize(size);
+                pdf.setFont('helvetica', style);
+                const lines = pdf.splitTextToSize(text, contentWidth);
+                lines.forEach((line: string) => {
+                    if (yPos + size / 2.5 > pageHeight - margin) { // Estimate line height and check page break
+                        pdf.addPage();
+                        yPos = margin;
+                    }
+                    pdf.text(line, margin, yPos);
+                    yPos += size / 2.5 + 1; // Move yPos down based on font size + spacing
+                });
+                yPos += spacing; // Add extra spacing after the block
+            };
+
+            // --- PDF Content ---
+
+            // 1. Title
+            addText(taskTitle, 18, 'bold', 5);
+            yPos += 5; // Extra space after title
+
+            // 2. Date and User
+            addText(`Analysis Date: ${analysisDate}`, 10, 'normal', 2);
             if (user) {
-                pdf.text(`User: ${user.email || 'Anonymous'}`, 20, 40);
+                addText(`User: ${user.email || 'Anonymous'} ${user.userType === 'doctor' ? '(Doctor)' : '(Patient)'}`, 10, 'normal', 5);
             }
-            
-            // Add image if available
-            if (storedImageUrl || imageUrl) {
-                pdf.addPage();
-                pdf.text('Medical Image', 20, 20);
-                
+            yPos += 5; // Space before image/results
+
+            // 3. Add Image if available
+            if (imageSrcForPdf) {
+                addText('Medical Image', 14, 'bold', 3);
+                 if (yPos > pageHeight - margin - 50) { // Check if enough space for title + some image height
+                    pdf.addPage();
+                    yPos = margin;
+                    addText('Medical Image', 14, 'bold', 3); // Re-add title on new page
+                }
+                const startImageY = yPos;
+
                 try {
-                    const imgSrc = storedImageUrl || imageUrl || '';
                     const img = new Image();
-                    img.crossOrigin = "Anonymous";
-                    img.src = imgSrc;
-                    
-                    // Wait for image to load
-                    await new Promise((resolve, reject) => {
-                        img.onload = () => resolve(true);
-                        img.onerror = () => reject(new Error("Failed to load image"));
-                        // Set timeout to prevent hanging
-                        setTimeout(() => resolve(false), 10000);
+                    img.crossOrigin = "Anonymous"; // Important for cross-origin images (like from Supabase storage)
+                    img.src = imageSrcForPdf;
+
+                    const imgLoaded = await new Promise<HTMLImageElement | null>((resolve) => {
+                        img.onload = () => resolve(img);
+                        img.onerror = (e) => {
+                            console.error("PDF Image Load Error:", e);
+                            resolve(null); // Resolve with null on error
+                        };
+                        // Timeout to prevent hanging
+                        setTimeout(() => resolve(null), 15000); // 15 seconds timeout
                     });
-                    
-                    // Calculate dimensions to fit in PDF
-                    const pageWidth = pdf.internal.pageSize.getWidth();
-                    const maxWidth = pageWidth - 40;
-                    
-                    let imgWidth = Math.min(img.width, maxWidth);
-                    let imgHeight = img.height * (imgWidth / img.width);
-                    
-                    if (imgHeight > 150) {
-                        imgHeight = 150;
-                        imgWidth = img.width * (imgHeight / img.width);
-                    }
-                    
-                    // Center the image
-                    const xOffset = (pageWidth - imgWidth) / 2;
-                    
-                    // Add image to PDF
-                    pdf.addImage(img, 'JPEG', xOffset, 40, imgWidth, imgHeight);
-                }
-                catch (imgError) {
-                    console.error("Could not add image to PDF:", imgError);
-                    pdf.text("Error loading image", 20, 40);
-                }
-            }
-            
-            // Add analysis results
-            if (results) {
-                pdf.addPage();
-                pdf.text('Analysis Results', 20, 20);
-                
-                // Clean up the results text
-                const cleanResults = results
-                    .replace(/\r\n/g, '\n')
-                    .replace(/ +\n/g, '\n')
-                    .replace(/<\/?b>/g, '')
-                    .replace(/<\/?strong>/g, '')
-                    .replace(/<\/?i>/g, '')
-                    .replace(/<\/?em>/g, '')
-                    .replace(/<\/?p>/g, '')
-                    .replace(/<br\s*\/?>/g, '\n')
-                    .replace(/&nbsp;/g, ' ')
-                    .trim();
-                
-                // Split text into paragraphs based on double newlines
-                const paragraphs = cleanResults.split(/\n\n+/);
-                
-                let yPos = 40; // Starting position after the title
-                
-                for (const paragraph of paragraphs) {
-                    const trimmed = paragraph.trim();
-                    if (!trimmed) continue;
-                    
-                    // Handle headings
-                    if (trimmed.startsWith('#')) {
-                        // Extract heading text without the # symbols
-                        const headingText = trimmed.replace(/^#+\s+/, '');
-                        pdf.setFontSize(14);
-                        pdf.setFont('helvetica', 'bold');
-                        
-                        // Check if we need a new page
-                        if (yPos > pdf.internal.pageSize.getHeight() - 20) {
-                            pdf.addPage();
-                            yPos = 20;
+
+                    if (imgLoaded) {
+                        const imgProps = pdf.getImageProperties(imgLoaded);
+                        const aspectRatio = imgProps.width / imgProps.height;
+                        const availableHeight = pageHeight - yPos - margin;
+                        let imgWidth = contentWidth;
+                        let imgHeight = imgWidth / aspectRatio;
+
+                        // If image height exceeds available space, scale based on height instead
+                        if (imgHeight > availableHeight) {
+                            imgHeight = availableHeight;
+                            imgWidth = imgHeight * aspectRatio;
                         }
-                        
-                        pdf.text(headingText, 20, yPos);
-                        yPos += 10;
-                        pdf.setFont('helvetica', 'normal');
+                        // If calculated width is now wider than content width (can happen with very wide images), rescale
+                        if (imgWidth > contentWidth) {
+                            imgWidth = contentWidth;
+                            imgHeight = imgWidth / aspectRatio;
+                        }
+
+                        // Center the image horizontally
+                        const xOffset = margin + (contentWidth - imgWidth) / 2;
+
+                         // Add image
+                        pdf.addImage(imgLoaded, imgProps.fileType, xOffset, yPos, imgWidth, imgHeight);
+                        yPos += imgHeight + 10; // Add space after image
                     } else {
-                        // This is regular content
-                        pdf.setFontSize(10);
-                        pdf.setFont('helvetica', 'normal');
-                        
-                        // Calculate available width for text
-                        const contentWidth = pdf.internal.pageSize.getWidth() - 40;
-                        
-                        // Split the text to fit the width
-                        const lines = pdf.splitTextToSize(trimmed, contentWidth);
-                        
-                        // Add each line to the PDF
-                        for (const line of lines) {
-                            // Check if we need a new page
-                            if (yPos > pdf.internal.pageSize.getHeight() - 20) {
-                                pdf.addPage();
-                                yPos = 20;
-                            }
-                            
-                            pdf.text(line, 20, yPos);
-                            yPos += 6;
-                        }
+                         if (yPos > pageHeight - margin) { pdf.addPage(); yPos = margin; }
+                         addText("Error: Could not load the medical image for the PDF.", 10, 'italic', 5);
                     }
-                    
-                    // Add some space after each paragraph
-                    yPos += 8;
+
+                } catch (imgError) {
+                    console.error("Could not add image to PDF:", imgError);
+                     if (yPos > pageHeight - margin) { pdf.addPage(); yPos = margin; }
+                    addText("Error processing image for PDF.", 10, 'italic', 5);
                 }
+            } else {
+                // If no image, add a note
+                addText("No image was available for this analysis.", 10, 'italic', 5);
+                 yPos += 5;
             }
-            
-            // Add page numbers
+
+
+            // 4. Add Analysis Results
+            if (results) {
+                if (yPos > pageHeight - margin - 20) { // Check space before adding results section
+                     pdf.addPage();
+                     yPos = margin;
+                }
+                addText('Analysis Results', 14, 'bold', 5);
+
+                // Simple text formatting (replace HTML/Markdown-like tags)
+                 const cleanResults = results
+                    .replace(/\r\n/g, '\n') // Normalize line breaks
+                    .replace(/```[\s\S]*?```/g, '\n[Code Block Removed]\n') // Remove code blocks
+                    .replace(/^(#{1,5})\s+(.*)/gm, (match, p1, p2) => `\n**${p2.trim()}**\n`) // Convert markdown headings to bold
+                    .replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion|Analysis Results)\s*[:*]?/gmi, '\n**$1:**') // Bold keywords
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown around text (jsPDF handles bold)
+                    .replace(/__(.*?)__/g, '$1') // Remove italic markdown
+                    .replace(/^[*•-]\s+/gm, '  • ') // Convert bullets
+                    .replace(/^\d+\.\s+/gm, (match) => `  ${match}`) // Indent numbered lists
+                    .replace(/<br\s*\/?>/gi, '\n') // Handle <br> tags
+                    .replace(/<\/?(p|strong|b|em|i|ul|ol|li|h[1-6])>/gi, '') // Strip common HTML tags
+                    .replace(/ /g, ' ') // Replace non-breaking space
+                    .replace(/ +\n/g, '\n') // Trim trailing spaces before newlines
+                    .replace(/\n{3,}/g, '\n\n') // Collapse multiple empty lines
+                    .trim();
+
+                 // Split into paragraphs/blocks
+                const resultBlocks = cleanResults.split('\n\n');
+
+                resultBlocks.forEach(block => {
+                    const trimmedBlock = block.trim();
+                    if (!trimmedBlock) return;
+
+                    // Check if it looks like a heading we made bold
+                    if (trimmedBlock.startsWith('**') && trimmedBlock.endsWith('**')) {
+                        addText(trimmedBlock.slice(2, -2), 12, 'bold', 3);
+                    } else if (trimmedBlock.startsWith('**') && trimmedBlock.endsWith(':')) {
+                        addText(trimmedBlock.slice(2), 12, 'bold', 3);
+                    } else {
+                         addText(trimmedBlock, 10, 'normal', 3);
+                    }
+                    yPos += 2; // Add a bit more space between blocks
+                });
+            }
+
+            // 5. Add Page Numbers
             const pageCount = pdf.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 pdf.setPage(i);
                 pdf.setFontSize(8);
-                pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() - 30, pdf.internal.pageSize.getHeight() - 10);
+                pdf.setTextColor(150); // Light gray color
+                pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() / 2, pageHeight - 10, { align: 'center' });
             }
-            
-            // Save the PDF
+
+            // 6. Save the PDF
             const date = new Date().toISOString().split('T')[0];
             const cleanTitle = taskTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            pdf.save(`${cleanTitle}_${date}.pdf`);
-            
+            pdf.save(`${cleanTitle}_analysis_${date}.pdf`);
+
             toast.success('PDF downloaded successfully!', { id: toastId });
         } catch (error) {
             console.error('Error generating PDF:', error);
-            toast.error('Failed to generate PDF', { id: toastId });
+            toast.error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: toastId });
         }
     };
+
 
     if (!taskId || !user) return null;
     const taskTitle = TASK_TITLES[taskId] || 'Unknown Analysis';
@@ -308,6 +347,7 @@ const AnalysisPage = () => {
     return (
         <AuroraBackground showRadialGradient={true}>
             <div className="container mx-auto px-4 py-12 ">
+                {/* Styles (unchanged) */}
                 <style>{`
                     .hover-scale { transition: transform 0.2s ease-out; }
                     .hover-scale:hover { transform: scale(1.05); }
@@ -325,28 +365,34 @@ const AnalysisPage = () => {
                     .analysis-results-content em,
                     .analysis-results-content b,
                     .analysis-results-content i {
-                        color: inherit !important;
+                        color: inherit !important; /* Inherit color from CardContent */
                     }
+                    /* Custom Scrollbar */
                     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
                     .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 3px; }
                     .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
                     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+                    /* Dark mode scrollbar */
                     html.dark .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
                     html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
                     html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
-                `}</style>
+                 `}</style>
 
+                {/* Navigation Buttons */}
                 <motion.div className="flex justify-between items-center mb-6" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                     <Button variant="gradient" onClick={() => navigate('/bone-analysis')} className="hover-scale rounded-xl text-xs sm:text-sm" size="sm"> <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Tasks </Button>
                     <Button variant="gradient" onClick={() => navigate('/')} className="hover-scale rounded-xl text-xs sm:text-sm" size="sm"> <Home className="mr-1.5 h-4 w-4" /> Home </Button>
                 </motion.div>
 
+                {/* Title Section */}
                 <div className={`bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-xl mb-8 shadow-sm border border-black/5 dark:border-white/5 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
                     <h1 className="text-2xl sm:text-3xl font-bold mb-1">{taskTitle}</h1>
                     <p className="text-sm text-muted-foreground">{user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}</p>
                 </div>
 
+                {/* Main Grid: Upload & Results */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Image Upload Card */}
                     <motion.div variants={fadeIn} initial="hidden" animate="visible" className="animate-fade-in">
                         <Card className="border transition-all duration-300 hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden">
                             <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg p-4">
@@ -365,18 +411,22 @@ const AnalysisPage = () => {
                         </Card>
                     </motion.div>
 
+                    {/* Analysis Results Card */}
                     <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className={`animate-fade-in ${isResultsMaximized ? 'fixed inset-0 z-50 overflow-hidden bg-background' : ''}`}>
                         <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full w-full rounded-none shadow-none border-none' : 'hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden'}`}>
                             <CardHeader className={`flex flex-row items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground ${isResultsMaximized ? 'sticky top-0 z-10' : 'rounded-t-lg'}`}>
                                 <CardTitle className="text-base sm:text-lg font-semibold">Analysis Results</CardTitle>
                                 <div className="flex items-center space-x-1">
-                                    {results && (<Button variant="outline" size="icon" title="Download PDF" onClick={handleDownloadResults} className="hover-scale rounded-md bg-white/20 text-white border-white/30 hover:bg-white/30 w-8 h-8"> <Download size={16} /> </Button>)}
+                                    {/* Download button enabled only when results are available */}
+                                    <Button variant="outline" size="icon" title="Download PDF" onClick={handleDownloadResults} disabled={!results || analyzing} className="hover-scale rounded-md bg-white/20 text-white border-white/30 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed w-8 h-8"> <Download size={16} /> </Button>
                                     <Button variant="ghost" size="icon" title={isResultsMaximized ? "Minimize" : "Maximize"} onClick={() => setIsResultsMaximized(!isResultsMaximized)} className="hover-scale rounded-md text-white hover:bg-white/20 w-8 h-8"> {isResultsMaximized ? <Minimize size={18} /> : <Maximize size={18} />} </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className={`p-5 ${isResultsMaximized ? 'h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar' : 'min-h-[200px] max-h-[60vh] overflow-y-auto custom-scrollbar'} ${isResultsMaximized ? 'bg-background' : 'bg-white/95 dark:bg-gray-900/90 rounded-b-lg'}`}>
+                                {/* We keep the ref here, even though html2canvas is removed, might be useful later */}
                                 <div ref={resultsRef}>
                                     {results ? (
+                                        // Use prose for better typography defaults, ensure max-width is overridden
                                         <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none animate-fade-in text-gray-800 dark:text-gray-200">
                                             {formatResults(results)}
                                         </div>
@@ -387,7 +437,9 @@ const AnalysisPage = () => {
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                                            <p className="text-sm"> {analyzing ? (<span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing...</span>) : 'Upload an image and click "Analyze Image" to view results.'} </p>
+                                            <p className="text-sm">
+                                                {analyzing ? (<span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing analysis...</span>) : 'Upload an image and click "Analyze Image" to view results.'}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -396,6 +448,7 @@ const AnalysisPage = () => {
                     </motion.div>
                 </div>
 
+                {/* Post-Analysis Actions */}
                 {results && (
                     <motion.div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
                         <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg w-full sm:w-auto text-xs sm:text-sm" size="sm" />
@@ -407,6 +460,7 @@ const AnalysisPage = () => {
                     </motion.div>
                 )}
 
+                {/* Consultation Dialog */}
                 <Dialog open={showConsultDialog} onOpenChange={setShowConsultDialog}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader> <DialogTitle className="flex items-center gap-2 text-lg"><UserRound className="h-5 w-5 text-primary" />Find a Specialist?</DialogTitle> <DialogDescription className="pt-2 text-sm"> This will open Google Maps to search for a <strong className="text-primary">{specialistType}</strong> near you. <br /><br /> <span className="text-xs text-muted-foreground"> Disclaimer: This search is for informational purposes only and does not constitute a medical referral or endorsement. Always consult with a qualified healthcare provider for medical advice. </span> </DialogDescription> </DialogHeader>
@@ -414,8 +468,39 @@ const AnalysisPage = () => {
                     </DialogContent>
                 </Dialog>
 
+                {/* Image Viewer Modal */}
                 {isImageModalOpen && imageUrl && (
-                    <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300 ${isImageModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}> <motion.div className={`relative bg-white dark:bg-gray-900 shadow-2xl rounded-lg overflow-hidden flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl w-full max-h-[90vh]'}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 25 }} > <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0"> <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploaded Image</h3> <div className="flex items-center space-x-1"> <Button variant="ghost" size="icon" onClick={handleZoomIn} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomIn size={18} /></Button> <Button variant="ghost" size="icon" onClick={handleZoomOut} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomOut size={18} /></Button> <Button variant="ghost" size="icon" onClick={toggleImageModalMaximize} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8">{isImageModalMaximized ? <Minimize size={18} /> : <Maximize size={18} />}</Button> <Button variant="ghost" size="icon" onClick={closeImageModal} className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 w-8 h-8"><CloseIcon size={20} /></Button> </div> </div> <div className="flex-grow p-4 overflow-auto flex items-center justify-center"> <img src={imageUrl} alt="Uploaded for analysis" className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out block" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }} /> </div> </motion.div> </div>
+                    // Added transition classes for fade-in/out
+                    <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300 ${isImageModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                        {/* Framer Motion for scale animation */}
+                         <motion.div className={`relative bg-white dark:bg-gray-900 shadow-2xl rounded-lg overflow-hidden flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl w-full max-h-[90vh]'}`}
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }} // Exit animation added
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }} // Spring animation
+                         >
+                             <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploaded Image</h3>
+                                <div className="flex items-center space-x-1">
+                                    {/* Zoom and Maximize controls */}
+                                    <Button variant="ghost" size="icon" onClick={handleZoomIn} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomIn size={18} /></Button>
+                                    <Button variant="ghost" size="icon" onClick={handleZoomOut} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomOut size={18} /></Button>
+                                    <Button variant="ghost" size="icon" onClick={toggleImageModalMaximize} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8">{isImageModalMaximized ? <Minimize size={18} /> : <Maximize size={18} />}</Button>
+                                    {/* Close Button */}
+                                    <Button variant="ghost" size="icon" onClick={closeImageModal} className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 w-8 h-8"><CloseIcon size={20} /></Button>
+                                </div>
+                            </div>
+                             {/* Image container */}
+                            <div className="flex-grow p-4 overflow-auto flex items-center justify-center">
+                                <img
+                                    src={imageUrl} // Always use the local blob URL for the modal viewer
+                                    alt="Uploaded for analysis"
+                                    className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out block"
+                                    style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
+                                />
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </div>
         </AuroraBackground>
