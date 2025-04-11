@@ -19,9 +19,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import jsPDF from 'jspdf';
-// html2canvas removed as we will use jsPDF's text rendering
+// html2canvas is not needed for this approach
 import { isDoctor } from "@/types/auth";
 
+// Constants remain the same...
 const TASK_TITLES: Record<string, string> = {
     'fracture-detection': 'Bone Fracture Detection',
     'bone-marrow': 'Bone Marrow Cell Classification',
@@ -53,13 +54,14 @@ const TASK_SPECIALISTS: Record<string, string> = {
     'bone-infection': 'Orthopedic Surgeon',
 };
 
+
 const AnalysisPage = () => {
     const { taskId } = useParams<{ taskId: string }>();
     const navigate = useNavigate();
     const { user } = useAuthContext();
     const [image, setImage] = useState<File | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null); // Local blob URL for preview
-    const [imageBase64, setImageBase64] = useState<string | null>(null);
+    const [imageBase64, setImageBase64] = useState<string | null>(null); // Base64 for analysis & PDF fallback
     const [analyzing, setAnalyzing] = useState(false);
     const [results, setResults] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -76,33 +78,34 @@ const AnalysisPage = () => {
     useEffect(() => {
         if (!user) { navigate('/auth'); return; }
         setTimeout(() => setTitleFadeIn(true), 100);
-        // Cleanup local object URL when component unmounts or imageUrl changes
+        // Cleanup local object URL
         return () => {
             if (imageUrl && imageUrl.startsWith('blob:')) {
                 URL.revokeObjectURL(imageUrl);
             }
         };
-    }, [user, navigate]); // Removed imageUrl from dependency array to avoid premature revoke
+    }, [user, navigate]);
 
     useEffect(() => {
         if (taskId && !TASK_TITLES[taskId]) { toast.error('Invalid analysis task'); navigate('/tasks'); }
     }, [taskId, navigate]);
 
     const handleImageUpload = (file: File) => {
-        // Revoke previous object URL if exists
         if (imageUrl && imageUrl.startsWith('blob:')) {
             URL.revokeObjectURL(imageUrl);
         }
-
         setImage(file);
         const newObjectURL = URL.createObjectURL(file);
-        setImageUrl(newObjectURL); // Use new object URL for preview
+        setImageUrl(newObjectURL); // Set for preview
 
         setResults(null); setError(null); setAnalysisId(null); setStoredImageUrl(null);
         setIsImageModalOpen(false); setIsImageModalMaximized(false); setZoomLevel(1); setShowConsultDialog(false);
+        setImageBase64(null); // Reset base64 until new one is read
 
         const reader = new FileReader();
-        reader.onloadend = () => { setImageBase64(reader.result as string); };
+        reader.onloadend = () => {
+            setImageBase64(reader.result as string); // Store base64
+        };
         reader.readAsDataURL(file);
     };
 
@@ -111,14 +114,14 @@ const AnalysisPage = () => {
         setAnalyzing(true); setError(null); setResults(null); setShowConsultDialog(false);
         const toastId = toast.loading('Analyzing image, please wait...');
         try {
+            // Ensure base64 is passed to the function
             const { data, error: functionError } = await supabase.functions.invoke('analyze-bone-image', { body: { image: imageBase64, taskId, userType: user.userType === 'doctor' ? 'doctor' : 'common', userId: user.id } });
             if (functionError) throw new Error(`Analysis service failed: ${functionError.message}`);
             if (data?.error) throw new Error(data.error);
             if (!data?.analysis) throw new Error('Analysis service did not return valid results.');
             setResults(data.analysis);
             setAnalysisId(data.analysisId || null);
-            // IMPORTANT: Store the image URL returned from the backend (likely Supabase Storage URL)
-            setStoredImageUrl(data.imageUrl || null);
+            setStoredImageUrl(data.imageUrl || null); // Store the URL from backend
             toast.success('Analysis complete!', { id: toastId });
         } catch (error) {
             console.error('Analysis error:', error); const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -127,7 +130,7 @@ const AnalysisPage = () => {
         } finally { setAnalyzing(false); }
     };
 
-    const proceedToConsultation = () => {
+    const proceedToConsultation = () => { /* ... (unchanged) ... */
         if (!taskId) return; const specialistType = TASK_SPECIALISTS[taskId] || 'medical specialist';
         const searchTerm = encodeURIComponent(`${specialistType} near me`); const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${searchTerm}`;
         if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( () => { window.open(mapsUrl, '_blank'); }, () => { window.open(mapsUrl, '_blank'); toast.info("Could not get precise location. Searching based on 'near me'."); }, { timeout: 5000 } ); }
@@ -140,8 +143,7 @@ const AnalysisPage = () => {
     const toggleImageModalMaximize = () => setIsImageModalMaximized(!isImageModalMaximized);
     const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
     const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
-
-    const formatResults = (resultsText: string | null): React.ReactNode => {
+    const formatResults = (resultsText: string | null): React.ReactNode => { /* ... (unchanged) ... */
         if (!resultsText) return <p className="text-muted-foreground">No results text available.</p>;
         try {
             const normalizedText = resultsText.replace(/\r\n/g, '\n').replace(/ +\n/g, '\n').trim();
@@ -153,6 +155,7 @@ const AnalysisPage = () => {
         } catch (e) { console.error("Error formatting results:", e); return <pre className="whitespace-pre-wrap text-sm">{resultsText}</pre>; }
     };
 
+    // --- Updated PDF Download Function ---
     const handleDownloadResults = async () => {
         if (!results || !taskId) {
             toast.warning('No results available to download.');
@@ -160,8 +163,9 @@ const AnalysisPage = () => {
         }
 
         const toastId = toast.loading('Generating PDF, please wait...');
-        // Use storedImageUrl if available (persistent), otherwise fall back to local imageUrl
-        const imageSrcForPdf = storedImageUrl || imageUrl;
+        // Prefer stored URL, but keep base64 as a backup
+        const imageSourceUrl = storedImageUrl;
+        const imageSourceBase64 = imageBase64; // Captured during upload
 
         try {
             const pdf = new jsPDF({
@@ -175,106 +179,184 @@ const AnalysisPage = () => {
             const margin = 20;
             const contentWidth = pdf.internal.pageSize.getWidth() - 2 * margin;
             const pageHeight = pdf.internal.pageSize.getHeight();
-            let yPos = margin; // Start position
+            let yPos = margin;
 
-            // --- Helper function to add text and handle page breaks ---
+            // Helper function for adding text with page break handling
             const addText = (text: string, size: number, style: 'normal' | 'bold' | 'italic' = 'normal', spacing = 5) => {
-                pdf.setFontSize(size);
-                pdf.setFont('helvetica', style);
-                const lines = pdf.splitTextToSize(text, contentWidth);
-                lines.forEach((line: string) => {
-                    if (yPos + size / 2.5 > pageHeight - margin) { // Estimate line height and check page break
-                        pdf.addPage();
-                        yPos = margin;
-                    }
-                    pdf.text(line, margin, yPos);
-                    yPos += size / 2.5 + 1; // Move yPos down based on font size + spacing
-                });
-                yPos += spacing; // Add extra spacing after the block
-            };
+                 pdf.setFontSize(size);
+                 pdf.setFont('helvetica', style);
+                 const lines = pdf.splitTextToSize(text, contentWidth);
+                 lines.forEach((line: string) => {
+                     // Estimate line height check
+                     if (yPos + size / 2.5 > pageHeight - margin) {
+                         pdf.addPage();
+                         yPos = margin;
+                     }
+                     pdf.text(line, margin, yPos);
+                     yPos += size / 2.5 + 1; // Move yPos down
+                 });
+                 yPos += spacing; // Add extra spacing after the block
+             };
 
-            // --- PDF Content ---
-
-            // 1. Title
+            // 1. Title, Date, User
             addText(taskTitle, 18, 'bold', 5);
-            yPos += 5; // Extra space after title
-
-            // 2. Date and User
+            yPos += 5;
             addText(`Analysis Date: ${analysisDate}`, 10, 'normal', 2);
             if (user) {
                 addText(`User: ${user.email || 'Anonymous'} ${user.userType === 'doctor' ? '(Doctor)' : '(Patient)'}`, 10, 'normal', 5);
             }
-            yPos += 5; // Space before image/results
+            yPos += 5;
 
-            // 3. Add Image if available
-            if (imageSrcForPdf) {
-                addText('Medical Image', 14, 'bold', 3);
-                 if (yPos > pageHeight - margin - 50) { // Check if enough space for title + some image height
-                    pdf.addPage();
-                    yPos = margin;
-                    addText('Medical Image', 14, 'bold', 3); // Re-add title on new page
-                }
-                const startImageY = yPos;
+            // 3. Add Image Section
+            addText('Medical Image', 14, 'bold', 3);
+            if (yPos > pageHeight - margin - 30) { // Check space before image section
+                pdf.addPage();
+                yPos = margin;
+                addText('Medical Image', 14, 'bold', 3); // Re-add title on new page
+            }
+            const startImageY = yPos;
+            let imageAddedSuccessfully = false;
 
+            // --- Attempt 1: Use storedImageUrl (preferred) ---
+            if (imageSourceUrl) {
+                console.log("PDF Gen: Attempting image from URL:", imageSourceUrl);
                 try {
                     const img = new Image();
-                    img.crossOrigin = "Anonymous"; // Important for cross-origin images (like from Supabase storage)
-                    img.src = imageSrcForPdf;
+                    img.crossOrigin = "Anonymous"; // Crucial for CORS
+                    img.src = imageSourceUrl;
 
                     const imgLoaded = await new Promise<HTMLImageElement | null>((resolve) => {
                         img.onload = () => resolve(img);
                         img.onerror = (e) => {
-                            console.error("PDF Image Load Error:", e);
-                            resolve(null); // Resolve with null on error
+                            console.error("PDF Gen Error: Failed to load image from URL.", "URL:", imageSourceUrl, "Error:", e);
+                            resolve(null);
                         };
-                        // Timeout to prevent hanging
-                        setTimeout(() => resolve(null), 15000); // 15 seconds timeout
+                        // Increased timeout
+                        setTimeout(() => {
+                             console.warn("PDF Gen Warning: Image load timeout for URL:", imageSourceUrl);
+                             resolve(null);
+                        }, 30000); // 30 seconds timeout
                     });
 
                     if (imgLoaded) {
                         const imgProps = pdf.getImageProperties(imgLoaded);
                         const aspectRatio = imgProps.width / imgProps.height;
+                        const availableHeight = pageHeight - yPos - margin; // Max height on current/new page
+                        let imgWidth = contentWidth;
+                        let imgHeight = imgWidth / aspectRatio;
+
+                        // Scale based on height if it exceeds available space
+                        if (imgHeight > availableHeight) {
+                            imgHeight = availableHeight;
+                            imgWidth = imgHeight * aspectRatio;
+                             // If it's now too wide after height scaling, scale by width again
+                             if (imgWidth > contentWidth) {
+                                imgWidth = contentWidth;
+                                imgHeight = imgWidth / aspectRatio;
+                             }
+                        }
+
+                        const xOffset = margin + (contentWidth - imgWidth) / 2; // Center horizontally
+
+                        // Check if image itself needs a new page
+                        if (yPos + imgHeight > pageHeight - margin) {
+                           pdf.addPage();
+                           yPos = margin;
+                           addText('Medical Image (cont.)', 14, 'bold', 3); // Optional title continuation
+                        }
+
+                        pdf.addImage(imgLoaded, imgProps.fileType, xOffset, yPos, imgWidth, imgHeight);
+                        yPos += imgHeight + 10; // Move yPos below image + spacing
+                        imageAddedSuccessfully = true;
+                        console.log("PDF Gen: Image added successfully from URL.");
+                    } else {
+                         console.log("PDF Gen: Failed to load image from URL, trying Base64 fallback.");
+                    }
+                } catch (urlImgError) {
+                    console.error("PDF Gen Error: Exception processing image from URL:", urlImgError);
+                    // Proceed to Base64 fallback
+                }
+            } else {
+                 console.log("PDF Gen: No storedImageUrl found, attempting Base64 fallback.");
+            }
+
+            // --- Attempt 2: Fallback to imageBase64 ---
+            if (!imageAddedSuccessfully && imageSourceBase64) {
+                console.log("PDF Gen: Attempting image from Base64.");
+                try {
+                    // jsPDF's addImage can often handle the full data URI directly
+                    const base64Data = imageSourceBase64;
+
+                    // We still need dimensions. Create an image element in memory.
+                    const img = new Image();
+                    const dimensionsLoaded = await new Promise<{ width: number, height: number } | null>((resolve) => {
+                        img.onload = () => resolve({ width: img.width, height: img.height });
+                        img.onerror = (e) => {
+                           console.error("PDF Gen Error: Could not get dimensions from Base64 image.", e);
+                           resolve(null);
+                        };
+                        img.src = base64Data;
+                        setTimeout(() => {
+                           console.warn("PDF Gen Warning: Timeout getting dimensions from Base64.");
+                           resolve(null);
+                        }, 10000); // Shorter timeout for local data
+                     });
+
+                    if (dimensionsLoaded) {
+                         const imageFormatMatch = base64Data.match(/^data:image\/(png|jpeg|jpg);base64,/);
+                         const imageFormat = imageFormatMatch ? imageFormatMatch[1].toUpperCase() : 'JPEG'; // Default to JPEG if format missing
+
+                        const aspectRatio = dimensionsLoaded.width / dimensionsLoaded.height;
                         const availableHeight = pageHeight - yPos - margin;
                         let imgWidth = contentWidth;
                         let imgHeight = imgWidth / aspectRatio;
 
-                        // If image height exceeds available space, scale based on height instead
-                        if (imgHeight > availableHeight) {
-                            imgHeight = availableHeight;
-                            imgWidth = imgHeight * aspectRatio;
-                        }
-                        // If calculated width is now wider than content width (can happen with very wide images), rescale
-                        if (imgWidth > contentWidth) {
-                            imgWidth = contentWidth;
-                            imgHeight = imgWidth / aspectRatio;
-                        }
+                         if (imgHeight > availableHeight) {
+                             imgHeight = availableHeight;
+                             imgWidth = imgHeight * aspectRatio;
+                              if (imgWidth > contentWidth) {
+                                 imgWidth = contentWidth;
+                                 imgHeight = imgWidth / aspectRatio;
+                              }
+                         }
 
-                        // Center the image horizontally
                         const xOffset = margin + (contentWidth - imgWidth) / 2;
 
-                         // Add image
-                        pdf.addImage(imgLoaded, imgProps.fileType, xOffset, yPos, imgWidth, imgHeight);
-                        yPos += imgHeight + 10; // Add space after image
-                    } else {
-                         if (yPos > pageHeight - margin) { pdf.addPage(); yPos = margin; }
-                         addText("Error: Could not load the medical image for the PDF.", 10, 'italic', 5);
-                    }
+                        if (yPos + imgHeight > pageHeight - margin) { // Check page break
+                            pdf.addPage();
+                            yPos = margin;
+                            addText('Medical Image (cont.)', 14, 'bold', 3);
+                        }
 
-                } catch (imgError) {
-                    console.error("Could not add image to PDF:", imgError);
-                     if (yPos > pageHeight - margin) { pdf.addPage(); yPos = margin; }
-                    addText("Error processing image for PDF.", 10, 'italic', 5);
+                        pdf.addImage(base64Data, imageFormat, xOffset, yPos, imgWidth, imgHeight);
+                        yPos += imgHeight + 10;
+                        imageAddedSuccessfully = true;
+                        console.log("PDF Gen: Image added successfully from Base64.");
+                    } else {
+                        console.error("PDF Gen Error: Failed to get dimensions for Base64 image.");
+                    }
+                } catch (base64ImgError) {
+                    console.error("PDF Gen Error: Exception processing image from Base64:", base64ImgError);
                 }
-            } else {
-                // If no image, add a note
-                addText("No image was available for this analysis.", 10, 'italic', 5);
-                 yPos += 5;
+            }
+
+            // --- Final Check: If image still not added ---
+            if (!imageAddedSuccessfully) {
+                 // Check page break before adding error message
+                if (yPos > pageHeight - margin - 10) {
+                    pdf.addPage();
+                    yPos = margin;
+                    // Don't re-add 'Medical Image' title here, just the error
+                 }
+                addText("Error: Could not load the medical image for the PDF.", 10, 'italic', 5);
+                console.log("PDF Gen: Failed to add image from both URL and Base64 sources.");
+                yPos += 5;
             }
 
 
             // 4. Add Analysis Results
             if (results) {
-                if (yPos > pageHeight - margin - 20) { // Check space before adding results section
+                if (yPos > pageHeight - margin - 20) { // Check space before results section
                      pdf.addPage();
                      yPos = margin;
                 }
@@ -284,27 +366,26 @@ const AnalysisPage = () => {
                  const cleanResults = results
                     .replace(/\r\n/g, '\n') // Normalize line breaks
                     .replace(/```[\s\S]*?```/g, '\n[Code Block Removed]\n') // Remove code blocks
-                    .replace(/^(#{1,5})\s+(.*)/gm, (match, p1, p2) => `\n**${p2.trim()}**\n`) // Convert markdown headings to bold
+                    .replace(/^(#{1,5})\s+(.*)/gm, (match, p1, p2) => `\n**${p2.trim()}**\n`) // Convert markdown headings
                     .replace(/^(Summary|Findings|Interpretation|Recommendations|Assessment|Diagnosis|Conclusion|Analysis Results)\s*[:*]?/gmi, '\n**$1:**') // Bold keywords
-                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown around text (jsPDF handles bold)
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown (handled by jsPDF font style)
                     .replace(/__(.*?)__/g, '$1') // Remove italic markdown
                     .replace(/^[*•-]\s+/gm, '  • ') // Convert bullets
                     .replace(/^\d+\.\s+/gm, (match) => `  ${match}`) // Indent numbered lists
-                    .replace(/<br\s*\/?>/gi, '\n') // Handle <br> tags
-                    .replace(/<\/?(p|strong|b|em|i|ul|ol|li|h[1-6])>/gi, '') // Strip common HTML tags
-                    .replace(/ /g, ' ') // Replace non-breaking space
-                    .replace(/ +\n/g, '\n') // Trim trailing spaces before newlines
+                    .replace(/<br\s*\/?>/gi, '\n') // Handle <br>
+                    .replace(/<\/?(p|strong|b|em|i|ul|ol|li|h[1-6])>/gi, '') // Strip common HTML
+                    .replace(/ /g, ' ')
+                    .replace(/ +\n/g, '\n')
                     .replace(/\n{3,}/g, '\n\n') // Collapse multiple empty lines
                     .trim();
 
-                 // Split into paragraphs/blocks
                 const resultBlocks = cleanResults.split('\n\n');
 
                 resultBlocks.forEach(block => {
                     const trimmedBlock = block.trim();
                     if (!trimmedBlock) return;
 
-                    // Check if it looks like a heading we made bold
+                    // Basic styling based on our cleaning patterns
                     if (trimmedBlock.startsWith('**') && trimmedBlock.endsWith('**')) {
                         addText(trimmedBlock.slice(2, -2), 12, 'bold', 3);
                     } else if (trimmedBlock.startsWith('**') && trimmedBlock.endsWith(':')) {
@@ -312,7 +393,7 @@ const AnalysisPage = () => {
                     } else {
                          addText(trimmedBlock, 10, 'normal', 3);
                     }
-                    yPos += 2; // Add a bit more space between blocks
+                    yPos += 2; // Add small space between blocks
                 });
             }
 
@@ -321,7 +402,7 @@ const AnalysisPage = () => {
             for (let i = 1; i <= pageCount; i++) {
                 pdf.setPage(i);
                 pdf.setFontSize(8);
-                pdf.setTextColor(150); // Light gray color
+                pdf.setTextColor(150); // Light gray
                 pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.getWidth() / 2, pageHeight - 10, { align: 'center' });
             }
 
@@ -336,6 +417,7 @@ const AnalysisPage = () => {
             toast.error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: toastId });
         }
     };
+    // --- End of Updated PDF Download Function ---
 
 
     if (!taskId || !user) return null;
@@ -348,7 +430,7 @@ const AnalysisPage = () => {
         <AuroraBackground showRadialGradient={true}>
             <div className="container mx-auto px-4 py-12 ">
                 {/* Styles (unchanged) */}
-                <style>{`
+                 <style>{`
                     .hover-scale { transition: transform 0.2s ease-out; }
                     .hover-scale:hover { transform: scale(1.05); }
                     .fade-in-title { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
@@ -378,21 +460,21 @@ const AnalysisPage = () => {
                     html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
                  `}</style>
 
-                {/* Navigation Buttons */}
+                {/* Navigation Buttons (unchanged) */}
                 <motion.div className="flex justify-between items-center mb-6" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                     <Button variant="gradient" onClick={() => navigate('/bone-analysis')} className="hover-scale rounded-xl text-xs sm:text-sm" size="sm"> <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Tasks </Button>
                     <Button variant="gradient" onClick={() => navigate('/')} className="hover-scale rounded-xl text-xs sm:text-sm" size="sm"> <Home className="mr-1.5 h-4 w-4" /> Home </Button>
                 </motion.div>
 
-                {/* Title Section */}
+                {/* Title Section (unchanged) */}
                 <div className={`bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-6 rounded-xl mb-8 shadow-sm border border-black/5 dark:border-white/5 ${titleFadeIn ? 'fade-in-title visible' : 'fade-in-title'}`}>
                     <h1 className="text-2xl sm:text-3xl font-bold mb-1">{taskTitle}</h1>
                     <p className="text-sm text-muted-foreground">{user.userType === 'doctor' ? 'AI-assisted analysis for clinical evaluation' : 'AI-powered analysis for informational purposes only'}</p>
                 </div>
 
-                {/* Main Grid: Upload & Results */}
+                 {/* Main Grid: Upload & Results (unchanged structure) */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Image Upload Card */}
+                    {/* Image Upload Card (unchanged) */}
                     <motion.div variants={fadeIn} initial="hidden" animate="visible" className="animate-fade-in">
                         <Card className="border transition-all duration-300 hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden">
                             <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground rounded-t-lg p-4">
@@ -403,7 +485,7 @@ const AnalysisPage = () => {
                                 <ImageUpload onImageSelected={handleImageUpload} imageUrl={imageUrl} isLoading={analyzing} />
                                 <div className="mt-5 flex flex-col sm:flex-row justify-between gap-3">
                                     {imageUrl && (<Button variant="outline" size="sm" onClick={openImageModal} className="flex-1 sm:flex-none text-xs sm:text-sm hover-scale rounded-md border-primary/50 text-primary hover:bg-primary/10"> <Eye className="mr-1.5 h-4 w-4" /> View Image </Button>)}
-                                    <Button size="sm" onClick={handleAnalyze} disabled={!image || analyzing} className="flex-1 sm:flex-none text-xs sm:text-sm hover-scale rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white disabled:opacity-60">
+                                    <Button size="sm" onClick={handleAnalyze} disabled={!image || analyzing || !imageBase64} /* Disable if base64 not ready */ className="flex-1 sm:flex-none text-xs sm:text-sm hover-scale rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white disabled:opacity-60">
                                         {analyzing ? (<><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Analyzing...</>) : 'Analyze Image'}
                                     </Button>
                                 </div>
@@ -411,8 +493,8 @@ const AnalysisPage = () => {
                         </Card>
                     </motion.div>
 
-                    {/* Analysis Results Card */}
-                    <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className={`animate-fade-in ${isResultsMaximized ? 'fixed inset-0 z-50 overflow-hidden bg-background' : ''}`}>
+                    {/* Analysis Results Card (unchanged structure, but download button logic updated) */}
+                     <motion.div variants={fadeIn} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className={`animate-fade-in ${isResultsMaximized ? 'fixed inset-0 z-50 overflow-hidden bg-background' : ''}`}>
                         <Card className={`border transition-all duration-300 ${isResultsMaximized ? 'h-full w-full rounded-none shadow-none border-none' : 'hover:shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg overflow-hidden'}`}>
                             <CardHeader className={`flex flex-row items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-primary-foreground ${isResultsMaximized ? 'sticky top-0 z-10' : 'rounded-t-lg'}`}>
                                 <CardTitle className="text-base sm:text-lg font-semibold">Analysis Results</CardTitle>
@@ -423,10 +505,8 @@ const AnalysisPage = () => {
                                 </div>
                             </CardHeader>
                             <CardContent className={`p-5 ${isResultsMaximized ? 'h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar' : 'min-h-[200px] max-h-[60vh] overflow-y-auto custom-scrollbar'} ${isResultsMaximized ? 'bg-background' : 'bg-white/95 dark:bg-gray-900/90 rounded-b-lg'}`}>
-                                {/* We keep the ref here, even though html2canvas is removed, might be useful later */}
                                 <div ref={resultsRef}>
                                     {results ? (
-                                        // Use prose for better typography defaults, ensure max-width is overridden
                                         <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none animate-fade-in text-gray-800 dark:text-gray-200">
                                             {formatResults(results)}
                                         </div>
@@ -448,8 +528,8 @@ const AnalysisPage = () => {
                     </motion.div>
                 </div>
 
-                {/* Post-Analysis Actions */}
-                {results && (
+                 {/* Post-Analysis Actions (unchanged) */}
+                 {results && (
                     <motion.div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
                         <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg w-full sm:w-auto text-xs sm:text-sm" size="sm" />
                         {user && !isDoctor(user) && (
@@ -460,7 +540,7 @@ const AnalysisPage = () => {
                     </motion.div>
                 )}
 
-                {/* Consultation Dialog */}
+                {/* Consultation Dialog (unchanged) */}
                 <Dialog open={showConsultDialog} onOpenChange={setShowConsultDialog}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader> <DialogTitle className="flex items-center gap-2 text-lg"><UserRound className="h-5 w-5 text-primary" />Find a Specialist?</DialogTitle> <DialogDescription className="pt-2 text-sm"> This will open Google Maps to search for a <strong className="text-primary">{specialistType}</strong> near you. <br /><br /> <span className="text-xs text-muted-foreground"> Disclaimer: This search is for informational purposes only and does not constitute a medical referral or endorsement. Always consult with a qualified healthcare provider for medical advice. </span> </DialogDescription> </DialogHeader>
@@ -468,32 +548,27 @@ const AnalysisPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* Image Viewer Modal */}
+                {/* Image Viewer Modal (unchanged) */}
                 {isImageModalOpen && imageUrl && (
-                    // Added transition classes for fade-in/out
                     <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300 ${isImageModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        {/* Framer Motion for scale animation */}
                          <motion.div className={`relative bg-white dark:bg-gray-900 shadow-2xl rounded-lg overflow-hidden flex flex-col ${isImageModalMaximized ? 'w-full h-full' : 'max-w-4xl w-full max-h-[90vh]'}`}
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }} // Exit animation added
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }} // Spring animation
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
                          >
                              <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploaded Image</h3>
                                 <div className="flex items-center space-x-1">
-                                    {/* Zoom and Maximize controls */}
                                     <Button variant="ghost" size="icon" onClick={handleZoomIn} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomIn size={18} /></Button>
                                     <Button variant="ghost" size="icon" onClick={handleZoomOut} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8"><ZoomOut size={18} /></Button>
                                     <Button variant="ghost" size="icon" onClick={toggleImageModalMaximize} className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 w-8 h-8">{isImageModalMaximized ? <Minimize size={18} /> : <Maximize size={18} />}</Button>
-                                    {/* Close Button */}
                                     <Button variant="ghost" size="icon" onClick={closeImageModal} className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 w-8 h-8"><CloseIcon size={20} /></Button>
                                 </div>
                             </div>
-                             {/* Image container */}
                             <div className="flex-grow p-4 overflow-auto flex items-center justify-center">
                                 <img
-                                    src={imageUrl} // Always use the local blob URL for the modal viewer
+                                    src={imageUrl} // Modal viewer uses the local blob URL for immediate preview
                                     alt="Uploaded for analysis"
                                     className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out block"
                                     style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
