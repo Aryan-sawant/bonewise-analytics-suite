@@ -100,7 +100,7 @@ serve(async (req) => {
     }
     // Use a capable vision model. Adjust if needed.
     // gemini-2.5-pro-exp-03-25 is more capable.
-    const geminiModel = "gemini-2.0-flash-thinking-exp-01-21";
+    const geminiModel = "gemini-2.5-pro-exp-03-25";
     const baseURL = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
     const url = `${baseURL}?key=${apiKey}`;
 
