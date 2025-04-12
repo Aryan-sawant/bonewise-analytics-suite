@@ -43,7 +43,7 @@ serve(async (req) => {
 
     // Use the specified model: gemini-2.5-pro-exp-03-25
     // **CONFIRMATION:** The code is already configured to use 'gemini-2.5-pro-exp-03-25' as requested.
-    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent"
+    const baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent"
     const url = `${baseURL}?key=${apiKey}`
 
     // Prepare enhanced context with user type
