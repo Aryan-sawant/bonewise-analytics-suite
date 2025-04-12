@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft, UserRound, ExternalLink, X as CloseIcon } from 'lucide-react';
+import { Loader2, Home, Download, Maximize, Minimize, Eye, ZoomIn, ZoomOut, ArrowLeft, UserRound, ExternalLink, X as CloseIcon, AlertTriangle } from 'lucide-react';
 import ChatbotButton from '@/components/ChatbotButton';
 import { motion } from 'framer-motion';
 import { AuroraBackground } from '@/components/ui/aurora-background';
@@ -116,25 +116,57 @@ const AnalysisPage = () => {
         try {
             // Ensure base64 is passed to the function
             const { data, error: functionError } = await supabase.functions.invoke('analyze-bone-image', { body: { image: imageBase64, taskId, userType: user.userType === 'doctor' ? 'doctor' : 'common', userId: user.id } });
-            if (functionError) throw new Error(`Analysis service failed: ${functionError.message}`);
-            if (data?.error) throw new Error(data.error);
+
+            if (functionError) {
+                console.error('Function error details:', functionError);
+                // Check if it's a model availability issue
+                if (functionError.message && functionError.message.includes('model')) {
+                    throw new Error(`The AI model is currently unavailable. Our team has been notified and is working on it.`);
+                } else {
+                    throw new Error(`Analysis service failed: ${functionError.message}`);
+                }
+            }
+
+            if (data?.error) {
+                console.error('Data error details:', data.error);
+                // Check if it's a model-related error
+                if (typeof data.error === 'string' && data.error.includes('model')) {
+                    throw new Error(`The AI model is currently unavailable. Our team has been notified and is working on it.`);
+                } else {
+                    throw new Error(data.error);
+                }
+            }
+
             if (!data?.analysis) throw new Error('Analysis service did not return valid results.');
+
             setResults(data.analysis);
             setAnalysisId(data.analysisId || null);
             setStoredImageUrl(data.imageUrl || null); // Store the URL from backend
-            toast.success('Analysis complete!', { id: toastId });
+            toast.success('Analysis complete! You can now use the chatbot to ask questions about your results.', { id: toastId, duration: 5000, dismissible: true });
         } catch (error) {
-            console.error('Analysis error:', error); const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-            setError(`Failed to analyze image. ${errorMessage}. Please try again or use a different image.`);
-            toast.error(`Analysis failed: ${errorMessage}`, { id: toastId });
-        } finally { setAnalyzing(false); }
+            console.error('Analysis error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+
+            // Set a more user-friendly error message
+            setError(`Failed to analyze image. ${errorMessage}. Please try again later or contact support if the issue persists.`);
+
+            // Show a more helpful toast message
+            toast.error(`Analysis failed: ${errorMessage}`, { id: toastId, duration: 8000 });
+
+            // No longer loading sample data on error
+        } finally {
+            setAnalyzing(false);
+        }
     };
 
-    const proceedToConsultation = () => { /* ... (unchanged) ... */
-        if (!taskId) return; const specialistType = TASK_SPECIALISTS[taskId] || 'medical specialist';
-        const searchTerm = encodeURIComponent(`${specialistType} near me`); const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${searchTerm}`;
-        if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( () => { window.open(mapsUrl, '_blank'); }, () => { window.open(mapsUrl, '_blank'); toast.info("Could not get precise location. Searching based on 'near me'."); }, { timeout: 5000 } ); }
-        else { window.open(mapsUrl, '_blank'); toast.info("Geolocation not supported. Searching based on 'near me'."); }
+    const proceedToConsultation = () => {
+        if (!taskId) return;
+        const specialistType = TASK_SPECIALISTS[taskId] || 'medical specialist';
+        const searchTerm = encodeURIComponent(`${specialistType} near me`);
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${searchTerm}`;
+
+        // Open in the same tab instead of a new one
+        window.location.href = mapsUrl;
         setShowConsultDialog(false);
     };
 
@@ -513,7 +545,8 @@ const AnalysisPage = () => {
                                     ) : error ? (
                                         <div className="flex flex-col items-center justify-center h-full text-center text-destructive animate-fade-in p-4">
                                             <p className="font-medium text-base">Analysis Failed</p>
-                                            <p className="text-xs mt-1">{error}</p>
+                                            <p className="text-xs mt-1 mb-4">{error}</p>
+
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
@@ -528,7 +561,7 @@ const AnalysisPage = () => {
                     </motion.div>
                 </div>
 
-                 {/* Post-Analysis Actions (unchanged) */}
+                 {/* Post-Analysis Actions */}
                  {results && (
                     <motion.div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
                         <ChatbotButton analysisContext={results} taskTitle={taskTitle} analysisId={analysisId} className="rounded-lg w-full sm:w-auto text-xs sm:text-sm" size="sm" />
@@ -539,6 +572,8 @@ const AnalysisPage = () => {
                         )}
                     </motion.div>
                 )}
+
+
 
                 {/* Consultation Dialog (unchanged) */}
                 <Dialog open={showConsultDialog} onOpenChange={setShowConsultDialog}>
