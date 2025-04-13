@@ -159,15 +159,16 @@ const AnalysisPage = () => {
         }
     };
 
-    const proceedToConsultation = () => {
+       const proceedToConsultation = () => {
         if (!taskId) return;
         const specialistType = TASK_SPECIALISTS[taskId] || 'medical specialist';
         const searchTerm = encodeURIComponent(`${specialistType} near me`);
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${searchTerm}`;
 
-        // Open in the same tab instead of a new one
-        window.location.href = mapsUrl;
-        setShowConsultDialog(false);
+        // Open Google Maps in a new browser tab
+        window.open(mapsUrl, '_blank', 'noopener,noreferrer'); // Added target '_blank' and rel attributes
+
+        setShowConsultDialog(false); // Close the dialog after opening the new tab
     };
 
     const openImageModal = () => setIsImageModalOpen(true);
