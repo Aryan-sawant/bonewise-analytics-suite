@@ -78,15 +78,14 @@ Open your browser and navigate to the port specified in your terminal.
 
 ## 📸 Screenshots / Demo
 
-*(Add screenshots or a GIF of your application here to showcase the UI and workflow)*
+*   **Landing Page:**
+    ![Landing Page Screenshot](https://github.com/Aryan-sawant/bonewise-analytics-suite/blob/main/Landing%20Page.png?raw=true)
 
-**Example:**
+*   **Analysis Result:**
+    *(Replace URL_TO_YOUR_SCREENSHOT_2 with the actual URL for your analysis result screenshot)*
+    ![Analysis Result Placeholder](URL_TO_YOUR_SCREENSHOT_2)
 
-*Landing Page*
-![Landing Page Placeholder](URL_TO_YOUR_SCREENSHOT_1)
-
-*Analysis Result*
-![Analysis Result Placeholder](URL_TO_YOUR_SCREENSHOT_2)
+*(Feel free to add more screenshots showcasing other key features like the dashboard, task selection, chatbot, etc.)*
 
 ---
 
