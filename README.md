@@ -1,4 +1,4 @@
-# BoneWise Analytics Suite 🦴✨
+# Bone Health AI Suite 🦴✨
 
 **Revolutionizing Bone Health Diagnostics with Generative AI**
 
@@ -79,11 +79,12 @@ Open your browser and navigate to the port specified in your terminal.
 ## 📸 Screenshots / Demo
 
 *   **Landing Page:**
+
     ![Landing Page Screenshot](https://github.com/Aryan-sawant/bonewise-analytics-suite/blob/main/Landing%20Page.png?raw=true)
 
 *   **Analysis Result:**
-    *(Replace URL_TO_YOUR_SCREENSHOT_2 with the actual URL for your analysis result screenshot)*
-    ![Analysis Result Placeholder](URL_TO_YOUR_SCREENSHOT_2)
+  
+    ![Analysis Result Placeholder](https://github.com/Aryan-sawant/bonewise-analytics-suite/blob/main/Analysis%20Page.png?raw=true)
 
 *(Feel free to add more screenshots showcasing other key features like the dashboard, task selection, chatbot, etc.)*
 
@@ -108,4 +109,4 @@ This project is licensed under the [MIT License](LICENSE). <!-- Make sure you ha
 
 ---
 
-Made with ❤️ by Aryan Sawant
+Developed by Aryan Sawant, Praveen Sonesha and Vishal Devkate
