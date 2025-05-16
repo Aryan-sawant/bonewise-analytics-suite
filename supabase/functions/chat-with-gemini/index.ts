@@ -42,7 +42,7 @@ serve(async (req) => {
     console.log(`Processing chat request with AI...`)
 
     // Model configuration
-    const modelName = 'gemini-2.5-pro-exp-03-25'; // Using the requested model
+    const modelName = 'gemini-2.5-pro-preview-05-06'; // Using the requested model
     const baseURL = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
     const url = `${baseURL}?key=${apiKey}`;
 
