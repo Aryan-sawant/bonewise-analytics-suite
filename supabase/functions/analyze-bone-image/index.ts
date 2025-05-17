@@ -100,8 +100,8 @@ serve(async (req) => {
       );
     }
     
-    // Updated to use the stable model version
-    const geminiModel = "gemini-1.5-flash";
+    // Updated to use the gemini-2.0-flash model
+    const geminiModel = "gemini-2.0-flash";
     const baseURL = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
     const url = `${baseURL}?key=${apiKey}`;
 
@@ -288,7 +288,7 @@ serve(async (req) => {
 
 
     // Store the chat interaction (using the formatted response) if we have user ID and analysis ID
-    if (userId && analysisText && supabase) {
+    if (userId && supabase) {
       try {
         const bucketName = 'bone-analysis-images';
 
