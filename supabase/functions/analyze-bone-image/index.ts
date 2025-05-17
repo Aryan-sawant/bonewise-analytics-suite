@@ -1,6 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { decode } from "https://deno.land/std@0.203.0/encoding/base64.ts"; // Deno's built-in base64 decoder
+import { decode } from "https://deno.land/std@0.203.0/encoding/base64.ts" // Deno's built-in base64 decoder
 
 // CORS headers for handling cross-origin requests
 const corsHeaders = {
@@ -98,8 +99,9 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    // Use a capable vision model. Adjust if needed.
-    const geminiModel = "gemini-2.5-pro-preview-05-06";
+    
+    // Updated to use the stable model version
+    const geminiModel = "gemini-1.5-flash";
     const baseURL = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
     const url = `${baseURL}?key=${apiKey}`;
 
@@ -168,63 +170,125 @@ serve(async (req) => {
         }
       ],
       generationConfig: {
-        // Optional: Customize generation parameters if needed
-        // temperature: 0.1, // Example: Lower temperature for less creative/more factual output
-        // maxOutputTokens: 8192, // Check model limits (Flash ~8k, Pro ~1M)
-      }
-    };
+        temperature: 0.4,
+        maxOutputTokens: 2048, // Reduced from max to optimize request
+      },
+      // Adding safety settings to ensure appropriate responses
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        }
+      ]
+    }
 
-    console.log(`Sending request to Gemini model: ${geminiModel}`);
+    console.log(`Sending request to Gemini with model: ${geminiModel}`);
 
-    // --- Call Gemini API ---
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload) // Send the payload as JSON string
-    });
-
-    // --- Handle Gemini API Response ---
-    if (!response.ok) {
-      // Log detailed error information if the API call fails
-      const errorText = await response.text();
-      console.error("Gemini API Error Status:", response.status);
-      console.error("Gemini API Error Response Text:", errorText);
+    // --- Add rate limiting retry logic ---
+    let retries = 3;
+    let response = null;
+    let error = null;
+    
+    while (retries > 0) {
       try {
-        const errorJson = JSON.parse(errorText); // Try parsing error as JSON
-        console.error("Gemini API Error JSON:", errorJson);
-      } catch (e) { /* Ignore if parsing fails, raw text is already logged */ }
-      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+        // Call the Gemini API
+        response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          break; // Successfully got a response
+        }
+        
+        if (response.status === 429) {
+          // Rate limit hit - get retry delay from response if available
+          const errorText = await response.text();
+          let retryDelay = 5000; // Default to 5 seconds
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            // Check if there's a retry delay suggestion in the response
+            const retryInfo = errorJson?.error?.details?.find(d => d['@type']?.includes('RetryInfo'));
+            if (retryInfo && retryInfo.retryDelay) {
+              const delayString = retryInfo.retryDelay;
+              // Convert "30s" to milliseconds
+              retryDelay = parseInt(delayString.replace(/[^0-9]/g, '')) * 1000;
+              console.log(`Rate limit hit. Retrying in ${retryDelay/1000} seconds...`);
+            }
+          } catch (parseError) {
+            console.error("Error parsing rate limit response:", parseError);
+          }
+          
+          retries--;
+          if (retries > 0) {
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            continue;
+          }
+        }
+        
+        // For non-429 errors or if we've exhausted retries
+        const errorText = await response.text();
+        console.error("Gemini API error:", response.status, errorText);
+        error = new Error(`Gemini API error: ${response.status} ${errorText}`);
+        break;
+      } catch (fetchError) {
+        console.error("Network error calling Gemini API:", fetchError);
+        error = fetchError;
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s between retries
+          continue;
+        }
+        break;
+      }
     }
 
-    // Parse the successful JSON response from Gemini
+    // If we still have an error after retries
+    if (!response || !response.ok) {
+      throw error || new Error("Failed to get valid response from Gemini API after retries");
+    }
+
     const data = await response.json();
-    console.log("Received Gemini response."); // Avoid logging full response for PII reasons unless debugging
 
-    // --- Process Gemini Response Content ---
-    // Validate the structure of the Gemini response
-    if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content || !data.candidates[0].content.parts || data.candidates[0].content.parts.length === 0) {
-       console.error("Invalid response structure from Gemini:", data); // Log the problematic structure
-      throw new Error("No valid response content generated by the model.");
+    if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content || !data.candidates[0].content.parts || data.candidates[0].content.parts.length === 0 || !data.candidates[0].content.parts[0].text) {
+       console.error("Invalid response structure from Gemini:", JSON.stringify(data, null, 2));
+       throw new Error("No valid response content generated by the model");
     }
 
-    // Extract the analysis text from the response
-    let analysisText = data.candidates[0].content.parts[0].text;
 
-    // Post-processing: Ensure consistent formatting (replace markdown bold/italic with HTML bold)
-    analysisText = analysisText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); // Replace **bold**
-    analysisText = analysisText.replace(/__(.*?)__/g, '<b>$1</b>');   // Replace __italic__ (treat as bold)
-    // Remove stray asterisks or underscores that might remain
-    analysisText = analysisText.replace(/(?<!<[^>]*)[*_](?![^<]*>)/g, '');
+    // Extract the raw response text
+    let aiResponse = data.candidates[0].content.parts[0].text
 
-    console.log("Gemini analysisText length (before DB):", analysisText.length);
+    // --- START: Apply Post-processing Formatting ---
+    console.log("Applying formatting to AI response...");
+    // Replace markdown bold/italic with HTML bold
+    aiResponse = aiResponse.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); // Replace **bold**
+    aiResponse = aiResponse.replace(/__(.*?)__/g, '<b>$1</b>');   // Replace __italic__ (treat as bold)
+    // Remove stray asterisks or underscores that might remain outside tags
+    aiResponse = aiResponse.replace(/(?<!<[^>]*)[*_](?![^<]*>)/g, '');
+    console.log("Formatting applied.");
+    // --- END: Apply Post-processing Formatting ---
 
-    // --- Initialize Variables for Storage/DB Results ---
-    let imageUrl: string | null = null;
-    let analysisId: string | null = null;
 
-    // --- Store Image and Analysis Data in Supabase (only if userId is valid) ---
-    if (userId && analysisText && image) {
-      console.log(`Proceeding with storage and DB operations for user ${userId}.`);
+    // Store the chat interaction (using the formatted response) if we have user ID and analysis ID
+    if (userId && analysisText && supabase) {
       try {
         const bucketName = 'bone-analysis-images';
 
@@ -279,6 +343,7 @@ serve(async (req) => {
           });
 
         // --- Handle Upload Result & Get Public URL ---
+        let imageUrl = null;
         if (uploadError) {
           console.error("Supabase Storage Upload Error:", uploadError);
           // imageUrl remains null
@@ -286,15 +351,12 @@ serve(async (req) => {
           console.log("Upload successful. Path:", uploadData.path);
 
           // Attempt to get the public URL for the uploaded file
-          const { data: publicUrlData, error: urlError } = supabase.storage
+          const { data: publicUrlData } = supabase.storage
             .from(bucketName)
             .getPublicUrl(uploadData.path); // Use the path returned by the upload
 
            // Check if URL retrieval was successful and the URL is valid
-           if (urlError) {
-               console.error("Error getting public URL:", urlError);
-               imageUrl = null;
-           } else if (publicUrlData && publicUrlData.publicUrl) {
+           if (publicUrlData && publicUrlData.publicUrl) {
                imageUrl = publicUrlData.publicUrl;
                console.log("Retrieved Public URL:", imageUrl);
            } else {
@@ -309,7 +371,7 @@ serve(async (req) => {
         }
 
         // --- Insert Analysis Record into Database ---
-        // imageUrl will be null if any previous step (upload, get URL) failed
+        let analysisId = null;
         console.log("Attempting to insert into 'analyses' table with image_url:", imageUrl);
         const { data: analysisData, error: insertError } = await supabase
           .from('analyses')
@@ -317,7 +379,7 @@ serve(async (req) => {
             user_id: userId,
             task_id: taskId,
             task_name: taskTitle, // Store the readable task name
-            result_text: analysisText, // Store the AI's analysis text
+            result_text: aiResponse, // Store the AI's analysis text
             image_url: imageUrl // Store the retrieved public URL (or null)
           })
           .select('id') // Only retrieve the ID of the newly inserted row
@@ -337,30 +399,34 @@ serve(async (req) => {
         }
         // --- End Database Insertion ---
 
+        // --- Return Final Response to Frontend ---
+        // Log whether an image URL and analysis ID are being returned
+        console.log("Returning final response:", { analysisId: !!analysisId, imageUrl: !!imageUrl });
+        return new Response(
+          JSON.stringify({
+            analysis: aiResponse, // The AI analysis text
+            analysisId: analysisId, // The ID from the 'analyses' table (or null)
+            imageUrl: imageUrl    // The public URL of the stored image (or null)
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       } catch (storageDbError) {
         // Catch errors specifically from the storage/DB interaction block
         console.error("Error during Storage/DB operations:", storageDbError);
         // Log error but allow function to return analysis text if available
-        // imageUrl and analysisId might be null depending on where the error occurred
       }
-    } else {
-        // Log reason for skipping storage/DB operations
-        if (!userId) console.log("Skipping storage/DB: userId is missing.");
-        if (!analysisText) console.log("Skipping storage/DB: analysisText is empty.");
-        if (!image) console.log("Skipping storage/DB: image data is missing.");
     }
-
 
     // --- Return Final Response to Frontend ---
     // Log whether an image URL and analysis ID are being returned
-    console.log("Returning final response:", { analysisId: !!analysisId, imageUrl: !!imageUrl });
+    console.log("Returning final response with analysis text");
     return new Response(
       JSON.stringify({
-        analysis: analysisText, // The AI analysis text
-        analysisId: analysisId, // The ID from the 'analyses' table (or null)
-        imageUrl: imageUrl    // The public URL of the stored image (or null)
+        analysis: aiResponse, // The AI analysis text
+        analysisId: null, // No DB ID since storage failed or was skipped
+        imageUrl: null    // No image URL since storage failed or was skipped
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } } // Set response headers
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
