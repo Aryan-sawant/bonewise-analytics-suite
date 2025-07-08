@@ -101,7 +101,7 @@ serve(async (req) => {
     }
     
     // Updated to use the gemini-2.0-flash model
-    const geminiModel = "gemini-2.0-flash";
+    const geminiModel = "gemini-2.5-flash";
     const baseURL = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
     const url = `${baseURL}?key=${apiKey}`;
 
